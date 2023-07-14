@@ -9,13 +9,20 @@
 
 #include "http_session.hpp"
 
+#include <boost/asio/error.hpp>
+#include <boost/beast/core/bind_handler.hpp>
+#include <boost/beast/http/file_body.hpp>
+#include <boost/beast/http/message_generator.hpp>
+#include <boost/beast/http/read.hpp>
 #include <boost/config.hpp>
 
 #include <iostream>
 
 #include "websocket_session.hpp"
 
-//------------------------------------------------------------------------------
+namespace beast = boost::beast;
+namespace http = boost::beast::http;
+namespace websocket = boost::beast::websocket;
 
 // Return a reasonable mime type based on the extension of a file.
 beast::string_view mime_type(beast::string_view path)
@@ -101,7 +108,7 @@ std::string path_cat(beast::string_view base, beast::string_view path)
 // The concrete type of the response message (which depends on the
 // request), is type-erased in message_generator.
 template <class Body, class Allocator>
-http::message_generator handle_request(
+boost::beast::http::message_generator handle_request(
     beast::string_view doc_root,
     http::request<Body, http::basic_fields<Allocator>>&& req
 )
@@ -193,24 +200,27 @@ http::message_generator handle_request(
 
 //------------------------------------------------------------------------------
 
-http_session::http_session(tcp::socket&& socket, boost::shared_ptr<shared_state> const& state)
+chat::http_session::http_session(
+    boost::asio::ip::tcp::socket&& socket,
+    const boost::shared_ptr<shared_state>& state
+)
     : stream_(std::move(socket)), state_(state)
 {
 }
 
-void http_session::run() { do_read(); }
+void chat::http_session::run() { do_read(); }
 
 // Report a failure
-void http_session::fail(beast::error_code ec, char const* what)
+void chat::http_session::fail(beast::error_code ec, char const* what)
 {
     // Don't report on canceled operations
-    if (ec == net::error::operation_aborted)
+    if (ec == boost::asio::error::operation_aborted)
         return;
 
     std::cerr << what << ": " << ec.message() << "\n";
 }
 
-void http_session::do_read()
+void chat::http_session::do_read()
 {
     // Construct a new parser for each message
     parser_.emplace();
@@ -231,12 +241,12 @@ void http_session::do_read()
     );
 }
 
-void http_session::on_read(beast::error_code ec, std::size_t)
+void chat::http_session::on_read(beast::error_code ec, std::size_t)
 {
     // This means they closed the connection
     if (ec == http::error::end_of_stream)
     {
-        stream_.socket().shutdown(tcp::socket::shutdown_send, ec);
+        stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
         return;
     }
 
@@ -267,7 +277,7 @@ void http_session::on_read(beast::error_code ec, std::size_t)
     });
 }
 
-void http_session::on_write(beast::error_code ec, std::size_t, bool keep_alive)
+void chat::http_session::on_write(beast::error_code ec, std::size_t, bool keep_alive)
 {
     // Handle the error, if any
     if (ec)
@@ -277,7 +287,7 @@ void http_session::on_write(beast::error_code ec, std::size_t, bool keep_alive)
     {
         // This means we should close the connection, usually because
         // the response indicated the "Connection: close" semantic.
-        stream_.socket().shutdown(tcp::socket::shutdown_send, ec);
+        stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
         return;
     }
 

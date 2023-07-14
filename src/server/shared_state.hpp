@@ -10,12 +10,12 @@
 #ifndef BOOST_BEAST_EXAMPLE_WEBSOCKET_CHAT_MULTI_SHARED_STATE_HPP
 #define BOOST_BEAST_EXAMPLE_WEBSOCKET_CHAT_MULTI_SHARED_STATE_HPP
 
-#include <boost/smart_ptr.hpp>
-
 #include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_set>
+
+namespace chat {
 
 // Forward declaration
 class websocket_session;
@@ -23,7 +23,7 @@ class websocket_session;
 // Represents the shared server state
 class shared_state
 {
-    std::string const doc_root_;
+    const std::string doc_root_;
 
     // This mutex synchronizes all access to sessions_
     std::mutex mutex_;
@@ -40,5 +40,7 @@ public:
     void leave(websocket_session* session);
     void send(std::string message);
 };
+
+}  // namespace chat
 
 #endif

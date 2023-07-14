@@ -10,39 +10,45 @@
 #ifndef BOOST_BEAST_EXAMPLE_WEBSOCKET_CHAT_MULTI_HTTP_SESSION_HPP
 #define BOOST_BEAST_EXAMPLE_WEBSOCKET_CHAT_MULTI_HTTP_SESSION_HPP
 
-#include <boost/optional.hpp>
-#include <boost/smart_ptr.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/http/parser.hpp>
+#include <boost/beast/http/string_body.hpp>
+#include <boost/optional/optional.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 
+#include <cstddef>
 #include <cstdlib>
 #include <memory>
 
-#include "beast.hpp"
-#include "net.hpp"
+#include "error.hpp"
 #include "shared_state.hpp"
 
-/** Represents an established HTTP connection
- */
+namespace chat {
+
 class http_session : public boost::enable_shared_from_this<http_session>
 {
-    beast::tcp_stream stream_;
-    beast::flat_buffer buffer_;
+    boost::beast::tcp_stream stream_;
+    boost::beast::flat_buffer buffer_;
     boost::shared_ptr<shared_state> state_;
 
     // The parser is stored in an optional container so we can
     // construct it from scratch it at the beginning of each new message.
-    boost::optional<http::request_parser<http::string_body>> parser_;
+    boost::optional<boost::beast::http::request_parser<boost::beast::http::string_body>> parser_;
 
     struct send_lambda;
 
-    void fail(beast::error_code ec, char const* what);
+    void fail(error_code ec, char const* what);
     void do_read();
-    void on_read(beast::error_code ec, std::size_t);
-    void on_write(beast::error_code ec, std::size_t, bool close);
+    void on_read(error_code ec, std::size_t);
+    void on_write(error_code ec, std::size_t, bool close);
 
 public:
-    http_session(tcp::socket&& socket, boost::shared_ptr<shared_state> const& state);
+    http_session(boost::asio::ip::tcp::socket&& socket, const boost::shared_ptr<shared_state>& state);
 
     void run();
 };
+
+}  // namespace chat
 
 #endif

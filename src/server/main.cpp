@@ -18,14 +18,21 @@
 */
 //------------------------------------------------------------------------------
 
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <boost/smart_ptr.hpp>
+#include <boost/smart_ptr/make_shared_array.hpp>
 
+#include <cstdlib>
 #include <iostream>
+#include <thread>
 #include <vector>
 
+#include "error.hpp"
 #include "listener.hpp"
 #include "shared_state.hpp"
+
+using namespace chat;
 
 int main(int argc, char* argv[])
 {
@@ -37,25 +44,25 @@ int main(int argc, char* argv[])
                   << "    websocket-chat-server 0.0.0.0 8080 . 5\n";
         return EXIT_FAILURE;
     }
-    auto address = net::ip::make_address(argv[1]);
+    auto address = boost::asio::ip::make_address(argv[1]);
     auto port = static_cast<unsigned short>(std::atoi(argv[2]));
     auto doc_root = argv[3];
     auto const threads = std::max<int>(1, std::atoi(argv[4]));
 
     // The io_context is required for all I/O
-    net::io_context ioc;
+    boost::asio::io_context ioc;
 
     // Create and launch a listening port
     boost::make_shared<listener>(
         ioc,
-        tcp::endpoint{address, port},
+        boost::asio::ip::tcp::endpoint{address, port},
         boost::make_shared<shared_state>(doc_root)
     )
         ->run();
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
-    net::signal_set signals(ioc, SIGINT, SIGTERM);
-    signals.async_wait([&ioc](boost::system::error_code const&, int) {
+    boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
+    signals.async_wait([&ioc](error_code, int) {
         // Stop the io_context. This will cause run()
         // to return immediately, eventually destroying the
         // io_context and any remaining handlers in it.

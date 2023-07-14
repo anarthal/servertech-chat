@@ -10,11 +10,11 @@ add_executable(
     main
     src/boost_asio.cpp
     src/boost_beast.cpp
-    src/http_session.cpp
-    src/listener.cpp
-    src/shared_state.cpp
-    src/websocket_session.cpp
-    src/main.cpp
+    src/server/http_session.cpp
+    src/server/listener.cpp
+    src/server/shared_state.cpp
+    src/server/websocket_session.cpp
+    src/server/main.cpp
 )
 target_link_libraries(
     main

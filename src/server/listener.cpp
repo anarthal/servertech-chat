@@ -9,14 +9,22 @@
 
 #include "listener.hpp"
 
+#include <boost/asio/error.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/beast/core/bind_handler.hpp>
+
 #include <iostream>
 
 #include "http_session.hpp"
 
-listener::listener(net::io_context& ioc, tcp::endpoint endpoint, boost::shared_ptr<shared_state> const& state)
+chat::listener::listener(
+    boost::asio::io_context& ioc,
+    boost::asio::ip::tcp::endpoint endpoint,
+    const boost::shared_ptr<shared_state>& state
+)
     : ioc_(ioc), acceptor_(ioc), state_(state)
 {
-    beast::error_code ec;
+    error_code ec;
 
     // Open the acceptor
     acceptor_.open(endpoint.protocol(), ec);
@@ -27,7 +35,7 @@ listener::listener(net::io_context& ioc, tcp::endpoint endpoint, boost::shared_p
     }
 
     // Allow address reuse
-    acceptor_.set_option(net::socket_base::reuse_address(true), ec);
+    acceptor_.set_option(boost::asio::socket_base::reuse_address(true), ec);
     if (ec)
     {
         fail(ec, "set_option");
@@ -43,7 +51,7 @@ listener::listener(net::io_context& ioc, tcp::endpoint endpoint, boost::shared_p
     }
 
     // Start listening for connections
-    acceptor_.listen(net::socket_base::max_listen_connections, ec);
+    acceptor_.listen(boost::asio::socket_base::max_listen_connections, ec);
     if (ec)
     {
         fail(ec, "listen");
@@ -51,26 +59,26 @@ listener::listener(net::io_context& ioc, tcp::endpoint endpoint, boost::shared_p
     }
 }
 
-void listener::run()
+void chat::listener::run()
 {
     // The new connection gets its own strand
     acceptor_.async_accept(
-        net::make_strand(ioc_),
-        beast::bind_front_handler(&listener::on_accept, shared_from_this())
+        boost::asio::make_strand(ioc_),
+        boost::beast::bind_front_handler(&listener::on_accept, shared_from_this())
     );
 }
 
 // Report a failure
-void listener::fail(beast::error_code ec, char const* what)
+void chat::listener::fail(error_code ec, char const* what)
 {
     // Don't report on canceled operations
-    if (ec == net::error::operation_aborted)
+    if (ec == boost::asio::error::operation_aborted)
         return;
     std::cerr << what << ": " << ec.message() << "\n";
 }
 
 // Handle a connection
-void listener::on_accept(beast::error_code ec, tcp::socket socket)
+void chat::listener::on_accept(error_code ec, boost::asio::ip::tcp::socket socket)
 {
     if (ec)
         return fail(ec, "accept");
@@ -80,7 +88,7 @@ void listener::on_accept(beast::error_code ec, tcp::socket socket)
 
     // The new connection gets its own strand
     acceptor_.async_accept(
-        net::make_strand(ioc_),
-        beast::bind_front_handler(&listener::on_accept, shared_from_this())
+        boost::asio::make_strand(ioc_),
+        boost::beast::bind_front_handler(&listener::on_accept, shared_from_this())
     );
 }
