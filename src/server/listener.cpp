@@ -22,6 +22,15 @@
 #include "http_session.hpp"
 #include "shared_state.hpp"
 
+static void fail(chat::error_code ec, char const* what)
+{
+    // Don't report on canceled operations
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+
+    std::cerr << what << ": " << ec.message() << "\n";
+}
+
 chat::listener::listener(
     boost::asio::io_context& ioc,
     boost::asio::ip::tcp::endpoint endpoint,
@@ -66,15 +75,6 @@ chat::listener::listener(
 
 void chat::listener::start() { launch_listener(); }
 
-// Report a failure
-void chat::listener::fail(error_code ec, char const* what)
-{
-    // Don't report on canceled operations
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    std::cerr << what << ": " << ec.message() << "\n";
-}
-
 // Handle a connection
 void chat::listener::on_accept(error_code ec, boost::asio::ip::tcp::socket socket)
 {
@@ -86,8 +86,8 @@ void chat::listener::on_accept(error_code ec, boost::asio::ip::tcp::socket socke
         boost::asio::any_io_executor ex(socket.get_executor());
         boost::asio::spawn(
             std::move(ex),
-            [this, socket = std::move(socket)](boost::asio::yield_context yield) mutable {
-                this->run_session(std::move(socket), yield);
+            [state = this->state_, socket = std::move(socket)](boost::asio::yield_context yield) mutable {
+                run_http_session(std::move(socket), std::move(state), yield);
             },
             // we ignore the result of the session,
             // most errors are handled with error_code
@@ -104,12 +104,6 @@ void chat::listener::on_accept(error_code ec, boost::asio::ip::tcp::socket socke
     }
 
     launch_listener();
-}
-
-void chat::listener::run_session(boost::asio::ip::tcp::socket socket, boost::asio::yield_context yield)
-{
-    http_session session(std::move(socket), state_);
-    session.run(yield);
 }
 
 void chat::listener::launch_listener()

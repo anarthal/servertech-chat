@@ -18,6 +18,15 @@
 namespace net = boost::asio;
 namespace websocket = boost::beast::websocket;
 
+static void fail(chat::error_code ec, char const* what)
+{
+    // Don't report these
+    if (ec == net::error::operation_aborted || ec == websocket::error::closed)
+        return;
+
+    std::cerr << what << ": " << ec.message() << "\n";
+}
+
 chat::websocket_session::websocket_session(net::ip::tcp::socket&& socket, std::shared_ptr<shared_state> state)
     : ws_(std::move(socket)), state_(std::move(state))
 {
@@ -30,7 +39,7 @@ chat::websocket_session::~websocket_session()
 }
 
 void chat::websocket_session::run(
-    http_session::parser_type::value_type request,
+    boost::beast::http::request<boost::beast::http::string_body> request,
     boost::asio::yield_context yield
 )
 {
@@ -70,15 +79,6 @@ void chat::websocket_session::run(
         // Clear the buffer
         buffer_.consume(buffer_.size());
     }
-}
-
-void chat::websocket_session::fail(error_code ec, char const* what)
-{
-    // Don't report these
-    if (ec == net::error::operation_aborted || ec == websocket::error::closed)
-        return;
-
-    std::cerr << what << ": " << ec.message() << "\n";
 }
 
 void chat::websocket_session::send(const boost::shared_ptr<const std::string>& ss)

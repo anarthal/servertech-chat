@@ -13,6 +13,8 @@
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/http/message.hpp>
+#include <boost/beast/http/string_body.hpp>
 #include <boost/beast/websocket/stream.hpp>
 
 #include <cstdlib>
@@ -21,7 +23,6 @@
 #include <vector>
 
 #include "error.hpp"
-#include "http_session.hpp"
 
 namespace chat {
 
@@ -37,23 +38,21 @@ class websocket_session : public std::enable_shared_from_this<websocket_session>
     std::shared_ptr<shared_state> state_;
     std::vector<boost::shared_ptr<const std::string>> queue_;
 
-    void fail(error_code ec, char const* what);
-    void on_accept(error_code ec);
-    void on_read(error_code ec, std::size_t bytes_transferred);
     void on_write(error_code ec, std::size_t bytes_transferred);
+    void on_send(const boost::shared_ptr<const std::string>& ss);
 
 public:
     websocket_session(boost::asio::ip::tcp::socket&& socket, std::shared_ptr<shared_state> state);
 
     ~websocket_session();
 
-    void run(http_session::parser_type::value_type request, boost::asio::yield_context yield);
+    void run(
+        boost::beast::http::request<boost::beast::http::string_body> request,
+        boost::asio::yield_context yield
+    );
 
     // Send a message
     void send(const boost::shared_ptr<const std::string>& ss);
-
-private:
-    void on_send(const boost::shared_ptr<const std::string>& ss);
 };
 
 }  // namespace chat

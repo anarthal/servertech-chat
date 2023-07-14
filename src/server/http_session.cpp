@@ -11,19 +11,32 @@
 
 #include <boost/asio/error.hpp>
 #include <boost/asio/spawn.hpp>
-#include <boost/beast/core/bind_handler.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/http/file_body.hpp>
 #include <boost/beast/http/message_generator.hpp>
+#include <boost/beast/http/parser.hpp>
 #include <boost/beast/http/read.hpp>
+#include <boost/beast/http/string_body.hpp>
 #include <boost/config.hpp>
 
 #include <iostream>
 
+#include "error.hpp"
 #include "websocket_session.hpp"
 
 namespace beast = boost::beast;
 namespace http = boost::beast::http;
 namespace websocket = boost::beast::websocket;
+
+static void fail(chat::error_code ec, char const* what)
+{
+    // Don't report on canceled operations
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+
+    std::cerr << what << ": " << ec.message() << "\n";
+}
 
 // Return a reasonable mime type based on the extension of a file.
 static beast::string_view mime_type(beast::string_view path)
@@ -199,29 +212,30 @@ static boost::beast::http::message_generator handle_request(
     return res;
 }
 
-chat::http_session::http_session(boost::asio::ip::tcp::socket&& socket, std::shared_ptr<shared_state> state)
-    : stream_(std::move(socket)), state_(std::move(state))
-{
-}
-
-void chat::http_session::run(boost::asio::yield_context yield)
+void chat::run_http_session(
+    boost::asio::ip::tcp::socket&& socket,
+    std::shared_ptr<shared_state> state,
+    boost::asio::yield_context yield
+)
 {
     error_code ec;
+    boost::beast::flat_buffer buff;
+    boost::beast::tcp_stream stream_(std::move(socket));
 
     while (true)
     {
         // Construct a new parser for each message
-        parser_.emplace();
+        boost::beast::http::request_parser<boost::beast::http::string_body> parser;
 
         // Apply a reasonable limit to the allowed size
         // of the body in bytes to prevent abuse.
-        parser_->body_limit(10000);
+        parser.body_limit(10000);
 
         // Set the timeout.
         stream_.expires_after(std::chrono::seconds(30));
 
         // Read a request
-        http::async_read(stream_, buffer_, parser_->get(), yield[ec]);
+        http::async_read(stream_, buff, parser.get(), yield[ec]);
 
         // This means they closed the connection
         if (ec == http::error::end_of_stream)
@@ -233,17 +247,17 @@ void chat::http_session::run(boost::asio::yield_context yield)
             return fail(ec, "read");
 
         // See if it is a WebSocket Upgrade
-        if (websocket::is_upgrade(parser_->get()))
+        if (websocket::is_upgrade(parser.get()))
         {
             // Create a websocket session, transferring ownership
             // of both the socket and the HTTP request.
-            auto websocket_sess = std::make_shared<websocket_session>(stream_.release_socket(), state_);
-            websocket_sess->run(parser_->release(), yield);
+            auto websocket_sess = std::make_shared<websocket_session>(stream_.release_socket(), state);
+            websocket_sess->run(parser.release(), yield);
             return;
         }
 
         // Handle request
-        http::message_generator msg = handle_request(state_->doc_root(), parser_->release());
+        http::message_generator msg = handle_request(state->doc_root(), parser.release());
 
         // Determine if we should close the connection
         bool keep_alive = msg.keep_alive();
@@ -261,14 +275,4 @@ void chat::http_session::run(boost::asio::yield_context yield)
             return;
         }
     }
-}
-
-// Report a failure
-void chat::http_session::fail(beast::error_code ec, char const* what)
-{
-    // Don't report on canceled operations
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
-    std::cerr << what << ": " << ec.message() << "\n";
 }
