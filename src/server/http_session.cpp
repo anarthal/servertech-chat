@@ -10,6 +10,7 @@
 #include "http_session.hpp"
 
 #include <boost/asio/error.hpp>
+#include <boost/asio/spawn.hpp>
 #include <boost/beast/core/bind_handler.hpp>
 #include <boost/beast/http/file_body.hpp>
 #include <boost/beast/http/message_generator.hpp>
@@ -25,7 +26,7 @@ namespace http = boost::beast::http;
 namespace websocket = boost::beast::websocket;
 
 // Return a reasonable mime type based on the extension of a file.
-beast::string_view mime_type(beast::string_view path)
+static beast::string_view mime_type(beast::string_view path)
 {
     using beast::iequals;
     auto const ext = [&path] {
@@ -81,7 +82,7 @@ beast::string_view mime_type(beast::string_view path)
 
 // Append an HTTP rel-path to a local filesystem path.
 // The returned path is normalized for the platform.
-std::string path_cat(beast::string_view base, beast::string_view path)
+static std::string path_cat(beast::string_view base, beast::string_view path)
 {
     if (base.empty())
         return std::string(path);
@@ -108,7 +109,7 @@ std::string path_cat(beast::string_view base, beast::string_view path)
 // The concrete type of the response message (which depends on the
 // request), is type-erased in message_generator.
 template <class Body, class Allocator>
-boost::beast::http::message_generator handle_request(
+static boost::beast::http::message_generator handle_request(
     beast::string_view doc_root,
     http::request<Body, http::basic_fields<Allocator>>&& req
 )
@@ -198,17 +199,69 @@ boost::beast::http::message_generator handle_request(
     return res;
 }
 
-//------------------------------------------------------------------------------
-
-chat::http_session::http_session(
-    boost::asio::ip::tcp::socket&& socket,
-    const boost::shared_ptr<shared_state>& state
-)
-    : stream_(std::move(socket)), state_(state)
+chat::http_session::http_session(boost::asio::ip::tcp::socket&& socket, std::shared_ptr<shared_state> state)
+    : stream_(std::move(socket)), state_(std::move(state))
 {
 }
 
-void chat::http_session::run() { do_read(); }
+void chat::http_session::run(boost::asio::yield_context yield)
+{
+    error_code ec;
+
+    while (true)
+    {
+        // Construct a new parser for each message
+        parser_.emplace();
+
+        // Apply a reasonable limit to the allowed size
+        // of the body in bytes to prevent abuse.
+        parser_->body_limit(10000);
+
+        // Set the timeout.
+        stream_.expires_after(std::chrono::seconds(30));
+
+        // Read a request
+        http::async_read(stream_, buffer_, parser_->get(), yield[ec]);
+
+        // This means they closed the connection
+        if (ec == http::error::end_of_stream)
+        {
+            stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
+            return;
+        }
+        else if (ec)
+            return fail(ec, "read");
+
+        // See if it is a WebSocket Upgrade
+        if (websocket::is_upgrade(parser_->get()))
+        {
+            // Create a websocket session, transferring ownership
+            // of both the socket and the HTTP request.
+            auto websocket_sess = std::make_shared<websocket_session>(stream_.release_socket(), state_);
+            websocket_sess->run(parser_->release(), yield);
+            return;
+        }
+
+        // Handle request
+        http::message_generator msg = handle_request(state_->doc_root(), parser_->release());
+
+        // Determine if we should close the connection
+        bool keep_alive = msg.keep_alive();
+
+        // Send the response
+        beast::async_write(stream_, std::move(msg), yield[ec]);
+        if (ec)
+            return fail(ec, "write");
+
+        if (!keep_alive)
+        {
+            // This means we should close the connection, usually because
+            // the response indicated the "Connection: close" semantic.
+            stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
+            return;
+        }
+    }
+}
 
 // Report a failure
 void chat::http_session::fail(beast::error_code ec, char const* what)
@@ -218,79 +271,4 @@ void chat::http_session::fail(beast::error_code ec, char const* what)
         return;
 
     std::cerr << what << ": " << ec.message() << "\n";
-}
-
-void chat::http_session::do_read()
-{
-    // Construct a new parser for each message
-    parser_.emplace();
-
-    // Apply a reasonable limit to the allowed size
-    // of the body in bytes to prevent abuse.
-    parser_->body_limit(10000);
-
-    // Set the timeout.
-    stream_.expires_after(std::chrono::seconds(30));
-
-    // Read a request
-    http::async_read(
-        stream_,
-        buffer_,
-        parser_->get(),
-        beast::bind_front_handler(&http_session::on_read, shared_from_this())
-    );
-}
-
-void chat::http_session::on_read(beast::error_code ec, std::size_t)
-{
-    // This means they closed the connection
-    if (ec == http::error::end_of_stream)
-    {
-        stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
-        return;
-    }
-
-    // Handle the error, if any
-    if (ec)
-        return fail(ec, "read");
-
-    // See if it is a WebSocket Upgrade
-    if (websocket::is_upgrade(parser_->get()))
-    {
-        // Create a websocket session, transferring ownership
-        // of both the socket and the HTTP request.
-        boost::make_shared<websocket_session>(stream_.release_socket(), state_)->run(parser_->release());
-        return;
-    }
-
-    // Handle request
-    http::message_generator msg = handle_request(state_->doc_root(), parser_->release());
-
-    // Determine if we should close the connection
-    bool keep_alive = msg.keep_alive();
-
-    auto self = shared_from_this();
-
-    // Send the response
-    beast::async_write(stream_, std::move(msg), [self, keep_alive](beast::error_code ec, std::size_t bytes) {
-        self->on_write(ec, bytes, keep_alive);
-    });
-}
-
-void chat::http_session::on_write(beast::error_code ec, std::size_t, bool keep_alive)
-{
-    // Handle the error, if any
-    if (ec)
-        return fail(ec, "write");
-
-    if (!keep_alive)
-    {
-        // This means we should close the connection, usually because
-        // the response indicated the "Connection: close" semantic.
-        stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
-        return;
-    }
-
-    // Read another request
-    do_read();
 }

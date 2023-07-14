@@ -33,7 +33,7 @@ void chat::shared_state::send(std::string message)
     // Make a local list of all the weak pointers representing
     // the sessions, so we can do the actual sending without
     // holding the mutex:
-    std::vector<boost::weak_ptr<websocket_session>> v;
+    std::vector<std::weak_ptr<websocket_session>> v;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         v.reserve(sessions_.size());

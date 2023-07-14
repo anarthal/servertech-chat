@@ -9,20 +9,25 @@
 
 #include "listener.hpp"
 
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
+#include <boost/asio/spawn.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/beast/core/bind_handler.hpp>
 
+#include <functional>
 #include <iostream>
 
 #include "http_session.hpp"
+#include "shared_state.hpp"
 
 chat::listener::listener(
     boost::asio::io_context& ioc,
     boost::asio::ip::tcp::endpoint endpoint,
-    const boost::shared_ptr<shared_state>& state
+    std::shared_ptr<shared_state> st
 )
-    : ioc_(ioc), acceptor_(ioc), state_(state)
+    : ioc_(ioc), acceptor_(ioc), state_(std::move(st))
 {
     error_code ec;
 
@@ -59,14 +64,7 @@ chat::listener::listener(
     }
 }
 
-void chat::listener::run()
-{
-    // The new connection gets its own strand
-    acceptor_.async_accept(
-        boost::asio::make_strand(ioc_),
-        boost::beast::bind_front_handler(&listener::on_accept, shared_from_this())
-    );
-}
+void chat::listener::start() { launch_listener(); }
 
 // Report a failure
 void chat::listener::fail(error_code ec, char const* what)
@@ -83,12 +81,42 @@ void chat::listener::on_accept(error_code ec, boost::asio::ip::tcp::socket socke
     if (ec)
         return fail(ec, "accept");
     else
+    {
         // Launch a new session for this connection
-        boost::make_shared<http_session>(std::move(socket), state_)->run();
+        boost::asio::any_io_executor ex(socket.get_executor());
+        boost::asio::spawn(
+            std::move(ex),
+            [this, socket = std::move(socket)](boost::asio::yield_context yield) mutable {
+                this->run_session(std::move(socket), yield);
+            },
+            // we ignore the result of the session,
+            // most errors are handled with error_code
+            [](std::exception_ptr ex) {
+                // if an exception occurred in the coroutine,
+                // it's something critical, e.g. out of memory
+                // we capture normal errors in the ec
+                // so we just rethrow the exception here,
+                // which will cause `ioc.run()` to throw
+                if (ex)
+                    std::rethrow_exception(ex);
+            }
+        );
+    }
 
+    launch_listener();
+}
+
+void chat::listener::run_session(boost::asio::ip::tcp::socket socket, boost::asio::yield_context yield)
+{
+    http_session session(std::move(socket), state_);
+    session.run(yield);
+}
+
+void chat::listener::launch_listener()
+{
     // The new connection gets its own strand
     acceptor_.async_accept(
         boost::asio::make_strand(ioc_),
-        boost::beast::bind_front_handler(&listener::on_accept, shared_from_this())
+        std::bind(&listener::on_accept, this, std::placeholders::_1, std::placeholders::_2)
     );
 }

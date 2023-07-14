@@ -18,11 +18,8 @@
 namespace net = boost::asio;
 namespace websocket = boost::beast::websocket;
 
-chat::websocket_session::websocket_session(
-    net::ip::tcp::socket&& socket,
-    const boost::shared_ptr<shared_state>& state
-)
-    : ws_(std::move(socket)), state_(state)
+chat::websocket_session::websocket_session(net::ip::tcp::socket&& socket, std::shared_ptr<shared_state> state)
+    : ws_(std::move(socket)), state_(std::move(state))
 {
 }
 
@@ -32,6 +29,49 @@ chat::websocket_session::~websocket_session()
     state_->leave(this);
 }
 
+void chat::websocket_session::run(
+    http_session::parser_type::value_type request,
+    boost::asio::yield_context yield
+)
+{
+    error_code ec;
+
+    // Set suggested timeout settings for the websocket
+    ws_.set_option(boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::server));
+
+    // Set a decorator to change the Server of the handshake
+    ws_.set_option(
+        boost::beast::websocket::stream_base::decorator([](boost::beast::websocket::response_type& res) {
+            res.set(
+                boost::beast::http::field::server,
+                std::string(BOOST_BEAST_VERSION_STRING) + " websocket-chat-multi"
+            );
+        })
+    );
+
+    // Accept the websocket handshake
+    ws_.async_accept(request, yield[ec]);
+    if (ec)
+        return fail(ec, "accept");
+
+    // Add this session to the list of active sessions
+    state_->join(this);
+
+    while (true)
+    {
+        // Read a message
+        ws_.async_read(buffer_, yield[ec]);
+        if (ec)
+            return fail(ec, "read");
+
+        // Send to all connections
+        state_->send(boost::beast::buffers_to_string(buffer_.data()));
+
+        // Clear the buffer
+        buffer_.consume(buffer_.size());
+    }
+}
+
 void chat::websocket_session::fail(error_code ec, char const* what)
 {
     // Don't report these
@@ -39,41 +79,6 @@ void chat::websocket_session::fail(error_code ec, char const* what)
         return;
 
     std::cerr << what << ": " << ec.message() << "\n";
-}
-
-void chat::websocket_session::on_accept(error_code ec)
-{
-    // Handle the error, if any
-    if (ec)
-        return fail(ec, "accept");
-
-    // Add this session to the list of active sessions
-    state_->join(this);
-
-    // Read a message
-    ws_.async_read(
-        buffer_,
-        boost::beast::bind_front_handler(&websocket_session::on_read, shared_from_this())
-    );
-}
-
-void chat::websocket_session::on_read(error_code ec, std::size_t)
-{
-    // Handle the error, if any
-    if (ec)
-        return fail(ec, "read");
-
-    // Send to all connections
-    state_->send(boost::beast::buffers_to_string(buffer_.data()));
-
-    // Clear the buffer
-    buffer_.consume(buffer_.size());
-
-    // Read another message
-    ws_.async_read(
-        buffer_,
-        boost::beast::bind_front_handler(&websocket_session::on_read, shared_from_this())
-    );
 }
 
 void chat::websocket_session::send(const boost::shared_ptr<const std::string>& ss)
@@ -88,7 +93,7 @@ void chat::websocket_session::send(const boost::shared_ptr<const std::string>& s
     );
 }
 
-void chat::websocket_session::on_send(boost::shared_ptr<std::string const> const& ss)
+void chat::websocket_session::on_send(const boost::shared_ptr<const std::string>& ss)
 {
     // Always add to queue
     queue_.push_back(ss);

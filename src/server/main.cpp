@@ -21,6 +21,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/redis/connection.hpp>
 #include <boost/smart_ptr/make_shared_array.hpp>
 
 #include <cstdlib>
@@ -52,13 +53,16 @@ int main(int argc, char* argv[])
     // The io_context is required for all I/O
     boost::asio::io_context ioc;
 
+    // Redis connection
+    boost::redis::connection conn(ioc.get_executor());
+
     // Create and launch a listening port
-    boost::make_shared<listener>(
+    listener list(
         ioc,
         boost::asio::ip::tcp::endpoint{address, port},
-        boost::make_shared<shared_state>(doc_root)
-    )
-        ->run();
+        std::make_shared<shared_state>(doc_root)
+    );
+    list.start();
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
     boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);

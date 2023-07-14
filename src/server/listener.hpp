@@ -11,7 +11,7 @@
 #define BOOST_BEAST_EXAMPLE_WEBSOCKET_CHAT_MULTI_LISTENER_HPP
 
 #include <boost/asio/io_context.hpp>
-#include <boost/smart_ptr.hpp>
+#include <boost/asio/spawn.hpp>
 
 #include <memory>
 #include <string>
@@ -24,24 +24,27 @@ namespace chat {
 class shared_state;
 
 // Accepts incoming connections and launches the sessions
-class listener : public boost::enable_shared_from_this<listener>
+class listener
 {
     boost::asio::io_context& ioc_;
     boost::asio::ip::tcp::acceptor acceptor_;
-    boost::shared_ptr<shared_state> state_;
+    std::shared_ptr<shared_state> state_;
 
     void fail(error_code ec, char const* what);
     void on_accept(error_code ec, boost::asio::ip::tcp::socket socket);
+    void run_session(boost::asio::ip::tcp::socket socket, boost::asio::yield_context yield);
+
+    void launch_listener();
 
 public:
     listener(
         boost::asio::io_context& ioc,
         boost::asio::ip::tcp::endpoint endpoint,
-        boost::shared_ptr<shared_state> const& state
+        std::shared_ptr<shared_state> state
     );
 
     // Start accepting incoming connections
-    void run();
+    void start();
 };
 
 }  // namespace chat
