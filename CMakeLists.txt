@@ -10,6 +10,7 @@ add_executable(
     main
     src/boost_asio.cpp
     src/boost_beast.cpp
+    src/boost_redis.cpp
     src/server/http_session.cpp
     src/server/listener.cpp
     src/server/shared_state.cpp
