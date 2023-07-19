@@ -8,35 +8,79 @@
 #ifndef SERVERTECHCHAT_SRC_SERVER_SHARED_STATE_HPP
 #define SERVERTECHCHAT_SRC_SERVER_SHARED_STATE_HPP
 
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/multi_index/indexed_by.hpp>
+#include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/redis/connection.hpp>
+
 #include <memory>
-#include <mutex>
 #include <string>
-#include <unordered_set>
+#include <string_view>
 
 namespace chat {
 
 // Forward declaration
 class websocket_session;
 
+class session_map
+{
+    struct room_session
+    {
+        std::string room_name;
+        std::shared_ptr<websocket_session> session;
+
+        const websocket_session* session_ptr() const noexcept { return session.get(); }
+    };
+
+    // clang-format off
+    using container_type = boost::multi_index::multi_index_container<
+        room_session,
+        boost::multi_index::indexed_by<
+            boost::multi_index::ordered_non_unique<
+                boost::multi_index::member<room_session, std::string, &room_session::room_name>
+            >,
+            boost::multi_index::ordered_non_unique<
+                boost::multi_index::const_mem_fun<room_session, const websocket_session*, &room_session::session_ptr>
+            >
+        >
+    >;
+    // clang-format on
+
+    container_type ct_;
+
+public:
+    session_map() = default;
+
+    void add_session(std::shared_ptr<websocket_session> sess, const std::vector<std::string>& rooms)
+    {
+        for (const auto& room : rooms)
+        {
+            ct_.insert(room_session{room, std::move(sess)});
+        }
+    }
+
+    void remove_session(websocket_session& sess) { ct_.get<1>().erase(&sess); }
+
+    // TODO: we could save a copy here
+    auto get_sessions(const std::string& room) { return ct_.equal_range(room); }
+};
+
 // Represents the shared server state
 class shared_state
 {
     const std::string doc_root_;
-
-    // This mutex synchronizes all access to sessions_
-    std::mutex mutex_;
-
-    // Keep a list of all the connected clients
-    std::unordered_set<websocket_session*> sessions_;
+    boost::redis::connection& redis_;
+    session_map sessions_;
 
 public:
-    explicit shared_state(std::string doc_root);
+    shared_state(std::string doc_root, boost::redis::connection& redis);
 
-    std::string const& doc_root() const noexcept { return doc_root_; }
-
-    void join(websocket_session* session);
-    void leave(websocket_session* session);
-    void send(std::string message);
+    const std::string& doc_root() const noexcept { return doc_root_; }
+    boost::redis::connection& redis() noexcept { return redis_; }
+    session_map& sessions() noexcept { return sessions_; }
 };
 
 }  // namespace chat

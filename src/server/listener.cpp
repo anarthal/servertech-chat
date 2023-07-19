@@ -106,9 +106,6 @@ void chat::listener::on_accept(error_code ec, boost::asio::ip::tcp::socket socke
 
 void chat::listener::launch_listener()
 {
-    // The new connection gets its own strand
-    acceptor_.async_accept(
-        boost::asio::make_strand(ioc_),
-        std::bind(&listener::on_accept, this, std::placeholders::_1, std::placeholders::_2)
+    acceptor_.async_accept(std::bind(&listener::on_accept, this, std::placeholders::_1, std::placeholders::_2)
     );
 }

@@ -27,30 +27,24 @@ namespace chat {
 // Forward declaration
 class shared_state;
 
-/** Represents an active WebSocket connection to the server
- */
+using ws_stream = boost::beast::websocket::stream<boost::beast::tcp_stream>;
+
 class websocket_session : public std::enable_shared_from_this<websocket_session>
 {
     boost::beast::flat_buffer buffer_;
-    boost::beast::websocket::stream<boost::beast::tcp_stream> ws_;
+    ws_stream ws_;
     std::shared_ptr<shared_state> state_;
     std::vector<boost::shared_ptr<const std::string>> queue_;
 
-    void on_write(error_code ec, std::size_t bytes_transferred);
-    void on_send(const boost::shared_ptr<const std::string>& ss);
-
 public:
     websocket_session(boost::asio::ip::tcp::socket&& socket, std::shared_ptr<shared_state> state);
-
-    ~websocket_session();
 
     void run(
         boost::beast::http::request<boost::beast::http::string_body> request,
         boost::asio::yield_context yield
     );
 
-    // Send a message
-    void send(const boost::shared_ptr<const std::string>& ss);
+    ws_stream& stream() noexcept { return ws_; }
 };
 
 }  // namespace chat

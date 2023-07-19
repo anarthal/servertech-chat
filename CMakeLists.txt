@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(servertech_chat)
 
-find_package(Boost REQUIRED COMPONENTS headers context)
+find_package(Boost REQUIRED COMPONENTS headers context json)
 find_package(OpenSSL REQUIRED)
 
 add_executable(
@@ -27,6 +27,7 @@ target_link_libraries(
     PRIVATE
     Boost::headers
     Boost::context
+    Boost::json
     OpenSSL::Crypto
     OpenSSL::SSL
 )

@@ -16,11 +16,12 @@
 */
 //------------------------------------------------------------------------------
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/redis/config.hpp>
 #include <boost/redis/connection.hpp>
-#include <boost/smart_ptr/make_shared_array.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -53,21 +54,25 @@ int main(int argc, char* argv[])
 
     // Redis connection
     boost::redis::connection conn(ioc.get_executor());
+    boost::redis::config cfg;
+    cfg.health_check_interval = std::chrono::seconds::zero();
+    conn.async_run(cfg, {}, boost::asio::detached);
 
     // Create and launch a listening port
     listener list(
         ioc,
         boost::asio::ip::tcp::endpoint{address, port},
-        std::make_shared<shared_state>(doc_root)
+        std::make_shared<shared_state>(doc_root, conn)
     );
     list.start();
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
     boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
-    signals.async_wait([&ioc](error_code, int) {
+    signals.async_wait([&ioc, &conn](error_code, int) {
         // Stop the io_context. This will cause run()
         // to return immediately, eventually destroying the
         // io_context and any remaining handlers in it.
+        conn.cancel();
         ioc.stop();
     });
 

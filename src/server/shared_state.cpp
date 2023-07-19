@@ -6,42 +6,13 @@
 //
 
 #include "shared_state.hpp"
+
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/redis/connection.hpp>
+
 #include "websocket_session.hpp"
 
-chat::shared_state::shared_state(std::string doc_root) : doc_root_(std::move(doc_root)) {}
-
-void chat::shared_state::join(websocket_session* session)
+chat::shared_state::shared_state(std::string doc_root, boost::redis::connection& redis)
+    : doc_root_(std::move(doc_root)), redis_(redis)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    sessions_.insert(session);
-}
-
-void chat::shared_state::leave(websocket_session* session)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    sessions_.erase(session);
-}
-
-// Broadcast a message to all websocket client sessions
-void chat::shared_state::send(std::string message)
-{
-    // Put the message in a shared pointer so we can re-use it for each client
-    const auto ss = boost::make_shared<const std::string>(std::move(message));
-
-    // Make a local list of all the weak pointers representing
-    // the sessions, so we can do the actual sending without
-    // holding the mutex:
-    std::vector<std::weak_ptr<websocket_session>> v;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        v.reserve(sessions_.size());
-        for (auto p : sessions_)
-            v.emplace_back(p->weak_from_this());
-    }
-
-    // For each session in our local list, try to acquire a strong
-    // pointer. If successful, then send the message on that session.
-    for (const auto& wp : v)
-        if (auto sp = wp.lock())
-            sp->send(ss);
 }
