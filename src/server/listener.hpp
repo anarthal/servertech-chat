@@ -31,6 +31,7 @@ class listener
     void on_accept(error_code ec, boost::asio::ip::tcp::socket socket);
     void run_session(boost::asio::ip::tcp::socket socket, boost::asio::yield_context yield);
     void launch_listener();
+    void fail(error_code ec, const char* what);
 
 public:
     listener(

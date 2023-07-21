@@ -35,6 +35,7 @@ class websocket_session : public std::enable_shared_from_this<websocket_session>
     ws_stream ws_;
     std::shared_ptr<shared_state> state_;
     std::vector<boost::shared_ptr<const std::string>> queue_;
+    std::string current_room_;
 
 public:
     websocket_session(boost::asio::ip::tcp::socket&& socket, std::shared_ptr<shared_state> state);

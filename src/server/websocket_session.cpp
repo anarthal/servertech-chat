@@ -8,26 +8,13 @@
 #include "websocket_session.hpp"
 
 #include <boost/asio/buffer.hpp>
-#include <boost/asio/deferred.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/experimental/cancellation_condition.hpp>
-#include <boost/asio/experimental/parallel_group.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/core/buffers_to_string.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
-#include <boost/describe/class.hpp>
-#include <boost/json/array.hpp>
-#include <boost/json/fwd.hpp>
-#include <boost/json/object.hpp>
-#include <boost/json/parse.hpp>
-#include <boost/json/serialize.hpp>
-#include <boost/json/value.hpp>
-#include <boost/json/value_from.hpp>
-#include <boost/json/value_to.hpp>
 #include <boost/redis/connection.hpp>
+#include <boost/redis/error.hpp>
 #include <boost/redis/ignore.hpp>
 #include <boost/redis/request.hpp>
-#include <boost/redis/resp3/node.hpp>
 #include <boost/redis/response.hpp>
 #include <boost/variant2/variant.hpp>
 
@@ -35,9 +22,11 @@
 #include <iostream>
 #include <memory>
 #include <string_view>
+#include <type_traits>
 #include <unordered_map>
 
 #include "error.hpp"
+#include "serialization.hpp"
 #include "shared_state.hpp"
 
 namespace net = boost::asio;
@@ -54,7 +43,7 @@ static void fail(chat::error_code ec, char const* what)
     if (ec == net::error::operation_aborted || ec == websocket::error::closed)
         return;
 
-    std::cerr << what << ": " << ec.message() << "\n";
+    std::cerr << what << ": " << ec << ": " << ec.message() << "\n";
 }
 
 chat::websocket_session::websocket_session(net::ip::tcp::socket&& socket, std::shared_ptr<shared_state> state)
@@ -62,106 +51,8 @@ chat::websocket_session::websocket_session(net::ip::tcp::socket&& socket, std::s
 {
 }
 
-namespace chat {
-struct message
-{
-    std::string user;
-    std::string message;
-};
-BOOST_DESCRIBE_STRUCT(message, (), (user, message))
-}  // namespace chat
-
-// static std::vector<chat::message> parse_stream_response(const boost::redis::generic_response& resp)
-// {
-//     std::vector<chat::message> res;
-//     std::size_t item_index = 0;
-//     // TODO: handle this better
-//     if (!resp.has_value())
-//         return res;
-
-//     const std::vector<boost::redis::resp3::node>& nodes = resp.value();
-
-//     for (std::size_t i = 0; i < nodes.size(); ++i)
-//     {
-//     }
-
-//     return res;
-// }
-
 // TODO: this is for testing
 static std::vector<std::string> get_rooms() { return {"room1", "room2", "room3"}; }
-
-// static std::string serialize_messages(const std::vector<chat::message>& input)
-// {
-//     return boost::json::serialize(boost::json::value_from(input));
-// }
-
-// static constexpr const char* group_name = "myrgoup";
-
-// static void message_consumer(
-//     boost::redis::connection& conn,
-//     chat::ws_stream& ws,
-//     boost::asio::yield_context yield
-// )
-// {
-//     // # array<StreamMsgs>
-//     // # StreamMsgs: tuple<StreamId /*string*/, array<Msg>>
-//     // # Msg: tuple<MsgId /*string*/, map<string, string>>
-
-//     std::string last_id = "$";
-//     chat::error_code ec;
-//     boost::redis::generic_response resp;
-
-//     // Loop while reconnection is enabled
-//     while (conn.will_reconnect())
-//     {
-//         // Wait for messages to be received
-//         boost::redis::request req;
-//         req.push("XREAD", "BLOCK", "0", "STREAMS", group_name, last_id);
-//         conn.async_exec(req, resp, yield[ec]);
-//         if (ec)
-//             break;  // connection lost?
-
-//         // Parse the messages
-//         auto msgs = parse_stream_response(resp);
-
-//         // Serialize them into a JSON object
-//         auto json = serialize_messages(msgs);
-
-//         // Send them through the websocket
-//         ws.async_write(boost::asio::buffer(json), yield[ec]);
-//         if (ec)
-//             break;
-//     }
-// }
-
-// static void message_producer(
-//     boost::redis::connection& conn,
-//     chat::ws_stream& ws_,
-//     boost::asio::yield_context yield
-// )
-// {
-//     boost::beast::flat_buffer buff;
-//     chat::error_code ec;
-
-//     while (true)
-//     {
-//         // Read a message
-//         ws_.async_read(buff, yield[ec]);
-//         if (ec)
-//             return fail(ec, "websocket read");
-
-//         // Publish it to Redis
-//         boost::redis::request redis_req;
-//         redis_req.push("XADD", group_name, "*", "user", "some_user", "msg", buffer_to_sv(buff.data()));
-//         conn.async_exec(redis_req, boost::redis::ignore, yield[ec]);
-//         if (ec)
-//             return fail(ec, "Redis publish");  // TODO: this is not robust
-
-//         // Clear the buffer
-//         buff.consume(buff.size());
-//     }
-// }
 
 static void send_rooms(
     chat::ws_stream& ws,
@@ -170,19 +61,7 @@ static void send_rooms(
 )
 {
     // Serialize them
-    boost::json::value res{
-        {"type",  "rooms"             },
-        {"rooms", boost::json::array()}
-    };
-    auto& json_rooms = res.at("rooms").as_array();
-    json_rooms.reserve(rooms.size());
-    for (const auto& room : rooms)
-    {
-        json_rooms.push_back(boost::json::object({
-            {"name", room}
-        }));
-    }
-    auto payload = boost::json::serialize(res);
+    auto payload = chat::serialize_rooms_event(rooms);
 
     // Send them
     ws.async_write(boost::asio::buffer(payload), yield);
@@ -201,7 +80,7 @@ static chat::error_code process_message(
 
     // Store it in Redis
     boost::redis::request req;
-    req.push("XADD", room_name, "*", "msg", msg.message);
+    req.push("XADD", room_name, "*", "msg", msg.content);
     st.redis().async_exec(req, boost::redis::ignore, yield[ec]);
     if (ec)
         return ec;
@@ -216,10 +95,39 @@ static chat::error_code process_message(
         // TODO: paralelize this
         // TODO: we need to guarantee that writes don't clash
         // TODO: errors are ignored
-        sess->stream().async_write(boost::asio::buffer(msg.message), yield[ec]);
+        sess->stream().async_write(boost::asio::buffer(msg.content), yield[ec]);
     }
 
     return ec;
+}
+
+static void send_chat_history(
+    chat::ws_stream& ws,
+    const std::vector<chat::message>& msgs,
+    boost::asio::yield_context yield
+)
+{
+    auto payload = chat::serialize_messages_event(msgs);
+    ws.async_write(boost::asio::buffer(payload), yield);
+}
+
+static chat::result<std::vector<chat::message>> get_room_history(
+    chat::shared_state& st,
+    std::string_view room_name,
+    boost::asio::yield_context yield
+)
+{
+    boost::redis::request req;
+    boost::redis::generic_response res;
+    chat::error_code ec;
+
+    req.push("XREVRANGE", room_name, "+", "-");
+    st.redis().async_exec(req, res, yield[ec]);
+
+    if (ec)
+        return ec;
+
+    return chat::parse_room_history(res);
 }
 
 void chat::websocket_session::run(
@@ -250,10 +158,23 @@ void chat::websocket_session::run(
     // Get the rooms the user is in - stub for now
     auto rooms = get_rooms();
 
+    // Set the current room
+    current_room_ = rooms.at(0);
+
+    // Retrieve history for the current room
+    auto history = get_room_history(*state_, current_room_, yield);
+    if (history.has_error())  // TODO: this is wrong
+        return fail(history.error(), "Retrieving chat history");
+
     // Send the rooms the user is in
     send_rooms(ws_, rooms, yield[ec]);
     if (ec)
         return fail(ec, "Sending rooms");
+
+    // Send chat history
+    send_chat_history(ws_, history.value(), yield[ec]);
+    if (ec)
+        return fail(ec, "Sending chat history");
 
     // Add the session to the map
     state_->sessions().add_session(shared_from_this(), rooms);
@@ -268,19 +189,15 @@ void chat::websocket_session::run(
             return fail(ec, "websocket read");
 
         // Deserialize it
-        auto msg = boost::json::parse(buffer_to_sv(buff.data()));
-        auto type = msg.as_object().at("type").as_string();
-        std::cout << "Received message with type: " << type << std::endl;
-        const auto& payload = msg.at("payload");
+        auto msg = chat::parse_websocket_request(buffer_to_sv(buff.data()));
+        const auto* err = boost::variant2::get_if<error_code>(&msg);
+        if (err)
+            return fail(*err, "bad websocket message");
 
-        if (type == "message")
-        {
-            chat::message parsed_msg = boost::json::value_to<chat::message>(payload);
-            ec = process_message(*state_, parsed_msg, yield);
-            if (ec)
-                return fail(ec, "Broadcasting message");
-        }
-        // TODO: other mesage types
+        // Message dispatch
+        ec = process_message(*state_, boost::variant2::get<message>(msg), yield);
+        if (ec)
+            return fail(ec, "Broadcasting message");
 
         // Clear the buffer
         buff.consume(buff.size());

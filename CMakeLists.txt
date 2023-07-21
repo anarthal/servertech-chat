@@ -20,6 +20,8 @@ add_executable(
     src/server/listener.cpp
     src/server/shared_state.cpp
     src/server/websocket_session.cpp
+    src/server/serialization.cpp
+    src/server/error.cpp
     src/server/main.cpp
 )
 target_link_libraries(

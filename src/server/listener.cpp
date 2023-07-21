@@ -20,13 +20,19 @@
 #include "http_session.hpp"
 #include "shared_state.hpp"
 
-static void fail(chat::error_code ec, char const* what)
+static void report(chat::error_code ec, char const* what)
 {
     // Don't report on canceled operations
     if (ec == boost::asio::error::operation_aborted)
         return;
 
     std::cerr << what << ": " << ec.message() << "\n";
+}
+
+void chat::listener::fail(chat::error_code ec, char const* what)
+{
+    report(ec, what);
+    ioc_.stop();
 }
 
 chat::listener::listener(
@@ -77,7 +83,7 @@ void chat::listener::start() { launch_listener(); }
 void chat::listener::on_accept(error_code ec, boost::asio::ip::tcp::socket socket)
 {
     if (ec)
-        return fail(ec, "accept");
+        return report(ec, "accept");
     else
     {
         // Launch a new session for this connection
