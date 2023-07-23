@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "error.hpp"
@@ -36,6 +37,17 @@ class websocket_session : public std::enable_shared_from_this<websocket_session>
     std::shared_ptr<shared_state> state_;
     std::vector<boost::shared_ptr<const std::string>> queue_;
     std::string current_room_;
+    std::string buffer_1_, buffer_2_;  // write buffers
+    error_code write_error_;           // set if a write failed
+    enum class currently_writing_t
+    {
+        none,
+        buff_1,
+        buff_2
+    } currently_writing_;
+    bool reading_{false};
+
+    void trigger_write();
 
 public:
     websocket_session(boost::asio::ip::tcp::socket&& socket, std::shared_ptr<shared_state> state);
@@ -44,6 +56,9 @@ public:
         boost::beast::http::request<boost::beast::http::string_body> request,
         boost::asio::yield_context yield
     );
+
+    result<std::string_view> read(boost::asio::yield_context yield);
+    void queue_write(std::string_view message);
 
     ws_stream& stream() noexcept { return ws_; }
 };

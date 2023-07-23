@@ -52,8 +52,8 @@
             const msg = {
                 type: "message",
                 payload: {
-                    user: userName.value,
-                    message: sendMessage.value
+                    username: userName.value,
+                    content: sendMessage.value
                 }
             }
             ws.send(JSON.stringify(msg));

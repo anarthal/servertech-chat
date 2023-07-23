@@ -35,6 +35,8 @@ inline error_code make_error_code(errc v) noexcept
     return error_code(static_cast<int>(v), get_chat_category());
 }
 
+void log_error(error_code ec, const char* what);
+
 }  // namespace chat
 
 namespace boost {

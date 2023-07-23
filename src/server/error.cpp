@@ -2,6 +2,8 @@
 
 #include "error.hpp"
 
+#include <iostream>
+
 static const char* to_string(chat::errc v) noexcept
 {
     switch (v)
@@ -25,3 +27,15 @@ public:
 static chat::chat_category cat;
 
 const boost::system::error_category& chat::get_chat_category() noexcept { return cat; }
+
+void chat::log_error(error_code ec, const char* what)
+{
+    // Don't report on canceled operations
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+
+    std::cerr << what << ": " << ec << ": " << ec.message();
+    if (ec.has_location())
+        std::cerr << " (" << ec.location() << ")";
+    std::cerr << '\n';
+}

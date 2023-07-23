@@ -18,23 +18,12 @@
 #include <boost/beast/http/string_body.hpp>
 #include <boost/config.hpp>
 
-#include <iostream>
-
 #include "error.hpp"
 #include "websocket_session.hpp"
 
 namespace beast = boost::beast;
 namespace http = boost::beast::http;
 namespace websocket = boost::beast::websocket;
-
-static void fail(chat::error_code ec, char const* what)
-{
-    // Don't report on canceled operations
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
-    std::cerr << what << ": " << ec.message() << "\n";
-}
 
 // Return a reasonable mime type based on the extension of a file.
 static beast::string_view mime_type(beast::string_view path)
@@ -242,7 +231,7 @@ void chat::run_http_session(
             return;
         }
         else if (ec)
-            return fail(ec, "read");
+            return log_error(ec, "read");
 
         // See if it is a WebSocket Upgrade
         if (websocket::is_upgrade(parser.get()))
@@ -263,7 +252,7 @@ void chat::run_http_session(
         // Send the response
         beast::async_write(stream_, std::move(msg), yield[ec]);
         if (ec)
-            return fail(ec, "write");
+            return log_error(ec, "write");
 
         if (!keep_alive)
         {

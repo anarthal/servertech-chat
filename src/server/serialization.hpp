@@ -26,9 +26,13 @@ using websocket_request = boost::variant2::variant<
 
 // TODO: can we make this use string_view?
 result<std::vector<message>> parse_room_history(const boost::redis::generic_response& from);
+std::string serialize_redis_message(const message& msg);
 
+std::string serialize_hello_event(
+    const std::vector<std::string>& rooms,      // available rooms
+    const std::vector<chat::message>& messages  // message history for 1st room
+);
 std::string serialize_messages_event(const std::vector<chat::message>& messages);
-std::string serialize_rooms_event(const std::vector<std::string>& rooms);
 
 websocket_request parse_websocket_request(std::string_view from);
 

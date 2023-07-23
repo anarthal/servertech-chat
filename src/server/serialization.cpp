@@ -3,9 +3,12 @@
 #include "serialization.hpp"
 
 #include <boost/describe/class.hpp>
+#include <boost/json/array.hpp>
 #include <boost/json/fwd.hpp>
+#include <boost/json/object.hpp>
 #include <boost/json/parse.hpp>
 #include <boost/json/serialize.hpp>
+#include <boost/json/value.hpp>
 #include <boost/json/value_to.hpp>
 
 #include <string>
@@ -137,42 +140,64 @@ chat::result<std::vector<chat::message>> chat::parse_room_history(const boost::r
     return res;
 }
 
-std::string chat::serialize_messages_event(const std::vector<chat::message>& messages)
+static boost::json::array serialize_messages(const std::vector<chat::message>& messages)
 {
-    // Top-level message
-    boost::json::value res{
-        {"type",    "messages"          },
-        {"payload", boost::json::array()}
-    };
-
-    // Individual messages
-    auto& payload = res.at("payload").as_array();
-    payload.reserve(messages.size());
+    boost::json::array res;
+    res.reserve(messages.size());
     for (const auto& msg : messages)
     {
-        payload.push_back(boost::json::object({
-            {"id",      msg.id      },
-            {"user",    msg.username},
-            {"content", msg.content },
+        res.push_back(boost::json::object({
+            {"id",       msg.id      },
+            {"username", msg.username},
+            {"content",  msg.content },
         }));
     }
+    return res;
+}
+
+std::string chat::serialize_redis_message(const message& msg)
+{
+    boost::json::value res{
+        {"username", msg.username},
+        {"content",  msg.content },
+    };
     return boost::json::serialize(res);
 }
 
-std::string chat::serialize_rooms_event(const std::vector<std::string>& rooms)
+std::string chat::serialize_messages_event(const std::vector<chat::message>& messages)
 {
     boost::json::value res{
-        {"type",    "rooms"             },
-        {"payload", boost::json::array()}
+        {"type",    "messages"                                  },
+        {"payload", {{"messages", serialize_messages(messages)}}}
     };
-    auto& payload = res.at("payload").as_array();
-    payload.reserve(rooms.size());
+    return boost::json::serialize(res);
+}
+
+std::string chat::serialize_hello_event(
+    const std::vector<std::string>& rooms,      // available rooms
+    const std::vector<chat::message>& messages  // message history for 1st room
+)
+{
+    // Rooms
+    boost::json::array json_rooms;
+    json_rooms.reserve(rooms.size());
     for (const auto& room : rooms)
     {
-        payload.push_back(boost::json::object({
+        json_rooms.push_back(boost::json::object({
             {"name", room}
         }));
     }
+
+    // Chat history
+    // clang-format off
+    boost::json::value res{
+        {"type",    "hello"},
+        {"payload", {
+            {"rooms", std::move(json_rooms)},
+            {"history", serialize_messages(messages)},
+        }}
+    };
+    // clang-format on
     return boost::json::serialize(res);
 }
 
@@ -193,7 +218,6 @@ chat::websocket_request chat::parse_websocket_request(std::string_view from)
     if (it == obj->end())
         CHAT_RETURN_ERROR(errc::websocket_parse_error)
     const auto& type = it->value();
-    std::cout << "Received message with type: " << type << std::endl;  // TODO: remove this
 
     // Get the payload
     it = obj->find("payload");
