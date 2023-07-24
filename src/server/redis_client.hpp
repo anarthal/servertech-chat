@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SRC_SERVER_REDIS_HPP
-#define SERVERTECHCHAT_SRC_SERVER_REDIS_HPP
+#ifndef SERVERTECHCHAT_SRC_SERVER_REDIS_CLIENT_HPP
+#define SERVERTECHCHAT_SRC_SERVER_REDIS_CLIENT_HPP
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/spawn.hpp>
