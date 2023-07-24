@@ -22,6 +22,8 @@ add_executable(
     src/server/websocket_session.cpp
     src/server/serialization.cpp
     src/server/error.cpp
+    src/server/redis_client.cpp
+    src/server/websocket.cpp
     src/server/main.cpp
 )
 target_link_libraries(

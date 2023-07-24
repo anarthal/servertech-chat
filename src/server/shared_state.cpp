@@ -12,7 +12,7 @@
 
 #include "websocket_session.hpp"
 
-chat::shared_state::shared_state(std::string doc_root, boost::redis::connection& redis)
-    : doc_root_(std::move(doc_root)), redis_(redis)
+chat::shared_state::shared_state(std::string doc_root, redis_client redis)
+    : doc_root_(std::move(doc_root)), redis_(std::move(redis))
 {
 }

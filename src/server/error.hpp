@@ -9,7 +9,7 @@
 #define SERVERTECHCHAT_SRC_SERVER_ERROR_HPP
 
 #include <boost/assert/source_location.hpp>
-#include <boost/system/detail/error_category.hpp>
+#include <boost/system/error_category.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/system/result.hpp>
 

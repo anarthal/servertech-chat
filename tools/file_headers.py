@@ -168,19 +168,23 @@ FILE_PROCESSORS : List[Tuple[str, BaseProcessor]] = [
 ]
 
 def process_file(fpath: str):
-    for ext, processor in FILE_PROCESSORS:
-        if fpath.endswith(ext):
-            if VERBOSE:
-                print('Processing file {} with processor {}'.format(fpath, processor.name))
-            if not processor.skip:
-                lines = read_file(fpath)
-                output_lines = processor.process(lines, fpath)
-                if output_lines != lines:
-                    write_file(fpath, output_lines)
-            break
-    else:
-        raise ValueError('Could not find a suitable processor for file: ' + fpath)
-    
+    try:
+        for ext, processor in FILE_PROCESSORS:
+            if fpath.endswith(ext):
+                if VERBOSE:
+                    print('Processing file {} with processor {}'.format(fpath, processor.name))
+                if not processor.skip:
+                    lines = read_file(fpath)
+                    output_lines = processor.process(lines, fpath)
+                    if output_lines != lines:
+                        write_file(fpath, output_lines)
+                break
+        else:
+            raise ValueError('Could not find a suitable processor for file: ' + fpath)
+    except:
+        print(f'Error processing {fpath}')
+        raise
+
 def process_all_files():
     for base_folder in BASE_FOLDERS:
         base_folder_abs = path.join(REPO_BASE, base_folder)

@@ -5,17 +5,6 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-//------------------------------------------------------------------------------
-/*
-    WebSocket chat server, multi-threaded
-
-    This implements a multi-user chat room using WebSocket. The
-    `io_context` runs on any number of threads, specified at
-    the command line.
-
-*/
-//------------------------------------------------------------------------------
-
 #include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
@@ -30,6 +19,7 @@
 
 #include "error.hpp"
 #include "listener.hpp"
+#include "redis_client.hpp"
 #include "shared_state.hpp"
 
 using namespace chat;
@@ -52,27 +42,23 @@ int main(int argc, char* argv[])
     // The io_context is required for all I/O
     boost::asio::io_context ioc;
 
-    // Redis connection
-    boost::redis::connection conn(ioc.get_executor());
-    boost::redis::config cfg;
-    cfg.health_check_interval = std::chrono::seconds::zero();
-    conn.async_run(cfg, {}, boost::asio::detached);
+    // Shared state
+    auto st = std::make_shared<shared_state>(doc_root, redis_client(ioc.get_executor()));
+
+    // Launch the Redis connection
+    st->redis().start_run();
 
     // Create and launch a listening port
-    listener list(
-        ioc,
-        boost::asio::ip::tcp::endpoint{address, port},
-        std::make_shared<shared_state>(doc_root, conn)
-    );
+    listener list(ioc, boost::asio::ip::tcp::endpoint{address, port}, st);
     list.start();
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
     boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
-    signals.async_wait([&ioc, &conn](error_code, int) {
+    signals.async_wait([&ioc, st](error_code, int) {
         // Stop the io_context. This will cause run()
         // to return immediately, eventually destroying the
         // io_context and any remaining handlers in it.
-        conn.cancel();
+        st->redis().cancel();
         ioc.stop();
     });
 

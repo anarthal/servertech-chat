@@ -20,6 +20,8 @@
 #include <string>
 #include <string_view>
 
+#include "redis_client.hpp"
+
 namespace chat {
 
 // Forward declaration
@@ -72,15 +74,16 @@ public:
 class shared_state
 {
     const std::string doc_root_;
-    boost::redis::connection& redis_;
+    redis_client redis_;
     session_map sessions_;
 
 public:
-    shared_state(std::string doc_root, boost::redis::connection& redis);
+    shared_state(std::string doc_root, redis_client redis);
 
     const std::string& doc_root() const noexcept { return doc_root_; }
-    boost::redis::connection& redis() noexcept { return redis_; }
+    redis_client& redis() noexcept { return redis_; }
     session_map& sessions() noexcept { return sessions_; }
+    boost::asio::any_io_executor get_executor() { return redis_.get_executor(); }
 };
 
 }  // namespace chat

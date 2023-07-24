@@ -234,12 +234,19 @@ void chat::run_http_session(
             return log_error(ec, "read");
 
         // See if it is a WebSocket Upgrade
-        if (websocket::is_upgrade(parser.get()))
+        if (boost::beast::websocket::is_upgrade(parser.get()))
         {
-            // Create a websocket session, transferring ownership
-            // of both the socket and the HTTP request.
-            auto websocket_sess = std::make_shared<websocket_session>(stream_.release_socket(), state);
-            websocket_sess->run(parser.release(), yield);
+            // Create a websocket, transferring ownership of the socket
+            websocket sock(stream_.release_socket());
+
+            // Perform the session handshake
+            ec = sock.accept(parser.release(), yield);
+            if (ec)
+                return log_error(ec, "websocket accept");
+
+            // Create a session object and run it
+            auto websocket_sess = std::make_shared<websocket_session>(std::move(sock), state);
+            websocket_sess->run(yield);
             return;
         }
 
