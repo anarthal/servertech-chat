@@ -35,10 +35,15 @@ export default function Home() {
                   value={userName}
                   onChange={event => setUserName(event.target.value)}
                 />
-                <Button variant='contained' onClick={() => {
-                  localStorage.setItem('servertech_username', userName)
-                  router.push('/chat')
-                }}>Get started</Button>
+                <Button
+                  variant='contained'
+                  disabled={!userName}
+                  onClick={() => {
+                    localStorage.setItem('servertech_username', userName)
+                    router.push('/chat')
+                  }}>
+                  Get started
+                </Button>
               </div>
             </div>
           </div>
