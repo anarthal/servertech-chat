@@ -1,21 +1,18 @@
 import React from "react"
 import Image from "next/image"
 import boostLogo from "../public/boost.jpg"
-import { headerbutton, container } from './header.module.css'
 
-const Separator = () => {
-
-}
+const links = [
+    { text: 'Source code', href: 'https://github.com/anarthal/servertech-chat' },
+    { text: 'Docs', href: '/' },
+]
 
 export default function Header() {
     return (
-        <div className={container}>
-            <div style={{ display: 'flex' }}>
-                <Image src={boostLogo} height={80} ></Image>
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                    <a className={headerbutton} href="https://github.com/anarthal/servertech-chat">Source code</a>
-                    <a className={headerbutton} href="/">Docs</a>
-                </div>
+        <div className="flex m-3">
+            <Image src={boostLogo} height={50} alt="Boost logo" ></Image>
+            <div className="flex-1 flex justify-end align-middle">
+                {links.map(({ text, href }) => <a className='no-underline pr-12 pl-12 text-2xl text-black' href={href} key={href}>{text}</a>)}
             </div>
         </div>
     )
