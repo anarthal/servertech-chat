@@ -120,7 +120,7 @@ const OtherUserMessage = ({ username, content, timestamp }: { username: string, 
   )
 }
 
-const MyMessage = ({ content, timestamp }: { username: string, content: string, timestamp: Date }) => {
+const MyMessage = ({ content, timestamp }: { content: string, timestamp: Date }) => {
   return (
     <div className='flex flex-row pt-3 pb-3'>
       <div className='flex-[4]'>
@@ -167,7 +167,7 @@ export default function Home() {
       </Head>
       <div className="flex flex-col h-full">
         <Header />
-        <div className="flex-1 flex min-h-0">
+        <div className="flex-1 flex min-h-0" style={{ borderTop: '1px solid var(--boost-light-grey)' }}>
           <div className='flex-1 flex flex-col overflow-y-scroll'>
             {rooms.map(({ id, name }) => <RoomEntry key={id} name={name} />)}
           </div>
