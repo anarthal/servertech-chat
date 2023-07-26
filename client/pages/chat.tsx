@@ -76,6 +76,13 @@ function stringToColor(string: string) {
   return color;
 }
 
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date)
+}
+
 const NameAvatar = ({ name }: { name: string }) => {
   return <Avatar sx={{
     bgcolor: stringToColor(name),
@@ -97,21 +104,30 @@ const RoomEntry = ({ name }: { name: string }) => {
 }
 
 const OtherUserMessage = ({ username, content, timestamp }: { username: string, content: string, timestamp: Date }) => {
-  const formattedDate = new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(timestamp)
   return (
-    <div className='flex flex-row'>
+    <div className='flex flex-row pt-3 pb-3'>
       <div className='pr-5 flex flex-col justify-end'>
         <NameAvatar name={username} />
         <p className='m-0 pt-1 text-sm'>User 1</p>
       </div>
       <div className='flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2'>
         <p className='m-0'>{content}</p>
-        <p className='m-0 pb-2 pr-2 text-xs text-right' style={{ color: 'var(--boost-grey)' }}>{formattedDate}</p>
+        <p className='m-0 pb-2 pr-2 text-xs text-right' style={{ color: 'var(--boost-grey)' }}>{formatDate(timestamp)}</p>
       </div>
       <div className='flex-[3]'>
+      </div>
+    </div>
+  )
+}
+
+const MyMessage = ({ content, timestamp }: { username: string, content: string, timestamp: Date }) => {
+  return (
+    <div className='flex flex-row pt-3 pb-3'>
+      <div className='flex-[4]'>
+      </div>
+      <div className='flex-[6] bg-green-100 rounded-lg pt-4 pl-5 pr-2'>
+        <p className='m-0'>{content}</p>
+        <p className='m-0 pb-2 pr-2 text-xs text-right' style={{ color: 'var(--boost-grey)' }}>{formatDate(timestamp)}</p>
       </div>
     </div>
   )
@@ -158,12 +174,19 @@ export default function Home() {
           <div className='flex-[3] flex overflow-y-scroll' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
             <div className='flex-1 flex flex-col p-5'>
               {testMessages.map(({ username, content, timestamp }) =>
-                <OtherUserMessage
-                  key={username}
-                  username={username}
-                  content={content}
-                  timestamp={timestamp}
-                />)
+                <>
+                  <OtherUserMessage
+                    key={username}
+                    username={username}
+                    content={content}
+                    timestamp={timestamp}
+                  />
+                  <MyMessage
+                    content={content}
+                    timestamp={timestamp}
+                  />
+                </>
+              )
               }
             </div>
           </div>
