@@ -40,6 +40,19 @@ function getStoredUser(): User {
 const rooms: Room[] = [
   { id: 'room-1', name: 'Boost.Beast' },
   { id: 'room-2', name: 'Building Boost' },
+  { id: 'room-3', name: 'Building Boost' },
+  { id: 'room-4', name: 'Building Boost' },
+  { id: 'room-5', name: 'Building Boost' },
+  { id: 'room-6', name: 'Building Boost' },
+  { id: 'room-7', name: 'Building Boost' },
+  { id: 'room-8', name: 'Building Boost' },
+  { id: 'room-9', name: 'Building Boost' },
+  { id: 'room-10', name: 'Building Boost' },
+  { id: 'room-11', name: 'Building Boost' },
+  { id: 'room-12', name: 'Building Boost' },
+  { id: 'room-13', name: 'Building Boost' },
+  { id: 'room-14', name: 'Building Boost' },
+  { id: 'room-15', name: 'Building Boost' },
 ]
 
 // Copied from MUI Avatar docs
@@ -136,13 +149,13 @@ export default function Home() {
         <title>BoostServerTech chat</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="flex flex-col">
+      <div className="flex flex-col" style={{ height: '100%' }}>
         <Header />
-        <div className="flex-1 flex">
-          <div className='flex-1 flex flex-col'>
+        <div className="flex-1 flex" style={{ minHeight: 0 }}>
+          <div className='flex-1 flex flex-col' style={{ overflowY: 'scroll' }}>
             {rooms.map(({ id, name }) => <RoomEntry key={id} name={name} />)}
           </div>
-          <div className='flex-[3] flex' style={{ backgroundColor: 'var(--boost-light-grey)', overflow: 'auto' }}>
+          <div className='flex-[3] flex' style={{ backgroundColor: 'var(--boost-light-grey)', overflowY: 'scroll' }}>
             <div className='flex-1 flex flex-col p-5' style={{ 'minHeight': 'min-content' }}>
               {testMessages.map(({ username, content, timestamp }) =>
                 <OtherUserMessage
