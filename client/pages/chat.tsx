@@ -83,6 +83,48 @@ const RoomEntry = ({ name }: { name: string }) => {
   )
 }
 
+const OtherUserMessage = ({ username, content, timestamp }: { username: string, content: string, timestamp: Date }) => {
+  const formattedDate = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(timestamp)
+  return (
+    <div className='flex flex-row'>
+      <div className='pr-5 flex flex-col justify-end'>
+        <NameAvatar name={username} />
+        <p className='m-0 pt-1 text-sm'>User 1</p>
+      </div>
+      <div className='flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2'>
+        <p className='m-0'>{content}</p>
+        <p className='m-0 pb-2 pr-2 text-xs text-right' style={{ color: 'var(--boost-grey)' }}>{formattedDate}</p>
+      </div>
+      <div className='flex-[3]'>
+      </div>
+    </div>
+  )
+}
+
+const testMessages = [
+  { username: 'User 1', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 2', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 3', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 4', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 5', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 6', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 7', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 8', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 9', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 10', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 11', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 12', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 13', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 14', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 15', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 16', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 17', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+  { username: 'User 18', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
+]
+
 export default function Home() {
   const [user, setUser] = useState(null);
   useEffect(() => {
@@ -96,24 +138,20 @@ export default function Home() {
       </Head>
       <div className="flex flex-col">
         <Header />
-        <div className="flex-1 flex border-">
+        <div className="flex-1 flex">
           <div className='flex-1 flex flex-col'>
             {rooms.map(({ id, name }) => <RoomEntry key={id} name={name} />)}
           </div>
-          <div className='flex-[3] flex' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
-            <div className='flex-1 flex flex-col p-5'>
-              <div className='flex flex-row'>
-                <div className='pr-5 flex flex-col justify-end'>
-                  <NameAvatar name='User 1' />
-                  <p className='m-0 pt-1 text-sm'>User 1</p>
-                </div>
-                <div className='flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2'>
-                  <p className='m-0'>Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message</p>
-                  <p className='m-0 pb-2 pr-2 text-xs text-right' style={{ color: 'var(--boost-grey)' }}>12:51</p>
-                </div>
-                <div className='flex-[3]'>
-                </div>
-              </div>
+          <div className='flex-[3] flex' style={{ backgroundColor: 'var(--boost-light-grey)', overflow: 'auto' }}>
+            <div className='flex-1 flex flex-col p-5' style={{ 'minHeight': 'min-content' }}>
+              {testMessages.map(({ username, content, timestamp }) =>
+                <OtherUserMessage
+                  key={username}
+                  username={username}
+                  content={content}
+                  timestamp={timestamp}
+                />)
+              }
             </div>
           </div>
         </div>
