@@ -149,14 +149,14 @@ export default function Home() {
         <title>BoostServerTech chat</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="flex flex-col" style={{ height: '100%' }}>
+      <div className="flex flex-col h-full">
         <Header />
-        <div className="flex-1 flex" style={{ minHeight: 0 }}>
-          <div className='flex-1 flex flex-col' style={{ overflowY: 'scroll' }}>
+        <div className="flex-1 flex min-h-0">
+          <div className='flex-1 flex flex-col overflow-y-scroll'>
             {rooms.map(({ id, name }) => <RoomEntry key={id} name={name} />)}
           </div>
-          <div className='flex-[3] flex' style={{ backgroundColor: 'var(--boost-light-grey)', overflowY: 'scroll' }}>
-            <div className='flex-1 flex flex-col p-5' style={{ 'minHeight': 'min-content' }}>
+          <div className='flex-[3] flex overflow-y-scroll' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
+            <div className='flex-1 flex flex-col p-5'>
               {testMessages.map(({ username, content, timestamp }) =>
                 <OtherUserMessage
                   key={username}
