@@ -87,7 +87,7 @@ export default function Home() {
   const [user, setUser] = useState(null);
   useEffect(() => {
     setUser(getStoredUser());
-  })
+  }, [])
   return (
     <>
       <Head>
@@ -100,8 +100,21 @@ export default function Home() {
           <div className='flex-1 flex flex-col'>
             {rooms.map(({ id, name }) => <RoomEntry key={id} name={name} />)}
           </div>
-          <div className='flex-[3] flex flex-col' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
-            <span>Messages</span>
+          <div className='flex-[3] flex' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
+            <div className='flex-1 flex flex-col p-5'>
+              <div className='flex flex-row'>
+                <div className='pr-5 flex flex-col justify-end'>
+                  <NameAvatar name='User 1' />
+                  <p className='m-0 pt-1 text-sm'>User 1</p>
+                </div>
+                <div className='flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2'>
+                  <p className='m-0'>Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message</p>
+                  <p className='m-0 pb-2 pr-2 text-xs text-right' style={{ color: 'var(--boost-grey)' }}>12:51</p>
+                </div>
+                <div className='flex-[3]'>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
