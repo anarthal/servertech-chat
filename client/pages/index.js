@@ -39,7 +39,16 @@ export default function Home() {
                   variant='contained'
                   disabled={!userName}
                   onClick={() => {
-                    localStorage.setItem('servertech_username', userName)
+                    let user = localStorage.getItem('servertech_user')
+                    if (!user) {
+                      user = {
+                        id: crypto.randomUUID(),
+                        name: userName
+                      }
+                    } else {
+                      user['username'] = userName
+                    }
+                    localStorage.setItem('servertech_user', JSON.stringify(user))
                     router.push('/chat')
                   }}>
                   Get started
