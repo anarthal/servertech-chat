@@ -67,14 +67,14 @@ const RoomEntry = ({
 }) => {
   const cardStyle = selected ? { backgroundColor: 'var(--boost-light-grey)' } : {}
   return (
-    <div className='flex pt-2 pl-3 pr-3 cursor-pointer' onClick={() => onClick(id)}>
-      <div className='flex-1 flex p-4 rounded-lg' style={cardStyle}>
+    <div className='flex pt-2 pl-3 pr-3 cursor-pointer overflow-hidden' onClick={() => onClick(id)}>
+      <div className='flex-1 flex p-4 rounded-lg overflow-hidden' style={cardStyle}>
         <div className='pr-3 flex flex-col justify-center'>
           <NameAvatar name={name} />
         </div>
-        <div className='flex-1 flex flex-col'>
+        <div className='flex-1 flex flex-col overflow-hidden'>
           <p className='m-0 font-bold pb-2'>{name}</p>
-          <p className='m-0'>{lastMessage}</p>
+          <p className='m-0 overflow-hidden text-ellipsis whitespace-nowrap'>{lastMessage}</p>
         </div>
       </div>
     </div>
