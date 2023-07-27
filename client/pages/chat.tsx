@@ -1,8 +1,7 @@
 import Head from 'next/head';
-import styles from '../styles/Home.module.css';
 import Header from '../components/header';
-import { TextField, Button, Avatar } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Avatar } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
 
 
 type User = {
@@ -155,17 +154,33 @@ const testMessages = [
 ]
 
 export default function Home() {
+
   const [user, setUser] = useState(null);
+
   useEffect(() => {
     setUser(getStoredUser());
   }, [])
+
+  const inputRef = useRef(null);
+
+  const onKeyDown = () => {
+    inputRef.current.focus()
+  }
+
+  useEffect(() => {
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [])
+
   return (
     <>
       <Head>
         <title>BoostServerTech chat</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full" onKeyDown={onKeyDown}>
         <Header />
         <div className="flex-1 flex min-h-0" style={{ borderTop: '1px solid var(--boost-light-grey)' }}>
           <div className='flex-1 flex flex-col overflow-y-scroll'>
@@ -191,7 +206,7 @@ export default function Home() {
             </div>
             <div className='flex'>
               <div className='flex-1 flex p-2' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
-                <input className='flex-1 text-xl pl-4 pr-4 pt-2 pb-2 border-0 rounded-xl' type='text' autoFocus placeholder='Type a message...' />
+                <input className='flex-1 text-xl pl-4 pr-4 pt-2 pb-2 border-0 rounded-xl' type='text' placeholder='Type a message...' ref={inputRef} />
               </div>
             </div>
           </div>
