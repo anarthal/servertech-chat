@@ -219,6 +219,10 @@ function reducer(state: State, action: Action): State {
   }
 }
 
+function getLastMessageTimestamp(room: Room): number {
+  return room.messages.length > 0 ? room.messages[0].timestamp : 0
+}
+
 export default function Home() {
 
   const inputRef = useRef(null);
@@ -299,10 +303,13 @@ export default function Home() {
   }, [dispatch])
 
   const [messagesAnimationParent] = useAutoAnimate()
+  const [roomsAnimationParent] = useAutoAnimate()
 
   if (state.loading) return <p>Loading...</p>
 
   const currentRoomMessages = state.rooms[state.currentRoomId]?.messages || []
+  const rooms = Object.values(state.rooms)
+  rooms.sort((r1, r2) => getLastMessageTimestamp(r2) - getLastMessageTimestamp(r1))
 
   return (
     <>
@@ -313,8 +320,8 @@ export default function Home() {
       <div className="flex flex-col h-full">
         <Header />
         <div className="flex-1 flex min-h-0" style={{ borderTop: '1px solid var(--boost-light-grey)' }}>
-          <div className='flex-1 flex flex-col overflow-y-scroll' >
-            {Object.values(state.rooms).map(({ id, name, messages }) =>
+          <div className='flex-1 flex flex-col overflow-y-scroll' ref={roomsAnimationParent}>
+            {rooms.map(({ id, name, messages }) =>
               <RoomEntry
                 key={id}
                 id={id}
@@ -326,7 +333,10 @@ export default function Home() {
             )}
           </div>
           <div className='flex-[3] flex flex-col'>
-            <div className='flex-1 flex flex-col-reverse p-5 overflow-y-scroll' style={{ backgroundColor: 'var(--boost-light-grey)' }} ref={messagesAnimationParent}>
+            <div
+              className='flex-1 flex flex-col-reverse p-5 overflow-y-scroll'
+              style={{ backgroundColor: 'var(--boost-light-grey)' }}
+              ref={messagesAnimationParent}>
               {
                 currentRoomMessages.length === 0 ?
                   <p>No messages</p> :
