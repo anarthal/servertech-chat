@@ -25,7 +25,6 @@ class websocket_session : public std::enable_shared_from_this<websocket_session>
 {
     websocket ws_;
     std::shared_ptr<shared_state> state_;
-    std::string current_room_;
 
 public:
     websocket_session(websocket socket, std::shared_ptr<shared_state> state);

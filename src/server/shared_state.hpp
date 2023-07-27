@@ -9,6 +9,7 @@
 #define SERVERTECHCHAT_SRC_SERVER_SHARED_STATE_HPP
 
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/core/span.hpp>
 #include <boost/multi_index/indexed_by.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/member.hpp>
@@ -56,11 +57,11 @@ class session_map
 public:
     session_map() = default;
 
-    void add_session(std::shared_ptr<websocket_session> sess, const std::vector<std::string>& rooms)
+    void add_session(std::shared_ptr<websocket_session> sess, boost::span<const room> rooms)
     {
         for (const auto& room : rooms)
         {
-            ct_.insert(room_session{room, std::move(sess)});
+            ct_.insert(room_session{room.id, std::move(sess)});
         }
     }
 

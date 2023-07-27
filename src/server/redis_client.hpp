@@ -10,8 +10,10 @@
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/spawn.hpp>
+#include <boost/core/span.hpp>
 #include <boost/redis/connection.hpp>
 
+#include <string_view>
 #include <vector>
 
 #include "error.hpp"
@@ -29,12 +31,27 @@ public:
     void start_run();
     void cancel();
 
-    result<std::vector<message>> get_room_history(
-        std::string_view room_name,
+    // The maximum number of messages for a room that get retrieved in a single go
+    static constexpr std::size_t message_batch_size = 100;
+
+    // Retrieves a full batch of room history for the first room, and minimal history for the others
+    result<std::vector<std::vector<message>>> get_room_history(
+        boost::span<const room> rooms,
         boost::asio::yield_context yield
     );
 
-    error_code add_message(std::string_view room_name, const message& msg, boost::asio::yield_context yield);
+    // Retrieves a batch of room history for a certain room, starting on a given message ID
+    result<std::vector<message>> get_room_history(
+        std::string_view room_id,
+        std::string_view last_message_id,
+        boost::asio::yield_context yield
+    );
+
+    error_code store_messages(
+        std::string_view room_id,
+        boost::span<const message> messages,
+        boost::asio::yield_context yield
+    );
 
     boost::asio::any_io_executor get_executor() { return conn_.get_executor(); }
 };

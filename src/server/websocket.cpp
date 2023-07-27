@@ -83,14 +83,11 @@ chat::error_code chat::websocket::unguarded_write(std::string_view buff, boost::
     return ec;
 }
 
-chat::error_code chat::websocket::write(
-    std::shared_ptr<std::string> message,
-    boost::asio::yield_context yield
-)
+chat::error_code chat::websocket::write(std::string_view message, boost::asio::yield_context yield)
 {
     if (!writing_)
     {
-        return unguarded_write(*message, yield);
+        return unguarded_write(message, yield);
     }
     else
     {
@@ -101,6 +98,6 @@ chat::error_code chat::websocket::write(
         chan.async_receive(yield[ec]);
         assert(!ec);
 
-        return unguarded_write(*message, yield);
+        return unguarded_write(message, yield);
     }
 }

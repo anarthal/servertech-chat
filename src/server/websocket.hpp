@@ -45,7 +45,7 @@ public:
     );
     result<std::string_view> read(boost::asio::yield_context yield);
     error_code unguarded_write(std::string_view buff, boost::asio::yield_context yield);
-    error_code write(std::shared_ptr<std::string> message, boost::asio::yield_context yield);
+    error_code write(std::string_view buff, boost::asio::yield_context yield);
 };
 
 }  // namespace chat

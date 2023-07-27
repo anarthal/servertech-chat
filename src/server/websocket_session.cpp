@@ -21,10 +21,11 @@
 #include <unordered_map>
 
 #include "error.hpp"
+#include "redis_client.hpp"
 #include "serialization.hpp"
 #include "shared_state.hpp"
+#include "websocket.hpp"
 
-namespace net = boost::asio;
 namespace websocket = boost::beast::websocket;
 
 static std::string_view buffer_to_sv(boost::asio::const_buffer buff) noexcept
@@ -44,61 +45,95 @@ chat::websocket_session::websocket_session(websocket socket, std::shared_ptr<sha
 {
 }
 
-// TODO: this is for testing
-static std::vector<std::string> get_rooms() { return {"room1", "room2", "room3"}; }
-
-static chat::error_code process_message(
-    chat::shared_state& st,
-    const chat::message& msg,
-    boost::asio::yield_context yield
-)
+// TODO: stub for now
+static std::vector<chat::room> get_rooms()
 {
-    // TODO: get room name
-    const char* room_name = "room1";
+    return {
+        {"beast", "Boost.Beast"        },
+        {"async", "Boost.Async"        },
+        {"db",    "Database connectors"},
+        {"wasm",  "Web assembly"       },
+    };
+}
 
-    // Store it in Redis
-    auto ec = st.redis().add_message(room_name, msg, yield);
-    if (ec)
-        return ec;
+namespace {
 
-    // Compose a messages event
-    std::vector<chat::message> vec{msg};  // TODO: shouldn't need this copy
-    auto event = std::make_shared<std::string>(chat::serialize_messages_event(vec));
+struct event_handler_visitor
+{
+    chat::websocket& ws;
+    chat::shared_state& st;
+    boost::asio::yield_context yield;
 
-    // Broadcast it to other clients
-    auto [first, last] = st.sessions().get_sessions(room_name);
-    for (auto it = first; it != last; ++it)
+    // Parsing error
+    chat::error_code operator()(chat::error_code ec) const noexcept { return ec; }
+
+    // Messages event
+    chat::error_code operator()(const chat::messages_event& evt) const
     {
-        boost::asio::spawn(
-            st.get_executor(),
-            [sess = it->session, event](boost::asio::yield_context yield) {
-                chat::error_code ec;
-                sess->get_websocket().write(event, yield[ec]);
-            },
-            boost::asio::detached
-        );
+        // Store it in Redis
+        auto ec = st.redis().store_messages(evt.room_id, evt.messages, yield);
+        if (ec)
+            return ec;
+
+        // Broadcast the event to the other clients
+        auto stringified_evt = std::make_shared<std::string>(chat::serialize_messages_event(evt));
+        auto [first, last] = st.sessions().get_sessions(evt.room_id);
+        for (auto it = first; it != last; ++it)
+        {
+            boost::asio::spawn(
+                st.get_executor(),
+                [sess = it->session, stringified_evt](boost::asio::yield_context yield) {
+                    chat::error_code ec;
+                    sess->get_websocket().write(*stringified_evt, yield[ec]);
+                },
+                boost::asio::detached
+            );
+        }
+
+        return chat::error_code();
     }
 
-    return chat::error_code();
-}
+    // Request room history event
+    chat::error_code operator()(const chat::request_room_history_event& evt) const
+    {
+        // Get room history from Redis
+        auto history_result = st.redis().get_room_history(evt.room_id, evt.first_message_id, yield);
+        if (history_result.has_error())
+            return history_result.error();
+        auto& history = history_result.value();
+
+        // Compose a room_history event
+        bool has_more = history.size() >= chat::redis_client::message_batch_size;
+        chat::room_history_event response_evt{evt.room_id, std::move(history), has_more};
+
+        // Serialize it
+        auto payload = chat::serialize_room_history_event(response_evt);
+
+        // Send it
+        chat::error_code ec;
+        ws.write(payload, yield[ec]);
+        return ec;
+    }
+};
+
+}  // namespace
 
 void chat::websocket_session::run(boost::asio::yield_context yield)
 {
     error_code ec;
 
-    // Get the rooms the user is in - stub for now
+    // Get the rooms the user is in
     auto rooms = get_rooms();
 
-    // Set the current room
-    current_room_ = rooms.at(0);
-
-    // Retrieve history for the current room
-    auto history = state_->redis().get_room_history(current_room_, yield);
+    // Retrieve room history
+    auto history = state_->redis().get_room_history(rooms, yield);
     if (history.has_error())
         return fail(history.error(), "Retrieving chat history");
 
     // Send the hello event
-    auto hello = serialize_hello_event(rooms, history.value());
+    for (std::size_t i = 0; i < rooms.size(); ++i)
+        rooms[i].messages = std::move(history.value()[i]);
+    auto hello = serialize_hello_event(hello_event{std::move(rooms)});
     ec = ws_.unguarded_write(hello, yield);
     if (ec)
         return fail(ec, "Sending hello event");
@@ -115,14 +150,11 @@ void chat::websocket_session::run(boost::asio::yield_context yield)
             return fail(raw_msg.error(), "websocket read");
 
         // Deserialize it
-        auto msg = chat::parse_websocket_request(raw_msg.value());
-        const auto* err = boost::variant2::get_if<error_code>(&msg);
-        if (err)
-            return fail(*err, "bad websocket message");
+        auto msg = chat::parse_client_event(raw_msg.value());
 
-        // Message dispatch
-        ec = process_message(*state_, boost::variant2::get<message>(msg), yield);
+        // Dispatch
+        ec = boost::variant2::visit(event_handler_visitor{ws_, *state_, yield}, msg);
         if (ec)
-            return fail(ec, "Broadcasting message");
+            return fail(ec, "processing websocket message");
     }
 }

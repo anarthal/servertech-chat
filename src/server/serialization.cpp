@@ -14,8 +14,10 @@
 #include <boost/json/parse.hpp>
 #include <boost/json/serialize.hpp>
 #include <boost/json/value.hpp>
+#include <boost/json/value_from.hpp>
 #include <boost/json/value_to.hpp>
 
+#include <chrono>
 #include <string>
 #include <string_view>
 
@@ -25,18 +27,89 @@ namespace resp3 = boost::redis::resp3;
 
 namespace chat {
 
-struct wire_message
+// User wire format
+struct wire_user
 {
+    std::string id;
     std::string username;
-    std::string content;
 };
-BOOST_DESCRIBE_STRUCT(wire_message, (), (username, content))
+BOOST_DESCRIBE_STRUCT(wire_user, (), (id, username))
+
+// Message (without ID) wire format, used in Redis and in messages event
+struct message_without_id
+{
+    wire_user user;
+    std::string content;
+    std::int64_t timestamp;
+};
+BOOST_DESCRIBE_STRUCT(message_without_id, (), (user, content, timestamp))
+
+// messages event wire format
+struct messages_event_wire
+{
+    std::string roomId;
+    std::vector<message_without_id> messages;
+};
+BOOST_DESCRIBE_STRUCT(messages_event_wire, (), (roomId, messages))
+
+// requestRoomHistory event wire format
+struct request_room_history_wire
+{
+    std::string roomId;
+    std::string firstMessageId;
+};
+BOOST_DESCRIBE_STRUCT(request_room_history_wire, (), (roomId, firstMessageId))
 
 }  // namespace chat
 
-chat::result<std::vector<chat::message>> chat::parse_room_history(const boost::redis::generic_response& from)
+static std::int64_t serialize_datetime(std::chrono::steady_clock::time_point input) noexcept
 {
-    std::vector<chat::message> res;
+    return std::chrono::duration_cast<std::chrono::milliseconds>(input.time_since_epoch()).count();
+}
+
+static std::chrono::steady_clock::time_point parse_datetime(std::int64_t input) noexcept
+{
+    return std::chrono::steady_clock::time_point(std::chrono::milliseconds(input));
+}
+
+static chat::message to_message(chat::message_without_id&& from, std::string_view id)
+{
+    return chat::message{
+        "", // no ID
+        std::move(from.content),
+        chat::user{
+                   std::move(from.user.id),
+                   std::move(from.user.username),
+                   },
+        parse_datetime(from.timestamp)
+    };
+}
+
+static boost::json::array serialize_messages(boost::span<const chat::message> messages)
+{
+    boost::json::array res;
+    res.reserve(messages.size());
+    for (const auto& msg : messages)
+    {
+        res.push_back(boost::json::object({
+            {"id",        msg.id                           },
+            {"content",   msg.content                      },
+            {"user",
+             {
+                 {"id", msg.usr.id},
+                 {"username", msg.usr.username},
+             }                                             },
+            {"timestamp", serialize_datetime(msg.timestamp)},
+        }));
+    }
+    return res;
+}
+
+chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_batch(
+    const boost::redis::generic_response& from
+)
+{
+    std::vector<std::vector<chat::message>> res;
     error_code ec;
 
     // Verify success
@@ -44,25 +117,18 @@ chat::result<std::vector<chat::message>> chat::parse_room_history(const boost::r
         CHAT_RETURN_ERROR(errc::redis_parse_error)  // TODO: log diagnostics
     const auto& nodes = from.value();
 
-    // Verify this is a list
-    auto it = nodes.begin();
-    if (it == nodes.end())
-        CHAT_RETURN_ERROR(errc::redis_parse_error)
-    if (it->data_type != resp3::type::array)
-    {
-        CHAT_RETURN_ERROR(errc::redis_parse_error)
-    }
-    ++it;
-
-    // We need a one-pass parser. Data format is:
+    // We need a one-pass parser. Every response has the following format:
     // list of MessageEntry:
     //    MessageEntry[0]: string (id)
     //    MessageEntry[1]: list<string> (key-value pairs; always an even number)
     // Since manipulating nodes is cumbersome, we have a single key named "payload",
     // with a single value containing a JSON
+    // This function is capable of parsing multiple, batched responses
     enum state_t
     {
-        wants_initial,
+        wants_level0_list,
+        wants_entry_list,
+        wants_level0_or_entry_list,
         wants_id,
         wants_attr_list,
         wants_key,
@@ -71,142 +137,181 @@ chat::result<std::vector<chat::message>> chat::parse_room_history(const boost::r
 
     struct parser_data_t
     {
-        state_t state{wants_initial};
+        state_t state{wants_entry_list};
         const std::string* id{};
     } data;
 
-    for (; it != nodes.end(); ++it)
+    for (const auto& node : nodes)
     {
-        if (data.state == wants_initial)
+        if (data.state == wants_level0_list)
         {
-            if (it->data_type != resp3::type::array)
+            if (node.data_type != resp3::type::array)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
-            if (it->depth != 1u)
+            if (node.depth != 0u)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
-            if (it->aggregate_size != 2u)
+            res.emplace_back();
+            data.state = wants_entry_list;
+        }
+        else if (data.state == wants_entry_list)
+        {
+            if (node.data_type != resp3::type::array)
+                CHAT_RETURN_ERROR(errc::redis_parse_error)
+            if (node.depth != 1u)
+                CHAT_RETURN_ERROR(errc::redis_parse_error)
+            if (node.aggregate_size != 2u)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
             data.state = wants_id;
         }
+        else if (data.state == wants_level0_or_entry_list)
+        {
+            if (node.data_type != resp3::type::array)
+                CHAT_RETURN_ERROR(errc::redis_parse_error)
+            if (node.depth == 0u)
+            {
+                res.emplace_back();
+                data.state = wants_entry_list;
+            }
+            else if (node.depth == 1u)
+            {
+                if (node.aggregate_size != 2u)
+                    CHAT_RETURN_ERROR(errc::redis_parse_error)
+                data.state = wants_id;
+            }
+            else
+            {
+                CHAT_RETURN_ERROR(errc::redis_parse_error)
+            }
+        }
         else if (data.state == wants_id)
         {
-            if (it->data_type != resp3::type::blob_string)
+            if (node.data_type != resp3::type::blob_string)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
-            if (it->depth != 2u)
+            if (node.depth != 2u)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
-            data.id = &it->value;
+            data.id = &node.value;
             data.state = wants_attr_list;
         }
         else if (data.state == wants_attr_list)
         {
-            if (it->data_type != resp3::type::array)
+            if (node.data_type != resp3::type::array)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
-            if (it->depth != 2u)
+            if (node.depth != 2u)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
-            if (it->aggregate_size != 2u)  // single key/value pair, serialized as JSON
+            if (node.aggregate_size != 2u)  // single key/value pair, serialized as JSON
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
             data.state = wants_key;
         }
         else if (data.state == wants_key)
         {
-            if (it->data_type != resp3::type::blob_string)
+            if (node.data_type != resp3::type::blob_string)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
-            if (it->depth != 3u)
+            if (node.depth != 3u)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
-            if (it->value != "payload")
+            if (node.value != "payload")
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
             data.state = wants_value;
         }
         else if (data.state == wants_value)
         {
-            if (it->data_type != resp3::type::blob_string)
+            if (node.data_type != resp3::type::blob_string)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
-            if (it->depth != 3u)
+            if (node.depth != 3u)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
 
             // Parse payload
-            auto jv = boost::json::parse(it->value, ec);
+            auto jv = boost::json::parse(node.value, ec);
             if (ec)
                 CHAT_RETURN_ERROR(ec)
-            auto msg = boost::json::try_value_to<chat::wire_message>(jv);
+            auto msg = boost::json::try_value_to<chat::message_without_id>(jv);
             if (msg.has_error())
                 CHAT_RETURN_ERROR(msg.error())
-            res.push_back(chat::message{
-                *data.id,
-                std::move(msg->username),
-                std::move(msg->content),
-            });
-            data = parser_data_t();
+            res.back().push_back(to_message(std::move(msg.value()), *data.id));
+            data.state = wants_level0_or_entry_list;
+            data.id = nullptr;
         }
     }
 
-    if (data.state != wants_initial)
+    if (data.state != wants_entry_list && data.state != wants_level0_or_entry_list)
         CHAT_RETURN_ERROR(errc::redis_parse_error)
 
     return res;
 }
 
-static boost::json::array serialize_messages(const std::vector<chat::message>& messages)
+chat::result<std::vector<chat::message>> chat::parse_room_history(const boost::redis::generic_response& from)
 {
-    boost::json::array res;
-    res.reserve(messages.size());
-    for (const auto& msg : messages)
-    {
-        res.push_back(boost::json::object({
-            {"id",       msg.id      },
-            {"username", msg.username},
-            {"content",  msg.content },
-        }));
-    }
-    return res;
+    auto res = parse_room_history_batch(from);
+    if (res.has_error())
+        return res.error();
+    return std::move(res->at(0));
 }
 
 std::string chat::serialize_redis_message(const message& msg)
 {
-    boost::json::value res{
-        {"username", msg.username},
-        {"content",  msg.content },
+    chat::message_without_id redis_msg{
+        wire_user{msg.usr.id, msg.usr.username},
+        msg.content,
+        serialize_datetime(msg.timestamp),
     };
-    return boost::json::serialize(res);
+    return boost::json::serialize(boost::json::value_from(redis_msg));
 }
 
-std::string chat::serialize_messages_event(const std::vector<chat::message>& messages)
-{
-    boost::json::value res{
-        {"type",    "messages"                                  },
-        {"payload", {{"messages", serialize_messages(messages)}}}
-    };
-    return boost::json::serialize(res);
-}
-
-std::string chat::serialize_hello_event(
-    const std::vector<std::string>& rooms,      // available rooms
-    const std::vector<chat::message>& messages  // message history for 1st room
-)
+std::string chat::serialize_hello_event(const hello_event& evt)
 {
     // Rooms
     boost::json::array json_rooms;
-    json_rooms.reserve(rooms.size());
-    for (const auto& room : rooms)
+    json_rooms.reserve(evt.rooms.size());
+    for (const auto& room : evt.rooms)
     {
         json_rooms.push_back(boost::json::object({
-            {"name", room}
+            {"id",              room.id                          },
+            {"name",            room.name                        },
+            {"messages",        serialize_messages(room.messages)},
+            {"hasMoreMessages", room.has_more_messages           },
         }));
     }
 
-    // Chat history
+    // Event
     // clang-format off
     boost::json::value res{
         {"type",    "hello"},
         {"payload", {
             {"rooms", std::move(json_rooms)},
-            {"history", serialize_messages(messages)},
         }}
     };
     // clang-format on
     return boost::json::serialize(res);
 }
 
-chat::websocket_request chat::parse_websocket_request(std::string_view from)
+std::string chat::serialize_messages_event(const messages_event& evt)
+{
+    // clang-format off
+    boost::json::value res{
+        {"type",    "messages" },
+        {"payload", {
+            {"roomId", evt.room_id},
+            {"messages", serialize_messages(evt.messages)}},
+        }
+    };
+    // clang-format on
+    return boost::json::serialize(res);
+}
+
+std::string chat::serialize_room_history_event(const room_history_event& evt)
+{
+    // clang-format off
+    boost::json::value res{
+        {"type",    "roomHistory" },
+        {"payload", {
+            {"roomId", evt.room_id},
+            {"messages", serialize_messages(evt.messages)}},
+            {"hasMoreMessages", evt.has_more_messages},
+        }
+    };
+    // clang-format on
+    return boost::json::serialize(res);
+}
+
+chat::any_client_event chat::parse_client_event(std::string_view from)
 {
     error_code ec;
 
@@ -230,16 +335,36 @@ chat::websocket_request chat::parse_websocket_request(std::string_view from)
         CHAT_RETURN_ERROR(errc::websocket_parse_error)
     const auto& payload = it->value();
 
-    if (type == "message")
+    if (type == "messages")
     {
         // Parse the payload
-        auto parsed_payload = boost::json::try_value_to<chat::wire_message>(payload);
+        auto parsed_payload = boost::json::try_value_to<chat::messages_event_wire>(payload);
         if (parsed_payload.has_error())
             CHAT_RETURN_ERROR(parsed_payload.error())
-        return chat::message{
-            "",  // no ID
-            std::move(parsed_payload->username),
-            std::move(parsed_payload->content),
+        auto& evt = parsed_payload.value();
+
+        // Compose the event
+        chat::messages_event res{std::move(evt.roomId)};
+        res.messages.reserve(evt.messages.size());
+        for (auto& msg : evt.messages)
+        {
+            res.messages.push_back(to_message(std::move(msg), ""));  // no ID
+        }
+
+        return res;
+    }
+    else if (type == "requestRoomHistory")
+    {
+        // Parse the payload
+        auto parsed_payload = boost::json::try_value_to<chat::request_room_history_wire>(payload);
+        if (parsed_payload.has_error())
+            CHAT_RETURN_ERROR(parsed_payload.error())
+        auto& evt = parsed_payload.value();
+
+        // Compose the event
+        return chat::request_room_history_event{
+            std::move(evt.roomId),
+            std::move(evt.firstMessageId),
         };
     }
     else

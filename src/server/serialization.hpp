@@ -12,6 +12,7 @@
 #include <boost/redis/response.hpp>
 #include <boost/variant2/variant.hpp>
 
+#include <chrono>
 #include <string>
 #include <string_view>
 
@@ -19,28 +20,71 @@
 
 namespace chat {
 
-struct message
+// API objects
+struct user
 {
     std::string id;
     std::string username;
-    std::string content;
 };
 
-using websocket_request = boost::variant2::variant<
-    error_code,  // TODO: this should probably include some "reason" for 400-like responses
-    message>;
+struct message
+{
+    std::string id;
+    std::string content;
+    user usr;
+    std::chrono::steady_clock::time_point timestamp;
+};
+
+struct room
+{
+    std::string id;
+    std::string name;
+    std::vector<message> messages;
+    bool has_more_messages;
+};
+
+// Events received from the client
+struct request_room_history_event
+{
+    std::string room_id;
+    std::string first_message_id;
+};
+
+// Events to be sent to the client
+struct hello_event
+{
+    std::vector<room> rooms;
+};
+
+struct messages_event
+{
+    std::string room_id;
+    std::vector<message> messages;
+};  // This may also be received from the client
+
+struct room_history_event
+{
+    std::string room_id;
+    std::vector<message> messages;
+    bool has_more_messages;
+};
+
+// Represents any event that may be received from the client
+using any_client_event = boost::variant2::variant<
+    error_code,  // Invalid, used to report errors
+    messages_event,
+    request_room_history_event>;
 
 // TODO: can we make this use string_view?
+result<std::vector<std::vector<message>>> parse_room_history_batch(const boost::redis::generic_response& from
+);
 result<std::vector<message>> parse_room_history(const boost::redis::generic_response& from);
 std::string serialize_redis_message(const message& msg);
 
-std::string serialize_hello_event(
-    const std::vector<std::string>& rooms,      // available rooms
-    const std::vector<chat::message>& messages  // message history for 1st room
-);
-std::string serialize_messages_event(const std::vector<chat::message>& messages);
-
-websocket_request parse_websocket_request(std::string_view from);
+std::string serialize_hello_event(const hello_event& evt);
+std::string serialize_messages_event(const messages_event& evt);
+std::string serialize_room_history_event(const room_history_event& evt);
+any_client_event parse_client_event(std::string_view from);
 
 }  // namespace chat
 
