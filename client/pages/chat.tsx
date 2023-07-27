@@ -171,8 +171,8 @@ export default function Home() {
           <div className='flex-1 flex flex-col overflow-y-scroll'>
             {rooms.map(({ id, name }) => <RoomEntry key={id} name={name} />)}
           </div>
-          <div className='flex-[3] flex overflow-y-scroll' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
-            <div className='flex-1 flex flex-col p-5'>
+          <div className='flex-[3] flex flex-col'>
+            <div className='flex-1 flex flex-col-reverse p-5 overflow-y-scroll' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
               {testMessages.map(({ username, content, timestamp }) =>
                 <>
                   <OtherUserMessage
@@ -188,6 +188,11 @@ export default function Home() {
                 </>
               )
               }
+            </div>
+            <div className='flex'>
+              <div className='flex-1 flex p-2' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
+                <input className='flex-1 text-xl pl-4 pr-4 pt-2 pb-2 border-0 rounded-xl' type='text' autoFocus placeholder='Type a message...' />
+              </div>
             </div>
           </div>
         </div>

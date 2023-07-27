@@ -46,6 +46,7 @@ export default function Home() {
                         name: userName
                       }
                     } else {
+                      user = JSON.parse(user)
                       user['username'] = userName
                     }
                     localStorage.setItem('servertech_user', JSON.stringify(user))
