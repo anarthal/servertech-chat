@@ -1,26 +1,8 @@
 import Head from 'next/head';
 import Header from '../components/header';
 import { Avatar } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 
-
-type User = {
-  id: string
-  username: string
-}
-
-type Message = {
-  id: string
-  user: User
-  content: string
-  timestamp: Date
-  roomId: string
-}
-
-type Room = {
-  id: string
-  name: string
-}
 
 function genRandomName() {
   const number = Math.floor(Math.random() * 999999);
@@ -35,24 +17,6 @@ function getStoredUser(): User {
     return { id: crypto.randomUUID(), username: genRandomName() }
   }
 }
-
-const rooms: Room[] = [
-  { id: 'room-1', name: 'Boost.Beast' },
-  { id: 'room-2', name: 'Building Boost' },
-  { id: 'room-3', name: 'Building Boost' },
-  { id: 'room-4', name: 'Building Boost' },
-  { id: 'room-5', name: 'Building Boost' },
-  { id: 'room-6', name: 'Building Boost' },
-  { id: 'room-7', name: 'Building Boost' },
-  { id: 'room-8', name: 'Building Boost' },
-  { id: 'room-9', name: 'Building Boost' },
-  { id: 'room-10', name: 'Building Boost' },
-  { id: 'room-11', name: 'Building Boost' },
-  { id: 'room-12', name: 'Building Boost' },
-  { id: 'room-13', name: 'Building Boost' },
-  { id: 'room-14', name: 'Building Boost' },
-  { id: 'room-15', name: 'Building Boost' },
-]
 
 // Copied from MUI Avatar docs
 function stringToColor(string: string) {
@@ -75,11 +39,11 @@ function stringToColor(string: string) {
   return color;
 }
 
-function formatDate(date: Date): string {
+function formatDate(date: number): string {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short'
-  }).format(date)
+  }).format(new Date(date))
 }
 
 const NameAvatar = ({ name }: { name: string }) => {
@@ -88,7 +52,7 @@ const NameAvatar = ({ name }: { name: string }) => {
   }}>{name[0]}</Avatar>
 }
 
-const RoomEntry = ({ name }: { name: string }) => {
+const RoomEntry = ({ name, lastMessage }: { name: string, lastMessage: string }) => {
   return (
     <div className='flex p-3'>
       <div className='pr-3 flex flex-col justify-center'>
@@ -96,13 +60,13 @@ const RoomEntry = ({ name }: { name: string }) => {
       </div>
       <div className='flex-1 flex flex-col'>
         <p className='m-0 font-bold pb-2'>{name}</p>
-        <p className='m-0'>Room last message</p>
+        <p className='m-0'>{lastMessage}</p>
       </div>
     </div>
   )
 }
 
-const OtherUserMessage = ({ username, content, timestamp }: { username: string, content: string, timestamp: Date }) => {
+const OtherUserMessage = ({ username, content, timestamp }: { username: string, content: string, timestamp: number }) => {
   return (
     <div className='flex flex-row pt-3 pb-3'>
       <div className='pr-5 flex flex-col justify-end'>
@@ -119,7 +83,7 @@ const OtherUserMessage = ({ username, content, timestamp }: { username: string, 
   )
 }
 
-const MyMessage = ({ content, timestamp }: { content: string, timestamp: Date }) => {
+const MyMessage = ({ content, timestamp }: { content: string, timestamp: number }) => {
   return (
     <div className='flex flex-row pt-3 pb-3'>
       <div className='flex-[4]'>
@@ -132,34 +96,103 @@ const MyMessage = ({ content, timestamp }: { content: string, timestamp: Date })
   )
 }
 
-const testMessages = [
-  { username: 'User 1', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 2', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 3', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 4', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 5', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 6', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 7', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 8', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 9', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 10', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 11', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 12', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 13', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 14', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 15', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 16', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 17', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-  { username: 'User 18', content: 'Their messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir messageTheir message', timestamp: new Date(Date.UTC(2020, 11, 20, 9, 23, 16, 738)) },
-]
+type User = {
+  id: string
+  username: string
+}
+
+type Message = {
+  id: string
+  user: User
+  content: string
+  timestamp: number // miliseconds since epoch
+}
+
+type Room = {
+  id: string
+  name: string
+  messages: Message[]
+  hasMoreMessages: boolean
+}
+
+type State = {
+  currentUser: User | null
+  loading: boolean
+  rooms: Record<string, Room> // id => room
+  currentRoomId: string | null
+}
+
+type Action = {
+  type: 'set_initial_state',
+  payload: {
+    currentUser: User,
+    rooms: Room[]
+  }
+} | {
+  type: 'add_messages',
+  payload: {
+    roomId: string
+    messages: Message[]
+  }
+}
+
+const Message = ({
+  userId,
+  username,
+  content,
+  timestamp,
+  currentUserId
+}: {
+  userId: string,
+  username: string,
+  content: string,
+  timestamp: number,
+  currentUserId: string
+}) => {
+  if (userId === currentUserId) {
+    return <MyMessage content={content} timestamp={timestamp} />
+  } else {
+    return <OtherUserMessage content={content} timestamp={timestamp} username={username} />
+  }
+}
+
+function reducer(state: State, action: Action): State {
+  const { type, payload } = action
+  switch (type) {
+    case 'set_initial_state':
+      const roomsById = {}
+      for (let room of payload.rooms)
+        roomsById[room.id] = room
+      return {
+        currentUser: payload.currentUser,
+        loading: false,
+        rooms: roomsById,
+        currentRoomId: payload.rooms.length > 0 ? payload.rooms[0].id : null
+      }
+    case 'add_messages':
+      const { roomId, messages } = payload
+      // Find the room
+      const room = state.rooms[roomId]
+      if (!room)
+        return state // We don't know what the server is talking about
+
+      // Add the new messages to the array
+      return {
+        ...state,
+        rooms: {
+          ...state.rooms,
+          roomId: {
+            ...room,
+            messages: room.messages.concat(messages)
+          }
+        }
+      }
+
+    default: return state
+  }
+}
 
 export default function Home() {
-
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    setUser(getStoredUser());
-  }, [])
 
   const inputRef = useRef(null);
 
@@ -174,6 +207,43 @@ export default function Home() {
     };
   }, [])
 
+  const [state, dispatch] = useReducer(reducer, {
+    currentUser: null,
+    loading: true,
+    rooms: {},
+    currentRoomId: null
+  })
+
+  const websocketRef = useRef<WebSocket>(null)
+
+  useEffect(() => {
+    websocketRef.current = new WebSocket('ws://localhost:8080')
+    websocketRef.current.addEventListener('message', (event) => {
+      const { type, payload } = JSON.parse(event.data)
+      console.log(type, payload)
+      switch (type) {
+        case 'hello': dispatch({
+          type: 'set_initial_state',
+          payload: {
+            currentUser: getStoredUser(),
+            rooms: payload.rooms,
+          }
+        })
+        case 'messages':
+          break
+      }
+    })
+
+    // Close the socket on page close. TODO: we should also deregister event handlers
+    return () => {
+      websocketRef.current.close()
+    }
+  }, [])
+
+  if (state.loading) return <p>Loading...</p>
+
+  const currentRoomMessages = state.rooms[state.currentRoomId]?.messages || []
+
   return (
     <>
       <Head>
@@ -184,24 +254,23 @@ export default function Home() {
         <Header />
         <div className="flex-1 flex min-h-0" style={{ borderTop: '1px solid var(--boost-light-grey)' }}>
           <div className='flex-1 flex flex-col overflow-y-scroll'>
-            {rooms.map(({ id, name }) => <RoomEntry key={id} name={name} />)}
+            {Object.values(state.rooms).map(({ id, name, messages }) =>
+              <RoomEntry key={id} name={name} lastMessage={messages[0]?.content || 'No messages yet'} />
+            )}
           </div>
           <div className='flex-[3] flex flex-col'>
             <div className='flex-1 flex flex-col-reverse p-5 overflow-y-scroll' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
-              {testMessages.map(({ username, content, timestamp }) =>
-                <>
-                  <OtherUserMessage
-                    key={username}
-                    username={username}
-                    content={content}
-                    timestamp={timestamp}
-                  />
-                  <MyMessage
-                    content={content}
-                    timestamp={timestamp}
-                  />
-                </>
-              )
+              {
+                currentRoomMessages.length === 0 ?
+                  <p>No messages</p> :
+                  currentRoomMessages.map(msg => <Message
+                    key={msg.id}
+                    userId={msg.user.id}
+                    username={msg.user.username}
+                    content={msg.content}
+                    timestamp={msg.timestamp}
+                    currentUserId={state.currentUser.id}
+                  />)
               }
             </div>
             <div className='flex'>
