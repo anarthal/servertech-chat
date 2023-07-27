@@ -8,6 +8,7 @@
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+    "@formkit/auto-animate": "^0.7.0",
     "@mui/material": "^5.14.2",
     "next": "latest",
     "react": "18.2.0",

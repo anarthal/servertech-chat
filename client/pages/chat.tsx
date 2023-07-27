@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Header from '../components/header';
 import { Avatar } from '@mui/material';
 import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 
 function genRandomName() {
@@ -297,6 +298,8 @@ export default function Home() {
     dispatch({ type: 'set_current_room', payload: { roomId } })
   }, [dispatch])
 
+  const [messagesAnimationParent] = useAutoAnimate()
+
   if (state.loading) return <p>Loading...</p>
 
   const currentRoomMessages = state.rooms[state.currentRoomId]?.messages || []
@@ -310,7 +313,7 @@ export default function Home() {
       <div className="flex flex-col h-full">
         <Header />
         <div className="flex-1 flex min-h-0" style={{ borderTop: '1px solid var(--boost-light-grey)' }}>
-          <div className='flex-1 flex flex-col overflow-y-scroll'>
+          <div className='flex-1 flex flex-col overflow-y-scroll' >
             {Object.values(state.rooms).map(({ id, name, messages }) =>
               <RoomEntry
                 key={id}
@@ -323,7 +326,7 @@ export default function Home() {
             )}
           </div>
           <div className='flex-[3] flex flex-col'>
-            <div className='flex-1 flex flex-col-reverse p-5 overflow-y-scroll' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
+            <div className='flex-1 flex flex-col-reverse p-5 overflow-y-scroll' style={{ backgroundColor: 'var(--boost-light-grey)' }} ref={messagesAnimationParent}>
               {
                 currentRoomMessages.length === 0 ?
                   <p>No messages</p> :
