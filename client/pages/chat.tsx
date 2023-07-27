@@ -1,7 +1,7 @@
 import Head from 'next/head';
 import Header from '../components/header';
 import { Avatar } from '@mui/material';
-import { useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
 
 
 function genRandomName() {
@@ -181,9 +181,10 @@ function reducer(state: State, action: Action): State {
         ...state,
         rooms: {
           ...state.rooms,
-          roomId: {
+          [roomId]: {
             ...room,
-            messages: room.messages.concat(messages)
+            // TODO: this looks like too modern
+            messages: messages.toReversed().concat(room.messages)
           }
         }
       }
@@ -196,23 +197,43 @@ export default function Home() {
 
   const inputRef = useRef(null);
 
-  const onKeyDown = () => {
-    inputRef.current.focus()
-  }
-
-  useEffect(() => {
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [])
-
   const [state, dispatch] = useReducer(reducer, {
     currentUser: null,
     loading: true,
     rooms: {},
     currentRoomId: null
   })
+
+  const onKeyDown = useCallback((event: KeyboardEvent) => {
+    inputRef.current.focus()
+    if (event.key === 'Enter') {
+      const messageContent = inputRef.current?.value
+      if (messageContent) {
+        const evt = {
+          type: 'messages',
+          payload: {
+            roomId: state.currentRoomId,
+            messages: [{
+              user: {
+                id: state.currentUser.id,
+                username: state.currentUser.username
+              },
+              content: messageContent
+            }]
+          }
+        }
+        websocketRef.current.send(JSON.stringify(evt))
+        inputRef.current.value = ''
+      }
+    }
+  }, [state.currentUser?.id, state.currentUser?.username])
+
+  useEffect(() => {
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onKeyDown])
 
   const websocketRef = useRef<WebSocket>(null)
 
@@ -229,7 +250,14 @@ export default function Home() {
             rooms: payload.rooms,
           }
         })
-        case 'messages':
+          break
+        case 'messages': dispatch({
+          type: 'add_messages',
+          payload: {
+            roomId: payload.roomId,
+            messages: payload.messages
+          }
+        })
           break
       }
     })
@@ -250,7 +278,7 @@ export default function Home() {
         <title>BoostServerTech chat</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="flex flex-col h-full" onKeyDown={onKeyDown}>
+      <div className="flex flex-col h-full">
         <Header />
         <div className="flex-1 flex min-h-0" style={{ borderTop: '1px solid var(--boost-light-grey)' }}>
           <div className='flex-1 flex flex-col overflow-y-scroll'>
@@ -275,7 +303,12 @@ export default function Home() {
             </div>
             <div className='flex'>
               <div className='flex-1 flex p-2' style={{ backgroundColor: 'var(--boost-light-grey)' }}>
-                <input className='flex-1 text-xl pl-4 pr-4 pt-2 pb-2 border-0 rounded-xl' type='text' placeholder='Type a message...' ref={inputRef} />
+                <input
+                  type='text'
+                  className='flex-1 text-xl pl-4 pr-4 pt-2 pb-2 border-0 rounded-xl'
+                  placeholder='Type a message...'
+                  ref={inputRef}
+                />
               </div>
             </div>
           </div>

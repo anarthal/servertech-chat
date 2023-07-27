@@ -36,20 +36,28 @@ struct wire_user
 };
 BOOST_DESCRIBE_STRUCT(wire_user, (), (id, username))
 
-// Message (without ID) wire format, used in Redis and in messages event
-struct message_without_id
+// Message as received from the client; no timestamp or ID
+struct client_message_wire
+{
+    wire_user user;
+    std::string content;
+};
+BOOST_DESCRIBE_STRUCT(client_message_wire, (), (user, content))
+
+// Message as stored in Redis, no ID
+struct redis_message_wire
 {
     wire_user user;
     std::string content;
     std::int64_t timestamp;
 };
-BOOST_DESCRIBE_STRUCT(message_without_id, (), (user, content, timestamp))
+BOOST_DESCRIBE_STRUCT(redis_message_wire, (), (user, content, timestamp))
 
 // messages event wire format
 struct messages_event_wire
 {
     std::string roomId;
-    std::vector<message_without_id> messages;
+    std::vector<client_message_wire> messages;
 };
 BOOST_DESCRIBE_STRUCT(messages_event_wire, (), (roomId, messages))
 
@@ -73,7 +81,20 @@ static std::chrono::steady_clock::time_point parse_datetime(std::int64_t input) 
     return std::chrono::steady_clock::time_point(std::chrono::milliseconds(input));
 }
 
-static chat::message to_message(chat::message_without_id&& from, std::string_view id)
+static chat::message to_message(chat::redis_message_wire&& from, std::string_view id)
+{
+    return chat::message{
+        std::string(id),
+        std::move(from.content),
+        chat::user{
+                   std::move(from.user.id),
+                   std::move(from.user.username),
+                   },
+        parse_datetime(from.timestamp)
+    };
+}
+
+static chat::message to_message(chat::client_message_wire&& from)
 {
     return chat::message{
         "", // no ID
@@ -82,7 +103,7 @@ static chat::message to_message(chat::message_without_id&& from, std::string_vie
                    std::move(from.user.id),
                    std::move(from.user.username),
                    },
-        parse_datetime(from.timestamp)
+        {}  // no timestamp
     };
 }
 
@@ -212,7 +233,7 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
             auto jv = boost::json::parse(node.value, ec);
             if (ec)
                 CHAT_RETURN_ERROR(ec)
-            auto msg = boost::json::try_value_to<chat::message_without_id>(jv);
+            auto msg = boost::json::try_value_to<chat::redis_message_wire>(jv);
             if (msg.has_error())
                 CHAT_RETURN_ERROR(msg.error())
             res.back().push_back(to_message(std::move(msg.value()), *data.id));
@@ -256,7 +277,7 @@ chat::result<std::vector<std::string>> chat::parse_string_list(const boost::redi
 
 std::string chat::serialize_redis_message(const message& msg)
 {
-    chat::message_without_id redis_msg{
+    chat::redis_message_wire redis_msg{
         wire_user{msg.usr.id, msg.usr.username},
         msg.content,
         serialize_datetime(msg.timestamp),
@@ -357,7 +378,7 @@ chat::any_client_event chat::parse_client_event(std::string_view from)
         res.messages.reserve(evt.messages.size());
         for (auto& msg : evt.messages)
         {
-            res.messages.push_back(to_message(std::move(msg), ""));  // no ID
+            res.messages.push_back(to_message(std::move(msg)));
         }
 
         return res;

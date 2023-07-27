@@ -14,6 +14,7 @@
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/variant2/variant.hpp>
 
+#include <chrono>
 #include <cstddef>
 #include <memory>
 #include <string_view>
@@ -70,6 +71,11 @@ struct event_handler_visitor
     // Messages event
     chat::error_code operator()(chat::messages_event& evt) const
     {
+        // Set the timestamp
+        auto timestamp = std::chrono::steady_clock::now();
+        for (auto& msg : evt.messages)
+            msg.timestamp = timestamp;
+
         // Store it in Redis
         auto message_ids_result = st.redis().store_messages(evt.room_id, evt.messages, yield);
         if (message_ids_result.has_error())
@@ -131,6 +137,10 @@ void chat::websocket_session::run(boost::asio::yield_context yield)
     // Get the rooms the user is in
     auto rooms = get_rooms();
 
+    // Add the session to the map. TODO: this can introduce race conditions in the client.
+    // Make sure queue updates until the hello is sent
+    state_->sessions().add_session(shared_from_this(), rooms);
+
     // Retrieve room history
     auto history = state_->redis().get_room_history(rooms, yield);
     if (history.has_error())
@@ -143,9 +153,6 @@ void chat::websocket_session::run(boost::asio::yield_context yield)
     ec = ws_.unguarded_write(hello, yield);
     if (ec)
         return fail(ec, "Sending hello event");
-
-    // Add the session to the map
-    state_->sessions().add_session(shared_from_this(), rooms);
 
     // Read subsequent messages from the websocket and dispatch them
     while (true)
