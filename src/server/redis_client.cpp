@@ -33,11 +33,8 @@ chat::result<std::vector<std::vector<chat::message>>> chat::redis_client::get_ro
 
     // Compose the request
     boost::redis::request req;
-    req.push("XREVRANGE", rooms[0].id, "+", "-", "COUNT", message_batch_size);
-    for (std::size_t i = 1; i < rooms.size(); ++i)
-    {
-        req.push("XREVRANGE", rooms[i].id, "+", "-", "COUNT", "1");
-    }
+    for (const auto& room : rooms)
+        req.push("XREVRANGE", room.id, "+", "-", "COUNT", message_batch_size);
 
     boost::redis::generic_response res;
     chat::error_code ec;

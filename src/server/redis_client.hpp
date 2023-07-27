@@ -34,7 +34,8 @@ public:
     // The maximum number of messages for a room that get retrieved in a single go
     static constexpr std::size_t message_batch_size = 100;
 
-    // Retrieves a full batch of room history for the first room, and minimal history for the others
+    // Retrieves a full batch of room history for several rooms
+    // TODO: we could just retrieve the 1st message for all except the 1st room
     result<std::vector<std::vector<message>>> get_room_history(
         boost::span<const room> rooms,
         boost::asio::yield_context yield

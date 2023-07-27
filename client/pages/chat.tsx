@@ -52,15 +52,30 @@ const NameAvatar = ({ name }: { name: string }) => {
   }}>{name[0]}</Avatar>
 }
 
-const RoomEntry = ({ name, lastMessage }: { name: string, lastMessage: string }) => {
+const RoomEntry = ({
+  id,
+  name,
+  lastMessage,
+  selected,
+  onClick
+}: {
+  id: string,
+  name: string,
+  lastMessage: string,
+  selected: boolean,
+  onClick: (roomId: string) => void
+}) => {
+  const cardStyle = selected ? { backgroundColor: 'var(--boost-light-grey)' } : {}
   return (
-    <div className='flex p-3'>
-      <div className='pr-3 flex flex-col justify-center'>
-        <NameAvatar name={name} />
-      </div>
-      <div className='flex-1 flex flex-col'>
-        <p className='m-0 font-bold pb-2'>{name}</p>
-        <p className='m-0'>{lastMessage}</p>
+    <div className='flex pt-2 pl-3 pr-3 cursor-pointer' onClick={() => onClick(id)}>
+      <div className='flex-1 flex p-4 rounded-lg' style={cardStyle}>
+        <div className='pr-3 flex flex-col justify-center'>
+          <NameAvatar name={name} />
+        </div>
+        <div className='flex-1 flex flex-col'>
+          <p className='m-0 font-bold pb-2'>{name}</p>
+          <p className='m-0'>{lastMessage}</p>
+        </div>
       </div>
     </div>
   )
@@ -134,6 +149,11 @@ type Action = {
     roomId: string
     messages: Message[]
   }
+} | {
+  type: 'set_current_room',
+  payload: {
+    roomId: string
+  }
 }
 
 const Message = ({
@@ -170,9 +190,8 @@ function reducer(state: State, action: Action): State {
         currentRoomId: payload.rooms.length > 0 ? payload.rooms[0].id : null
       }
     case 'add_messages':
-      const { roomId, messages } = payload
       // Find the room
-      const room = state.rooms[roomId]
+      const room = state.rooms[payload.roomId]
       if (!room)
         return state // We don't know what the server is talking about
 
@@ -181,13 +200,19 @@ function reducer(state: State, action: Action): State {
         ...state,
         rooms: {
           ...state.rooms,
-          [roomId]: {
+          [payload.roomId]: {
             ...room,
             // TODO: this looks like too modern
-            messages: messages.toReversed().concat(room.messages)
+            messages: payload.messages.toReversed().concat(room.messages)
           }
         }
       }
+    case 'set_current_room':
+      return {
+        ...state,
+        currentRoomId: payload.roomId
+      }
+
 
     default: return state
   }
@@ -226,7 +251,7 @@ export default function Home() {
         inputRef.current.value = ''
       }
     }
-  }, [state.currentUser?.id, state.currentUser?.username])
+  }, [state.currentUser?.id, state.currentUser?.username, state.currentRoomId])
 
   useEffect(() => {
     window.addEventListener('keydown', onKeyDown);
@@ -268,6 +293,10 @@ export default function Home() {
     }
   }, [])
 
+  const onClickRoom = useCallback((roomId: string) => {
+    dispatch({ type: 'set_current_room', payload: { roomId } })
+  }, [dispatch])
+
   if (state.loading) return <p>Loading...</p>
 
   const currentRoomMessages = state.rooms[state.currentRoomId]?.messages || []
@@ -283,7 +312,14 @@ export default function Home() {
         <div className="flex-1 flex min-h-0" style={{ borderTop: '1px solid var(--boost-light-grey)' }}>
           <div className='flex-1 flex flex-col overflow-y-scroll'>
             {Object.values(state.rooms).map(({ id, name, messages }) =>
-              <RoomEntry key={id} name={name} lastMessage={messages[0]?.content || 'No messages yet'} />
+              <RoomEntry
+                key={id}
+                id={id}
+                name={name}
+                selected={id === state.currentRoomId}
+                lastMessage={messages[0]?.content || 'No messages yet'}
+                onClick={onClickRoom}
+              />
             )}
           </div>
           <div className='flex-[3] flex flex-col'>

@@ -61,7 +61,7 @@ public:
     {
         for (const auto& room : rooms)
         {
-            ct_.insert(room_session{room.id, std::move(sess)});
+            ct_.insert(room_session{room.id, sess});
         }
     }
 
