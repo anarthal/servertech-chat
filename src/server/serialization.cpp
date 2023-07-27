@@ -71,14 +71,14 @@ BOOST_DESCRIBE_STRUCT(request_room_history_wire, (), (roomId, firstMessageId))
 
 }  // namespace chat
 
-static std::int64_t serialize_datetime(std::chrono::steady_clock::time_point input) noexcept
+static std::int64_t serialize_datetime(chat::timestamp_t input) noexcept
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(input.time_since_epoch()).count();
 }
 
-static std::chrono::steady_clock::time_point parse_datetime(std::int64_t input) noexcept
+static chat::timestamp_t parse_datetime(std::int64_t input) noexcept
 {
-    return std::chrono::steady_clock::time_point(std::chrono::milliseconds(input));
+    return chat::timestamp_t(std::chrono::milliseconds(input));
 }
 
 static chat::message to_message(chat::redis_message_wire&& from, std::string_view id)

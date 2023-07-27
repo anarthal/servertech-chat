@@ -20,6 +20,8 @@
 
 namespace chat {
 
+using timestamp_t = std::chrono::system_clock::time_point;
+
 // API objects
 struct user
 {
@@ -32,7 +34,7 @@ struct message
     std::string id;
     std::string content;
     user usr;
-    std::chrono::steady_clock::time_point timestamp;
+    timestamp_t timestamp;
 };
 
 struct room

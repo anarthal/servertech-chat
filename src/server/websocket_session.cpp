@@ -72,7 +72,7 @@ struct event_handler_visitor
     chat::error_code operator()(chat::messages_event& evt) const
     {
         // Set the timestamp
-        auto timestamp = std::chrono::steady_clock::now();
+        auto timestamp = chat::timestamp_t::clock::now();
         for (auto& msg : evt.messages)
             msg.timestamp = timestamp;
 
