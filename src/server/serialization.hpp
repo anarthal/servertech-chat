@@ -78,6 +78,8 @@ using any_client_event = boost::variant2::variant<
 // TODO: can we make this use string_view?
 result<std::vector<std::vector<message>>> parse_room_history_batch(const boost::redis::generic_response& from
 );
+result<std::vector<std::string>> parse_string_list(const boost::redis::generic_response& from
+);  // XADD pipeline responses
 result<std::vector<message>> parse_room_history(const boost::redis::generic_response& from);
 std::string serialize_redis_message(const message& msg);
 

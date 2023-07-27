@@ -16,6 +16,7 @@
 #include <boost/json/value.hpp>
 #include <boost/json/value_from.hpp>
 #include <boost/json/value_to.hpp>
+#include <boost/redis/resp3/type.hpp>
 
 #include <chrono>
 #include <string>
@@ -232,6 +233,25 @@ chat::result<std::vector<chat::message>> chat::parse_room_history(const boost::r
     if (res.has_error())
         return res.error();
     return std::move(res->at(0));
+}
+
+chat::result<std::vector<std::string>> chat::parse_string_list(const boost::redis::generic_response& from)
+{
+    if (from.has_error())
+        CHAT_RETURN_ERROR(errc::redis_parse_error)  // TODO: log diagnostics
+    const auto& nodes = from.value();
+
+    std::vector<std::string> res;
+    res.reserve(nodes.size());
+    for (const auto& node : nodes)
+    {
+        if (node.depth != 0u)
+            CHAT_RETURN_ERROR(errc::redis_parse_error)
+        else if (node.data_type != resp3::type::blob_string)
+            CHAT_RETURN_ERROR(errc::redis_parse_error)
+        res.push_back(node.value);
+    }
+    return res;
 }
 
 std::string chat::serialize_redis_message(const message& msg)

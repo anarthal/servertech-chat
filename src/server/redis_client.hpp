@@ -47,7 +47,8 @@ public:
         boost::asio::yield_context yield
     );
 
-    error_code store_messages(
+    // Returns a list with IDs for the newly inserted messages
+    result<std::vector<std::string>> store_messages(
         std::string_view room_id,
         boost::span<const message> messages,
         boost::asio::yield_context yield

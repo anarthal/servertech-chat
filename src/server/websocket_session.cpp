@@ -68,12 +68,18 @@ struct event_handler_visitor
     chat::error_code operator()(chat::error_code ec) const noexcept { return ec; }
 
     // Messages event
-    chat::error_code operator()(const chat::messages_event& evt) const
+    chat::error_code operator()(chat::messages_event& evt) const
     {
         // Store it in Redis
-        auto ec = st.redis().store_messages(evt.room_id, evt.messages, yield);
-        if (ec)
-            return ec;
+        auto message_ids_result = st.redis().store_messages(evt.room_id, evt.messages, yield);
+        if (message_ids_result.has_error())
+            return message_ids_result.error();
+        auto& message_ids = message_ids_result.value();
+
+        // Set the message IDs appropriately
+        assert(message_ids.size() == evt.messages.size());
+        for (std::size_t i = 0; i < message_ids.size(); ++i)
+            evt.messages[i].id = std::move(message_ids[i]);
 
         // Broadcast the event to the other clients
         auto stringified_evt = std::make_shared<std::string>(chat::serialize_messages_event(evt));

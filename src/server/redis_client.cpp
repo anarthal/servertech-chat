@@ -8,8 +8,10 @@
 #include "redis_client.hpp"
 
 #include <boost/asio/detached.hpp>
+#include <boost/redis/response.hpp>
 
 #include "error.hpp"
+#include "serialization.hpp"
 
 chat::redis_client::redis_client(boost::asio::any_io_executor ex) : conn_(ex) {}  //
 
@@ -69,20 +71,24 @@ chat::result<std::vector<chat::message>> chat::redis_client::get_room_history(
     return chat::parse_room_history(res);
 }
 
-chat::error_code chat::redis_client::store_messages(
+chat::result<std::vector<std::string>> chat::redis_client::store_messages(
     std::string_view room_id,
     boost::span<const message> messages,
     boost::asio::yield_context yield
 )
 {
+    // Compose the request
     boost::redis::request req;
-    error_code ec;
-
-    // TODO: we should get IDs from here
     for (const auto& msg : messages)
         req.push("XADD", room_id, "*", "payload", chat::serialize_redis_message(msg));
 
-    conn_.async_exec(req, boost::redis::ignore, yield[ec]);
+    // Execute it
+    boost::redis::generic_response res;
+    error_code ec;
+    conn_.async_exec(req, res, yield[ec]);
+    if (ec)
+        return ec;
 
-    return ec;
+    // Parse the response
+    return parse_string_list(res);
 }
