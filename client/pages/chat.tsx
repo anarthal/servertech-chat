@@ -71,7 +71,7 @@ const OtherUserMessage = ({ username, content, timestamp }: { username: string, 
     <div className='flex flex-row pt-3 pb-3'>
       <div className='pr-5 flex flex-col justify-end'>
         <NameAvatar name={username} />
-        <p className='m-0 pt-1 text-sm'>User 1</p>
+        <p className='m-0 pt-1 text-sm'>{username}</p>
       </div>
       <div className='flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2'>
         <p className='m-0'>{content}</p>
