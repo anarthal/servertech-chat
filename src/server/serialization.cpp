@@ -127,7 +127,6 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
     enum state_t
     {
         wants_level0_list,
-        wants_entry_list,
         wants_level0_or_entry_list,
         wants_id,
         wants_attr_list,
@@ -137,7 +136,7 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
 
     struct parser_data_t
     {
-        state_t state{wants_entry_list};
+        state_t state{wants_level0_list};
         const std::string* id{};
     } data;
 
@@ -150,17 +149,7 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
             if (node.depth != 0u)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
             res.emplace_back();
-            data.state = wants_entry_list;
-        }
-        else if (data.state == wants_entry_list)
-        {
-            if (node.data_type != resp3::type::array)
-                CHAT_RETURN_ERROR(errc::redis_parse_error)
-            if (node.depth != 1u)
-                CHAT_RETURN_ERROR(errc::redis_parse_error)
-            if (node.aggregate_size != 2u)
-                CHAT_RETURN_ERROR(errc::redis_parse_error)
-            data.state = wants_id;
+            data.state = wants_level0_or_entry_list;
         }
         else if (data.state == wants_level0_or_entry_list)
         {
@@ -169,7 +158,7 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
             if (node.depth == 0u)
             {
                 res.emplace_back();
-                data.state = wants_entry_list;
+                data.state = wants_level0_or_entry_list;
             }
             else if (node.depth == 1u)
             {
@@ -231,7 +220,7 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
         }
     }
 
-    if (data.state != wants_entry_list && data.state != wants_level0_or_entry_list)
+    if (data.state != wants_level0_or_entry_list)
         CHAT_RETURN_ERROR(errc::redis_parse_error)
 
     return res;
