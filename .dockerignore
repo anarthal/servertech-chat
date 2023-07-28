@@ -1,0 +1,6 @@
+/__build/
+/private/
+/.vscode/
+**/.next/
+**/node_modules/
+**/out/

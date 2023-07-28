@@ -10,6 +10,8 @@
 #include <boost/asio/detached.hpp>
 #include <boost/redis/response.hpp>
 
+#include <cstdlib>
+
 #include "error.hpp"
 #include "serialization.hpp"
 
@@ -17,7 +19,11 @@ chat::redis_client::redis_client(boost::asio::any_io_executor ex) : conn_(ex) {}
 
 void chat::redis_client::start_run()
 {
+    const char* host_c_str = std::getenv("REDIS_HOST");
+    std::string host = host_c_str ? host_c_str : "redis";
+
     boost::redis::config cfg;
+    cfg.addr.host = std::move(host);
     cfg.health_check_interval = std::chrono::seconds::zero();
     conn_.async_run(cfg, {}, boost::asio::detached);
 }
