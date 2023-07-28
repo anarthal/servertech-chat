@@ -43,7 +43,7 @@ export default function Home() {
                     if (!user) {
                       user = {
                         id: crypto.randomUUID(),
-                        name: userName
+                        username: userName
                       }
                     } else {
                       user = JSON.parse(user)
