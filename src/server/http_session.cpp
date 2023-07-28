@@ -18,12 +18,13 @@
 #include <boost/beast/http/string_body.hpp>
 #include <boost/config.hpp>
 
+#include <filesystem>
+
 #include "error.hpp"
 #include "websocket_session.hpp"
 
 namespace beast = boost::beast;
 namespace http = boost::beast::http;
-namespace websocket = boost::beast::websocket;
 
 // Return a reasonable mime type based on the extension of a file.
 static beast::string_view mime_type(beast::string_view path)
@@ -156,9 +157,13 @@ static boost::beast::http::message_generator handle_request(
         return bad_request("Illegal request-target");
 
     // Build the path to the requested file
-    std::string path = path_cat(doc_root, req.target());
-    if (req.target().back() == '/')
-        path.append("index.html");
+    // The special target / gets index.html
+    std::string path = path_cat(doc_root, req.target() == "/" ? "/index.html" : req.target());
+
+    // If the filename doesn't have an extension, we infer html
+    std::filesystem::path p(path);
+    if (p.extension().empty())
+        path.append(".html");
 
     // Attempt to open the file
     beast::error_code ec;
