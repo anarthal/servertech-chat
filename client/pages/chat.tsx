@@ -177,6 +177,12 @@ const Message = ({
   }
 }
 
+const addNewMessages = (messages: Message[], newMessages: Message[]): Message[] => {
+  const res = [...newMessages]
+  res.reverse()
+  return res.concat(messages)
+}
+
 function reducer(state: State, action: Action): State {
   const { type, payload } = action
   switch (type) {
@@ -203,8 +209,7 @@ function reducer(state: State, action: Action): State {
           ...state.rooms,
           [payload.roomId]: {
             ...room,
-            // TODO: this looks like too modern
-            messages: payload.messages.toReversed().concat(room.messages)
+            messages: addNewMessages(room.messages, payload.messages)
           }
         }
       }
