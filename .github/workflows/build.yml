@@ -1,0 +1,60 @@
+name: Build and deploy
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: eu-north-1
+  ECS_SERVICE: servertech-chat # Identifier of the ECS service object
+  ECS_CLUSTER: servetech-chat-3  # Identifier of the ECS cluster object
+  ECS_TASK_DEFINITION: tools/ecs-task-def.json # path in our repo
+  CONTAINER_NAME: servertech-chat-cppserver # name of the container in the ghcr repo
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: anarthal-containers
+          password: ${{ secrets.ANARTHAL_CONTAINERS_TOKEN }}
+
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}, ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:latest
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ID }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true

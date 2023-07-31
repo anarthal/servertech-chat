@@ -11,7 +11,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>BoostServerTech chat</title>
+        <title>BoostServerTech chat 💬</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 

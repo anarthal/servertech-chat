@@ -1,0 +1,32 @@
+{
+    "requiresCompatibilities": [
+        "EC2"
+    ],
+    "family": "servertech-chat",
+    "containerDefinitions": [
+        {
+            "name": "redis",
+            "image": "redis:alpine",
+            "essential": true
+        },
+        {
+            "name": "cppserver",
+            "image": "ghcr.io/anarthal-containers/servertech-chat-cppserver",
+            "essential": true,
+            "links": [
+                "redis:redis"
+            ],
+            "portMappings": [
+                {
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp"
+                }
+            ]
+        }
+    ],
+    "volumes": [],
+    "networkMode": "bridge",
+    "memory": "0.75 GB",
+    "cpu": "0.75 vCPU"
+}
