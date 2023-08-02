@@ -3,21 +3,7 @@ import Header from '../components/header';
 import { Avatar } from '@mui/material';
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react'
-
-
-function genRandomName() {
-  const number = Math.floor(Math.random() * 999999);
-  return `user-${number}`
-}
-
-function getStoredUser(): User {
-  const user = localStorage.getItem('servertech_user')
-  if (user) {
-    return JSON.parse(user)
-  } else {
-    return { id: crypto.randomUUID(), username: genRandomName() }
-  }
-}
+import { loadUser, createUser } from '../lib/user'
 
 // Copied from MUI Avatar docs
 function stringToColor(string: string) {
@@ -281,7 +267,7 @@ export default function Home() {
         case 'hello': dispatch({
           type: 'set_initial_state',
           payload: {
-            currentUser: getStoredUser(),
+            currentUser: loadUser() || createUser(),
             rooms: payload.rooms,
           }
         })
