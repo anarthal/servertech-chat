@@ -24,6 +24,8 @@ BASE_FOLDERS = [
 ]
 BASE_FILES = [
     'CMakeLists.txt',
+    'docker-compose.yml',
+    'Dockerfile'
 ]
 
 HEADER_TEMPLATE = '''{begin}
