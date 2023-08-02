@@ -214,6 +214,12 @@ function getLastMessageTimestamp(room: Room): number {
   return room.messages.length > 0 ? room.messages[0].timestamp : 0
 }
 
+function getWebsocketURL(): string {
+  const res = process.env.NEXT_PUBLIC_WEBSOCKET_URL || `ws://${location.hostname}:${location.port}/`
+  console.log(process.env.NEXT_PUBLIC_WEBSOCKET_URL)
+  return res
+}
+
 export default function Home() {
 
   const inputRef = useRef(null);
@@ -259,7 +265,7 @@ export default function Home() {
   const websocketRef = useRef<WebSocket>(null)
 
   useEffect(() => {
-    websocketRef.current = new WebSocket('ws://localhost:8080')
+    websocketRef.current = new WebSocket(getWebsocketURL())
     websocketRef.current.addEventListener('message', (event) => {
       const { type, payload } = JSON.parse(event.data)
       console.log(type, payload)
