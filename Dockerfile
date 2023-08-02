@@ -3,10 +3,13 @@
 #
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-#
 
+#
 # Build the server
-FROM alpine:3.18.2 AS build
+#
+FROM alpine:3.18.2 AS server-builder
+
+# Packages
 RUN apk update && \
     apk add --no-cache \
         g++ \
@@ -14,45 +17,63 @@ RUN apk update && \
         ninja \
         openssl-dev \
         git \
-        linux-headers
+        linux-headers \
+        wget
 
+# Boost
 WORKDIR /boost-src
-RUN git config --global submodule.fetchJobs 8
-RUN git clone --depth 1 https://github.com/boostorg/boost.git --recurse-submodules --shallow-submodules .
-RUN git clone --depth 1 https://github.com/boostorg/redis.git libs/redis
-RUN ./bootstrap.sh
-RUN ./b2 --with-json --with-context --prefix=/boost install
+RUN \
+    wget -q https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.gz && \
+    tar -xf boost_1_82_0.tar.gz
 
+# Boost.Redis
+WORKDIR /boost-src/boost_1_82_0
+RUN REDIS_COMMIT=7d162597496becdca3c72820b3c40c84a85debf9 && \
+    git clone --depth 1 https://github.com/boostorg/redis.git libs/redis && \
+    cd libs/redis && \
+    git fetch origin $REDIS_COMMIT && \
+    git checkout $REDIS_COMMIT
+
+# Build
+RUN \
+    ./bootstrap.sh && \
+    ./b2 --with-json --with-context -d0 --prefix=/boost install
+
+# The actual server
 WORKDIR /app
 COPY src/ ./src/
 COPY CMakeLists.txt .
-
 WORKDIR /app/__build
-
 RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Release .. && \
     cmake --build . --parallel 8
 
+#
 # Build the client
+#
 FROM node:18-alpine AS client-builder
 
 # Don't send telemetry
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# OS dependencies
 RUN apk add --no-cache libc6-compat
-WORKDIR /app
-COPY client ./
-RUN npm ci
-RUN npm run build
 
+# Application dependencies
+WORKDIR /app
+COPY client/package.json client/package-lock.json ./
+RUN npm ci
+
+# Application code
+COPY client ./
+RUN npm run build
 
 
 # Runtime image
 FROM alpine:3.18.2
 RUN apk add openssl libstdc++
-COPY --from=build /boost/lib /boost/lib
-COPY --from=build /app/__build/main /app/
+COPY --from=server-builder /boost/lib /boost/lib
+COPY --from=server-builder /app/__build/main /app/
 COPY --from=client-builder /app/out/ /app/static/
 
 EXPOSE 80
 ENTRYPOINT [ "/app/main", "0.0.0.0", "80", "/app/static/", "1" ]
-
