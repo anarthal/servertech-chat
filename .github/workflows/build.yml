@@ -1,5 +1,9 @@
 name: Build and deploy
 
+permissions:
+  id-token: write # Required to login to AWS
+  contents: read  # Required for actions/checkout
+
 on:
   push:
     branches:
