@@ -26,6 +26,12 @@ jobs:
           username: anarthal-containers
           password: ${{ secrets.ANARTHAL_CONTAINERS_TOKEN }}
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ID }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Checkout the code
         uses: actions/checkout@v3
 
@@ -35,13 +41,6 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}, ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:latest
-      
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ID }}
-          role-session-name: GitHub_to_AWS_via_FederatedOIDC
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
