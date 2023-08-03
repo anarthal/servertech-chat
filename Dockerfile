@@ -76,4 +76,4 @@ COPY --from=server-builder /app/__build/main /app/
 COPY --from=client-builder /app/out/ /app/static/
 
 EXPOSE 80
-ENTRYPOINT [ "/app/main", "0.0.0.0", "80", "/app/static/", "1" ]
+ENTRYPOINT [ "/app/main", "0.0.0.0", "80", "/app/static/" ]

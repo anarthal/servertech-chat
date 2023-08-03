@@ -9,12 +9,9 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <boost/redis/config.hpp>
-#include <boost/redis/connection.hpp>
 
 #include <cstdlib>
 #include <iostream>
-#include <thread>
 #include <vector>
 
 #include "error.hpp"
@@ -27,17 +24,16 @@ using namespace chat;
 int main(int argc, char* argv[])
 {
     // Check command line arguments.
-    if (argc != 5)
+    if (argc != 4)
     {
-        std::cerr << "Usage: websocket-chat-multi <address> <port> <doc_root> <threads>\n"
+        std::cerr << "Usage: websocket-chat-multi <address> <port> <doc_root>\n"
                   << "Example:\n"
-                  << "    websocket-chat-server 0.0.0.0 8080 . 5\n";
+                  << "    websocket-chat-server 0.0.0.0 8080 .\n";
         return EXIT_FAILURE;
     }
     auto address = boost::asio::ip::make_address(argv[1]);
     auto port = static_cast<unsigned short>(std::atoi(argv[2]));
     auto doc_root = argv[3];
-    auto const threads = std::max<int>(1, std::atoi(argv[4]));
 
     // The io_context is required for all I/O
     boost::asio::io_context ioc;
@@ -61,18 +57,9 @@ int main(int argc, char* argv[])
         ioc.stop();
     });
 
-    // Run the I/O service on the requested number of threads
-    std::vector<std::thread> v;
-    v.reserve(threads - 1);
-    for (auto i = threads - 1; i > 0; --i)
-        v.emplace_back([&ioc] { ioc.run(); });
+    // Run the I/O context
     ioc.run();
 
     // (If we get here, it means we got a SIGINT or SIGTERM)
-
-    // Block until all the threads exit
-    for (auto& t : v)
-        t.join();
-
     return EXIT_SUCCESS;
 }
