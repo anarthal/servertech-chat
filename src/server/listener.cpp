@@ -7,38 +7,37 @@
 
 #include "listener.hpp"
 
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/beast/core/bind_handler.hpp>
 
-#include <functional>
+#include <memory>
 
 #include "http_session.hpp"
 #include "shared_state.hpp"
 
-void chat::listener::fail(chat::error_code ec, char const* what)
+static void fail(chat::error_code ec, char const* what, boost::asio::io_context& ctx)
 {
-    log_error(ec, what);
-    ioc_.stop();
+    chat::log_error(ec, what);
+    ctx.stop();
 }
 
-chat::listener::listener(
-    boost::asio::io_context& ioc,
-    boost::asio::ip::tcp::endpoint endpoint,
-    std::shared_ptr<shared_state> st
+static void do_listen(
+    boost::asio::ip::tcp::endpoint listening_endpoint,
+    boost::asio::io_context& ctx,
+    std::shared_ptr<chat::shared_state> st,
+    boost::asio::yield_context yield
 )
-    : ioc_(ioc), acceptor_(ioc), state_(std::move(st))
 {
-    error_code ec;
+    boost::asio::ip::tcp::acceptor acceptor_(ctx.get_executor());
+    chat::error_code ec;
 
     // Open the acceptor
-    acceptor_.open(endpoint.protocol(), ec);
+    acceptor_.open(listening_endpoint.protocol(), ec);
     if (ec)
     {
-        fail(ec, "open");
+        fail(ec, "open", ctx);
         return;
     }
 
@@ -46,15 +45,15 @@ chat::listener::listener(
     acceptor_.set_option(boost::asio::socket_base::reuse_address(true), ec);
     if (ec)
     {
-        fail(ec, "set_option");
+        fail(ec, "set_option", ctx);
         return;
     }
 
     // Bind to the server address
-    acceptor_.bind(endpoint, ec);
+    acceptor_.bind(listening_endpoint, ec);
     if (ec)
     {
-        fail(ec, "bind");
+        fail(ec, "bind", ctx);
         return;
     }
 
@@ -62,25 +61,20 @@ chat::listener::listener(
     acceptor_.listen(boost::asio::socket_base::max_listen_connections, ec);
     if (ec)
     {
-        fail(ec, "listen");
+        fail(ec, "listen", ctx);
         return;
     }
-}
 
-void chat::listener::start() { launch_listener(); }
-
-// Handle a connection
-void chat::listener::on_accept(error_code ec, boost::asio::ip::tcp::socket socket)
-{
-    if (ec)
-        return log_error(ec, "accept");
-    else
+    while (!ctx.stopped())
     {
+        auto sock = acceptor_.async_accept(yield[ec]);
+        if (ec)
+            return chat::log_error(ec, "accept");
+
         // Launch a new session for this connection
-        boost::asio::any_io_executor ex(socket.get_executor());
         boost::asio::spawn(
-            std::move(ex),
-            [state = this->state_, socket = std::move(socket)](boost::asio::yield_context yield) mutable {
+            ctx.get_executor(),
+            [state = st, socket = std::move(sock)](boost::asio::yield_context yield) mutable {
                 run_http_session(std::move(socket), std::move(state), yield);
             },
             // we ignore the result of the session,
@@ -96,12 +90,29 @@ void chat::listener::on_accept(error_code ec, boost::asio::ip::tcp::socket socke
             }
         );
     }
-
-    launch_listener();
 }
 
-void chat::listener::launch_listener()
+void chat::run_listener(
+    boost::asio::io_context& ctx,
+    boost::asio::ip::tcp::endpoint listening_endpoint,
+    std::shared_ptr<shared_state> state
+)
 {
-    acceptor_.async_accept(std::bind(&listener::on_accept, this, std::placeholders::_1, std::placeholders::_2)
+    boost::asio::spawn(
+        ctx.get_executor(),
+        [listening_endpoint, &ctx, st = state](boost::asio::yield_context yield) mutable {
+            do_listen(listening_endpoint, ctx, std::move(st), yield);
+        },
+        // we ignore the result of the session,
+        // most errors are handled with error_code
+        [](std::exception_ptr ex) {
+            // if an exception occurred in the coroutine,
+            // it's something critical, e.g. out of memory
+            // we capture normal errors in the ec
+            // so we just rethrow the exception here,
+            // which will cause `ioc.run()` to throw
+            if (ex)
+                std::rethrow_exception(ex);
+        }
     );
 }

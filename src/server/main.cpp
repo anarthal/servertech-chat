@@ -48,9 +48,8 @@ int main(int argc, char* argv[])
     // Launch the Redis connection
     st->redis().start_run();
 
-    // Create and launch a listening port
-    listener list(ioc, boost::asio::ip::tcp::endpoint{address, port}, st);
-    list.start();
+    // Start listening for HTTP connections. This will run until the context is stopped
+    run_listener(ioc, boost::asio::ip::tcp::endpoint{address, port}, st);
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
     boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
