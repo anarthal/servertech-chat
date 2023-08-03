@@ -13,6 +13,7 @@
 #include <boost/beast/websocket/stream.hpp>
 
 #include <deque>
+#include <memory>
 #include <string_view>
 
 #include "error.hpp"
@@ -28,6 +29,28 @@ struct chat::websocket::impl
     impl(boost::asio::ip::tcp::socket&& sock, boost::beast::flat_buffer&& buff)
         : ws(std::move(sock)), read_buffer(std::move(buff))
     {
+    }
+
+    struct read_guard_deleter
+    {
+        void operator()(impl* self) const noexcept { self->reading = false; }
+    };
+    using read_guard = std::unique_ptr<impl, read_guard_deleter>;
+    read_guard mark_as_reading() noexcept
+    {
+        reading = true;
+        return read_guard(this);
+    }
+
+    struct write_guard_deleter
+    {
+        void operator()(impl* self) const noexcept { self->writing = false; }
+    };
+    using write_guard = std::unique_ptr<impl, write_guard_deleter>;
+    write_guard mark_as_writing() noexcept
+    {
+        writing = true;
+        return write_guard(this);
     }
 };
 
@@ -85,10 +108,12 @@ chat::result<std::string_view> chat::websocket::read(boost::asio::yield_context 
 
     error_code ec;
 
-    impl_->reading = true;  // TODO: RAII-fy this
-    impl_->read_buffer.clear();
-    impl_->ws.async_read(impl_->read_buffer, yield[ec]);
-    impl_->reading = false;
+    {
+        auto guard = impl_->mark_as_reading();
+        impl_->read_buffer.clear();
+        impl_->ws.async_read(impl_->read_buffer, yield[ec]);
+    }
+
     if (ec)
         return ec;
     auto res = buffer_to_sv(impl_->read_buffer.data());
@@ -102,11 +127,11 @@ chat::error_code chat::websocket::unguarded_write(std::string_view buff, boost::
 
     error_code ec;
 
-    // TODO: RAIIfy
-    impl_->writing = true;
-    impl_->ws.async_write(boost::asio::buffer(buff), yield[ec]);
-    std::cout << "(WRITE) " << buff << std::endl;
-    impl_->writing = false;
+    {
+        auto guard = impl_->mark_as_writing();
+        impl_->ws.async_write(boost::asio::buffer(buff), yield[ec]);
+        std::cout << "(WRITE) " << buff << std::endl;
+    }
 
     if (!impl_->pending_requests.empty())
     {
