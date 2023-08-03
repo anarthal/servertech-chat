@@ -8,39 +8,34 @@
 #ifndef SERVERTECHCHAT_SRC_SERVER_WEBSOCKET_HPP
 #define SERVERTECHCHAT_SRC_SERVER_WEBSOCKET_HPP
 
-#include <boost/asio/experimental/channel.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/websocket/stream.hpp>
 
-#include <deque>
 #include <memory>
-#include <string>
 #include <string_view>
 
 #include "error.hpp"
 
 namespace chat {
 
-using ws_stream = boost::beast::websocket::stream<boost::beast::tcp_stream>;
-
 // A wrapper around beast's websocket stream that handles concurrent writes.
 // Having this in a separate .cpp makes re-builds less painful
 class websocket
 {
-    ws_stream ws_;
-    boost::beast::flat_buffer read_buffer_;
-    std::deque<boost::asio::experimental::channel<void(error_code)>*> pending_requests;
-
-    bool reading_{false}, writing_{false};
+    struct impl;
+    std::unique_ptr<impl> impl_;
 
 public:
-    websocket(boost::asio::ip::tcp::socket sock);
+    websocket(boost::asio::ip::tcp::socket sock, boost::beast::flat_buffer buffer);
+    websocket(const websocket&) = delete;
+    websocket(websocket&&) noexcept;
+    websocket& operator=(const websocket&) = delete;
+    websocket& operator=(websocket&&) noexcept;
+    ~websocket();
 
     error_code accept(
-        boost::beast::http::request<boost::beast::http::string_body>,
+        boost::beast::http::request<boost::beast::http::string_body> upgrade_request,
         boost::asio::yield_context yield
     );
     result<std::string_view> read(boost::asio::yield_context yield);
