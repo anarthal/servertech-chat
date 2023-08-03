@@ -167,6 +167,7 @@ FILE_PROCESSORS : List[Tuple[str, BaseProcessor]] = [
     ('.tar.gz', IgnoreProcessor()),
     ('.json', IgnoreProcessor()),
     ('.html', IgnoreProcessor()),
+    ('Dockerfile', hash_processor),
 ]
 
 def process_file(fpath: str):

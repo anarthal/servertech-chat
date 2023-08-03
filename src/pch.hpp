@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECH_PCH
-#define SERVERTECH_PCH
+#ifndef SERVERTECHCHAT_SRC_PCH_HPP
+#define SERVERTECHCHAT_SRC_PCH_HPP
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
