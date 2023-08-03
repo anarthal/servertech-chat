@@ -7,6 +7,7 @@
 
 #include "serialization.hpp"
 
+#include <boost/core/span.hpp>
 #include <boost/describe/class.hpp>
 #include <boost/json/array.hpp>
 #include <boost/json/fwd.hpp>

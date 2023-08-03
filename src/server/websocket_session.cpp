@@ -12,6 +12,7 @@
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/core/buffers_to_string.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
+#include <boost/beast/websocket/error.hpp>
 #include <boost/variant2/variant.hpp>
 
 #include <chrono>
@@ -19,7 +20,6 @@
 #include <memory>
 #include <string_view>
 #include <type_traits>
-#include <unordered_map>
 
 #include "error.hpp"
 #include "redis_client.hpp"
@@ -27,17 +27,10 @@
 #include "shared_state.hpp"
 #include "websocket.hpp"
 
-namespace websocket = boost::beast::websocket;
-
-static std::string_view buffer_to_sv(boost::asio::const_buffer buff) noexcept
-{
-    return std::string_view(static_cast<const char*>(buff.data()), buff.size());
-}
-
 static void fail(chat::error_code ec, char const* what)
 {
     // Don't report these
-    if (ec != websocket::error::closed)
+    if (ec != boost::beast::websocket::error::closed)
         chat::log_error(ec, what);
 }
 
