@@ -26,9 +26,9 @@ int main(int argc, char* argv[])
     // Check command line arguments.
     if (argc != 4)
     {
-        std::cerr << "Usage: websocket-chat-multi <address> <port> <doc_root>\n"
+        std::cerr << "Usage: " << argv[0] << " <address> <port> <doc_root>\n"
                   << "Example:\n"
-                  << "    websocket-chat-server 0.0.0.0 8080 .\n";
+                  << "    " << argv[0] << " 0.0.0.0 8080 .\n";
         return EXIT_FAILURE;
     }
     auto address = boost::asio::ip::make_address(argv[1]);

@@ -16,16 +16,17 @@ add_executable(
     src/boost_asio.cpp
     src/boost_beast.cpp
     src/boost_redis.cpp
-    src/server/http_session.cpp
-    src/server/listener.cpp
-    src/server/shared_state.cpp
-    src/server/websocket_session.cpp
-    src/server/serialization.cpp
-    src/server/error.cpp
-    src/server/redis_client.cpp
-    src/server/websocket.cpp
-    src/server/main.cpp
+    src/http_session.cpp
+    src/listener.cpp
+    src/shared_state.cpp
+    src/websocket_session.cpp
+    src/serialization.cpp
+    src/error.cpp
+    src/redis_client.cpp
+    src/websocket.cpp
+    src/main.cpp
 )
+target_include_directories(main PRIVATE include)
 target_link_libraries(
     main
     PRIVATE
@@ -44,5 +45,5 @@ target_compile_definitions(
 target_precompile_headers(
     main
     PRIVATE
-    src/pch.hpp
+    include/pch.hpp
 )

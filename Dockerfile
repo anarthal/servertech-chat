@@ -42,8 +42,7 @@ RUN \
 
 # The actual server
 WORKDIR /app
-COPY src/ ./src/
-COPY CMakeLists.txt .
+COPY server/ ./
 WORKDIR /app/__build
 RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Release .. && \
     cmake --build . --parallel 8
