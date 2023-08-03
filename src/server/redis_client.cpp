@@ -7,15 +7,35 @@
 
 #include "redis_client.hpp"
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/redis/connection.hpp>
 #include <boost/redis/response.hpp>
 
 #include <cstdlib>
+#include <utility>
 
 #include "error.hpp"
 #include "serialization.hpp"
 
-chat::redis_client::redis_client(boost::asio::any_io_executor ex) : conn_(ex) {}  //
+struct chat::redis_client::impl
+{
+    boost::redis::connection conn_;
+
+    impl(boost::asio::any_io_executor ex) : conn_(ex) {}
+};
+
+chat::redis_client::redis_client(boost::asio::any_io_executor ex) : impl_(new impl(ex)) {}
+
+chat::redis_client::redis_client(redis_client&& rhs) noexcept : impl_(std::move(rhs.impl_)) {}
+
+chat::redis_client& chat::redis_client::operator=(redis_client&& rhs) noexcept
+{
+    impl_ = std::move(impl_);
+    return *this;
+}
+
+chat::redis_client::~redis_client() {}
 
 void chat::redis_client::start_run()
 {
@@ -25,10 +45,10 @@ void chat::redis_client::start_run()
     boost::redis::config cfg;
     cfg.addr.host = std::move(host);
     cfg.health_check_interval = std::chrono::seconds::zero();
-    conn_.async_run(cfg, {}, boost::asio::detached);
+    impl_->conn_.async_run(cfg, {}, boost::asio::detached);
 }
 
-void chat::redis_client::cancel() { conn_.cancel(); }
+void chat::redis_client::cancel() { impl_->conn_.cancel(); }
 
 chat::result<std::vector<std::vector<chat::message>>> chat::redis_client::get_room_history(
     boost::span<const room> rooms,
@@ -45,7 +65,7 @@ chat::result<std::vector<std::vector<chat::message>>> chat::redis_client::get_ro
     boost::redis::generic_response res;
     chat::error_code ec;
 
-    conn_.async_exec(req, res, yield[ec]);
+    impl_->conn_.async_exec(req, res, yield[ec]);
 
     if (ec)
         return ec;
@@ -66,7 +86,7 @@ chat::result<std::vector<chat::message>> chat::redis_client::get_room_history(
     // Execute it
     boost::redis::generic_response res;
     chat::error_code ec;
-    conn_.async_exec(req, res, yield[ec]);
+    impl_->conn_.async_exec(req, res, yield[ec]);
     if (ec)
         return ec;
 
@@ -88,7 +108,7 @@ chat::result<std::vector<std::string>> chat::redis_client::store_messages(
     // Execute it
     boost::redis::generic_response res;
     error_code ec;
-    conn_.async_exec(req, res, yield[ec]);
+    impl_->conn_.async_exec(req, res, yield[ec]);
     if (ec)
         return ec;
 

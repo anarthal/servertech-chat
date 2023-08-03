@@ -15,7 +15,6 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index_container.hpp>
-#include <boost/redis/connection.hpp>
 
 #include <memory>
 #include <string>
@@ -84,7 +83,6 @@ public:
     const std::string& doc_root() const noexcept { return doc_root_; }
     redis_client& redis() noexcept { return redis_; }
     session_map& sessions() noexcept { return sessions_; }
-    boost::asio::any_io_executor get_executor() { return redis_.get_executor(); }
 };
 
 }  // namespace chat

@@ -7,11 +7,6 @@
 
 #include "shared_state.hpp"
 
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/redis/connection.hpp>
-
-#include "websocket_session.hpp"
-
 chat::shared_state::shared_state(std::string doc_root, redis_client redis)
     : doc_root_(std::move(doc_root)), redis_(std::move(redis))
 {

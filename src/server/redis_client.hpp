@@ -11,7 +11,6 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/core/span.hpp>
-#include <boost/redis/connection.hpp>
 
 #include <string_view>
 #include <vector>
@@ -23,10 +22,16 @@ namespace chat {
 
 class redis_client
 {
-    boost::redis::connection conn_;
+    struct impl;
+    std::unique_ptr<impl> impl_;
 
 public:
     redis_client(boost::asio::any_io_executor ex);
+    redis_client(const redis_client&) = delete;
+    redis_client(redis_client&&) noexcept;
+    redis_client& operator=(const redis_client&) = delete;
+    redis_client& operator=(redis_client&&) noexcept;
+    ~redis_client();
 
     void start_run();
     void cancel();
@@ -54,8 +59,6 @@ public:
         boost::span<const message> messages,
         boost::asio::yield_context yield
     );
-
-    boost::asio::any_io_executor get_executor() { return conn_.get_executor(); }
 };
 
 }  // namespace chat

@@ -93,7 +93,7 @@ struct event_handler_visitor
         for (auto it = first; it != last; ++it)
         {
             boost::asio::spawn(
-                st.get_executor(),
+                yield.get_executor(),
                 [sess = it->session, stringified_evt](boost::asio::yield_context yield) {
                     chat::error_code ec;
                     sess->get_websocket().write(*stringified_evt, yield[ec]);
