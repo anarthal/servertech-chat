@@ -11,8 +11,10 @@ project(servertech_chat)
 find_package(Boost REQUIRED COMPONENTS headers context json)
 find_package(OpenSSL REQUIRED)
 
-add_executable(
-    main
+# This library is consumed by the actual server and the tests
+add_library(
+    servertech_chat
+    STATIC
     src/boost_asio.cpp
     src/boost_beast.cpp
     src/boost_redis.cpp
@@ -24,12 +26,12 @@ add_executable(
     src/error.cpp
     src/redis_client.cpp
     src/websocket.cpp
-    src/main.cpp
+    src/application.cpp
 )
-target_include_directories(main PRIVATE include)
+target_include_directories(servertech_chat PUBLIC include)
 target_link_libraries(
-    main
-    PRIVATE
+    servertech_chat
+    PUBLIC
     Boost::headers
     Boost::context
     Boost::json
@@ -37,13 +39,24 @@ target_link_libraries(
     OpenSSL::SSL
 )
 target_compile_definitions(
-    main
-    PRIVATE
+    servertech_chat
+    PUBLIC
     BOOST_BEAST_SEPARATE_COMPILATION
     BOOST_ASIO_SEPARATE_COMPILATION
 )
 target_precompile_headers(
-    main
+    servertech_chat
     PRIVATE
     include/pch.hpp
 )
+
+# The actual server executable
+add_executable(main src/main.cpp)
+target_link_libraries(main PRIVATE servertech_chat)
+
+
+# Testing
+include(CTest)
+if (BUILD_TESTING)
+    add_subdirectory(test/integration)
+endif()
