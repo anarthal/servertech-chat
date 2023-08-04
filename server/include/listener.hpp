@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SRC_SERVER_LISTENER_HPP
-#define SERVERTECHCHAT_SRC_SERVER_LISTENER_HPP
+#ifndef SERVERTECHCHAT_SERVER_INCLUDE_LISTENER_HPP
+#define SERVERTECHCHAT_SERVER_INCLUDE_LISTENER_HPP
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>

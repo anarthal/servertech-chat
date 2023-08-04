@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SRC_SERVER_SHARED_STATE_HPP
-#define SERVERTECHCHAT_SRC_SERVER_SHARED_STATE_HPP
+#ifndef SERVERTECHCHAT_SERVER_INCLUDE_SHARED_STATE_HPP
+#define SERVERTECHCHAT_SERVER_INCLUDE_SHARED_STATE_HPP
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/core/span.hpp>

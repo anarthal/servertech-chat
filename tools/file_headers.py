@@ -18,12 +18,10 @@ VERBOSE = False
 
 REPO_BASE = path.abspath(path.join(path.dirname(path.realpath(__file__)), '..'))
 BASE_FOLDERS = [
-    'src',
-    'static',
+    'server',
     'tools',
 ]
 BASE_FILES = [
-    'CMakeLists.txt',
     'docker-compose.yml',
     'Dockerfile'
 ]

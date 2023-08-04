@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SRC_SERVER_SERIALIZATION_HPP
-#define SERVERTECHCHAT_SRC_SERVER_SERIALIZATION_HPP
+#ifndef SERVERTECHCHAT_SERVER_INCLUDE_SERIALIZATION_HPP
+#define SERVERTECHCHAT_SERVER_INCLUDE_SERIALIZATION_HPP
 
 #include <boost/redis/resp3/node.hpp>
 #include <boost/redis/response.hpp>
