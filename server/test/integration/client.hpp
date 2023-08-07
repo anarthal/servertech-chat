@@ -5,6 +5,8 @@
 #include <boost/core/span.hpp>
 
 #include <memory>
+#include <optional>
+#include <string_view>
 #include <thread>
 #include <vector>
 
@@ -25,8 +27,10 @@ public:
     websocket_client& operator=(websocket_client&&) noexcept;
     ~websocket_client();
 
-    std::vector<unsigned char> read();
-    void write(boost::span<const unsigned char> buffer);
+    // Contents point into an internal buffer, valid until the next read
+    std::string_view read();
+
+    void write(std::string_view buffer);
 
 private:
     std::unique_ptr<impl> impl_;
@@ -35,7 +39,7 @@ private:
 class server_runner
 {
     application app;
-    std::thread runner;
+    std::optional<std::thread> runner;
 
 public:
     server_runner();

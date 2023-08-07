@@ -6,9 +6,12 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/websocket/stream.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <memory>
+#include <string_view>
 
 using namespace chat::test;
 namespace websocket = boost::beast::websocket;
@@ -26,6 +29,7 @@ static boost::asio::io_context& get_context()
 struct websocket_client::impl
 {
     websocket::stream<boost::asio::ip::tcp::socket> ws{get_context().get_executor()};
+    boost::beast::flat_buffer read_buffer;
 };
 
 websocket_client::websocket_client(impl* i) noexcept : impl_(i) {}
@@ -39,29 +43,30 @@ websocket_client& websocket_client::operator=(websocket_client&& rhs) noexcept
 }
 websocket_client::~websocket_client() {}
 
-std::vector<unsigned char> websocket_client::read()
+std::string_view websocket_client::read()
 {
-    std::vector<unsigned char> res;
-    boost::asio::dynamic_vector_buffer dynbuff{res};
-    impl_->ws.read(res);
-    return res;
+    impl_->ws.read(impl_->read_buffer);
+    return std::string_view(
+        static_cast<const char*>(impl_->read_buffer.data().data()),
+        impl_->read_buffer.data().size()
+    );
 }
 
-void websocket_client::write(boost::span<const unsigned char> buffer)
-{
-    impl_->ws.write(boost::asio::buffer(buffer));
-}
+void websocket_client::write(std::string_view buffer) { impl_->ws.write(boost::asio::buffer(buffer)); }
 
-server_runner::server_runner()
-    : app(application_config{"", localhost, port}), runner([this] { this->app.run_until_completion(true); })
+server_runner::server_runner() : app(application_config{"", localhost, port})
 {
+    auto ec = app.setup();
+    if (ec)
+        throw boost::system::system_error(ec);
+    runner = std::thread([this] { this->app.run_until_completion(true); });
 }
 
 server_runner::~server_runner()
 {
     app.stop();
-    if (runner.joinable())
-        runner.join();
+    if (runner && runner->joinable())
+        runner->join();
 }
 
 websocket_client server_runner::connect_websocket()

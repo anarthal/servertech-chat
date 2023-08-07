@@ -7,11 +7,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <chrono>
-#include <cstdlib>
 #include <iostream>
-#include <string>
-#include <string_view>
 
 #include "client.hpp"
 
@@ -20,7 +16,6 @@ using namespace chat::test;
 BOOST_AUTO_TEST_CASE(a)
 {
     server_runner runner;
-    std::this_thread::sleep_for(std::chrono::seconds(2));  // TODO
 
     auto ws = runner.connect_websocket();
     auto buff = ws.read();
@@ -29,5 +24,5 @@ BOOST_AUTO_TEST_CASE(a)
     // ws.close(websocket::close_code::normal); TODO
 
     // The make_printable() function helps print a ConstBufferSequence
-    std::cout << std::string_view((const char*)buff.data(), buff.size()) << std::endl;
+    std::cout << buff << std::endl;
 }
