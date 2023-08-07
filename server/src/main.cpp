@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include "application.hpp"
+#include "error.hpp"
 
 using namespace chat;
 
@@ -32,6 +33,14 @@ int main(int argc, char* argv[])
 
     // Construct an application object
     chat::application app(std::move(config));
+
+    // Bind the app to the port and launch tasks
+    auto ec = app.setup();
+    if (ec)
+    {
+        log_error(ec, "Error setting up the application");
+        exit(EXIT_FAILURE);
+    }
 
     // Run the application until stopped by a signal
     app.run_until_completion(true);

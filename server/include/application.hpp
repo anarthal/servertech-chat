@@ -11,6 +11,8 @@
 #include <memory>
 #include <string>
 
+#include "error.hpp"
+
 namespace chat {
 
 struct application_config
@@ -32,6 +34,8 @@ public:
     application& operator=(const application&) = delete;
     application& operator=(application&&) noexcept;
     ~application();
+
+    [[nodiscard]] error_code setup();
 
     // Launches the application and runs until explicitly stopped by stop().
     // If with_signal_handlers, registers signal handlers that call stop()

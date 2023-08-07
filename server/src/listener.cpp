@@ -7,73 +7,34 @@
 
 #include "listener.hpp"
 
-#include <boost/asio/error.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 
 #include <memory>
 
+#include "error.hpp"
 #include "http_session.hpp"
 #include "shared_state.hpp"
 
-static void fail(chat::error_code ec, char const* what, boost::asio::io_context& ctx)
-{
-    chat::log_error(ec, what);
-    ctx.stop();
-}
+using namespace chat;
 
 static void do_listen(
-    boost::asio::ip::tcp::endpoint listening_endpoint,
-    boost::asio::io_context& ctx,
+    boost::asio::ip::tcp::acceptor acceptor,
     std::shared_ptr<chat::shared_state> st,
     boost::asio::yield_context yield
 )
 {
-    boost::asio::ip::tcp::acceptor acceptor_(ctx.get_executor());
-    chat::error_code ec;
+    error_code ec;
 
-    // Open the acceptor
-    acceptor_.open(listening_endpoint.protocol(), ec);
-    if (ec)
+    while (true)
     {
-        fail(ec, "open", ctx);
-        return;
-    }
-
-    // Allow address reuse
-    acceptor_.set_option(boost::asio::socket_base::reuse_address(true), ec);
-    if (ec)
-    {
-        fail(ec, "set_option", ctx);
-        return;
-    }
-
-    // Bind to the server address
-    acceptor_.bind(listening_endpoint, ec);
-    if (ec)
-    {
-        fail(ec, "bind", ctx);
-        return;
-    }
-
-    // Start listening for connections
-    acceptor_.listen(boost::asio::socket_base::max_listen_connections, ec);
-    if (ec)
-    {
-        fail(ec, "listen", ctx);
-        return;
-    }
-
-    while (!ctx.stopped())
-    {
-        auto sock = acceptor_.async_accept(yield[ec]);
+        auto sock = acceptor.async_accept(yield[ec]);
         if (ec)
             return chat::log_error(ec, "accept");
 
         // Launch a new session for this connection
         boost::asio::spawn(
-            ctx.get_executor(),
+            sock.get_executor(),
             [state = st, socket = std::move(sock)](boost::asio::yield_context yield) mutable {
                 run_http_session(std::move(socket), std::move(state), yield);
             },
@@ -92,16 +53,42 @@ static void do_listen(
     }
 }
 
-void chat::run_listener(
-    boost::asio::io_context& ctx,
-    boost::asio::ip::tcp::endpoint listening_endpoint,
-    std::shared_ptr<shared_state> state
-)
+listener::listener(boost::asio::any_io_executor ex) : acceptor_(std::move(ex)) {}
+
+error_code listener::setup(boost::asio::ip::tcp::endpoint listening_endpoint)
 {
+    error_code ec;
+
+    // Open the acceptor
+    acceptor_.open(listening_endpoint.protocol(), ec);
+    if (ec)
+        return ec;
+
+    // Allow address reuse
+    acceptor_.set_option(boost::asio::socket_base::reuse_address(true), ec);
+    if (ec)
+        return ec;
+
+    // Bind to the server address
+    acceptor_.bind(listening_endpoint, ec);
+    if (ec)
+        return ec;
+
+    // Start listening for connections
+    acceptor_.listen(boost::asio::socket_base::max_listen_connections, ec);
+    if (ec)
+        return ec;
+
+    return error_code();
+}
+
+void listener::run_until_completion(std::shared_ptr<shared_state> state)
+{
+    auto ex = acceptor_.get_executor();
     boost::asio::spawn(
-        ctx.get_executor(),
-        [listening_endpoint, &ctx, st = state](boost::asio::yield_context yield) mutable {
-            do_listen(listening_endpoint, ctx, std::move(st), yield);
+        std::move(ex),
+        [acceptor = std::move(acceptor_), st = std::move(state)](boost::asio::yield_context yield) mutable {
+            do_listen(std::move(acceptor), std::move(st), yield);
         },
         // we ignore the result of the session,
         // most errors are handled with error_code

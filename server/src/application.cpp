@@ -22,12 +22,14 @@
 struct chat::application::impl
 {
     boost::asio::io_context ioc;
+    listener list;
     std::shared_ptr<shared_state> st;  // TODO: do we really need this to be shared?
     boost::asio::ip::tcp::endpoint listening_endpoint;
     boost::asio::signal_set signals;
 
     impl(application_config&& config)
         : ioc(1),  // single-threaded
+          list(ioc.get_executor()),
           st(std::make_shared<shared_state>(std::move(config.doc_root), redis_client(ioc.get_executor()))),
           listening_endpoint(boost::asio::ip::make_address(config.ip), config.port),
           signals(ioc.get_executor(), SIGINT, SIGTERM)
@@ -47,13 +49,15 @@ chat::application& chat::application::operator=(application&& rhs) noexcept
 
 chat::application::~application() {}
 
+chat::error_code chat::application::setup() { return impl_->list.setup(impl_->listening_endpoint); }
+
 void chat::application::run_until_completion(bool with_signal_handlers)
 {
     // Launch the Redis connection
     impl_->st->redis().start_run();
 
     // Start listening for HTTP connections. This will run until the context is stopped
-    run_listener(impl_->ioc, impl_->listening_endpoint, impl_->st);
+    impl_->list.run_until_completion(impl_->st);
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
     if (with_signal_handlers)
