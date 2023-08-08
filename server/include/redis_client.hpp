@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "error.hpp"
+#include "redis_fwd.hpp"
 #include "serialization.hpp"
 
 namespace chat {
@@ -59,6 +60,8 @@ public:
         boost::span<const message> messages,
         boost::asio::yield_context yield
     );
+
+    boost::redis::connection& connection() noexcept;
 };
 
 }  // namespace chat

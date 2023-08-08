@@ -1,14 +1,18 @@
-// copyright
-#ifndef BOOST_MYSQL_
-#define BOOST_MYSQL_
+//
+// Copyright (c) 2023 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+
+#ifndef SERVERTECHCHAT_SERVER_TEST_INTEGRATION_CLIENT_HPP
+#define SERVERTECHCHAT_SERVER_TEST_INTEGRATION_CLIENT_HPP
 
 #include <boost/core/span.hpp>
 
 #include <memory>
-#include <optional>
 #include <string_view>
 #include <thread>
-#include <vector>
 
 #include "application.hpp"
 
@@ -36,20 +40,27 @@ private:
     std::unique_ptr<impl> impl_;
 };
 
-class server_runner
+class server_runner_base
 {
+protected:
     application app;
-    std::optional<std::thread> runner;
+    std::thread runner;
 
 public:
-    server_runner();
-    server_runner(const server_runner&) = delete;
-    server_runner(server_runner&&) = delete;
-    server_runner& operator=(const server_runner&) = delete;
-    server_runner& operator=(server_runner&&) = delete;
-    ~server_runner();
+    server_runner_base();
+    server_runner_base(const server_runner_base&) = delete;
+    server_runner_base(server_runner_base&&) = delete;
+    server_runner_base& operator=(const server_runner_base&) = delete;
+    server_runner_base& operator=(server_runner_base&&) = delete;
+    ~server_runner_base();
 
     websocket_client connect_websocket();
+};
+
+class server_runner : public server_runner_base
+{
+public:
+    server_runner();
 };
 
 }  // namespace test

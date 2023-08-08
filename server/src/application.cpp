@@ -11,6 +11,7 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/redis/connection.hpp>
 
 #include <memory>
 
@@ -76,4 +77,9 @@ void chat::application::stop()
 
     // Stop the io_context. This will cause run() to return
     impl_->ioc.stop();
+}
+
+boost::redis::connection& chat::application::redis_connection() noexcept
+{
+    return impl_->st->redis().connection();
 }

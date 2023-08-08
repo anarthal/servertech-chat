@@ -12,6 +12,7 @@
 #include <string>
 
 #include "error.hpp"
+#include "redis_fwd.hpp"
 
 namespace chat {
 
@@ -34,6 +35,9 @@ public:
     application& operator=(const application&) = delete;
     application& operator=(application&&) noexcept;
     ~application();
+
+    // Exposed for testing
+    boost::redis::connection& redis_connection() noexcept;
 
     [[nodiscard]] error_code setup();
 

@@ -115,3 +115,5 @@ chat::result<std::vector<std::string>> chat::redis_client::store_messages(
     // Parse the response
     return parse_string_list(res);
 }
+
+boost::redis::connection& chat::redis_client::connection() noexcept { return impl_->conn_; }
