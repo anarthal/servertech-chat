@@ -14,6 +14,7 @@ static const char* to_string(chat::errc v) noexcept
     switch (v)
     {
     case chat::errc::redis_parse_error: return "redis_parse_error";
+    case chat::errc::websocket_parse_error: return "websocket_parse_error";
     default: return "<unknown chat error>";
     }
 }

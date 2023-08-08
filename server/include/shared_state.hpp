@@ -64,7 +64,7 @@ public:
         }
     }
 
-    void remove_session(websocket_session& sess) { ct_.get<1>().erase(&sess); }
+    void remove_session(websocket_session& sess) noexcept { ct_.get<1>().erase(&sess); }
 
     // TODO: we could save a copy here
     auto get_sessions(const std::string& room) { return ct_.equal_range(room); }

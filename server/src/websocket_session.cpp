@@ -121,6 +121,15 @@ struct event_handler_visitor
     }
 };
 
+struct session_map_deleter
+{
+    chat::session_map& sessmap;
+
+    void operator()(chat::websocket_session* sess) const noexcept { sessmap.remove_session(*sess); }
+};
+
+using session_map_guard = std::unique_ptr<chat::websocket_session, session_map_deleter>;
+
 }  // namespace
 
 void chat::websocket_session::run(boost::asio::yield_context yield)
@@ -133,6 +142,7 @@ void chat::websocket_session::run(boost::asio::yield_context yield)
     // Add the session to the map. TODO: this can introduce race conditions in the client.
     // Make sure queue updates until the hello is sent
     state_->sessions().add_session(shared_from_this(), rooms);
+    session_map_guard guard{this, session_map_deleter{state_->sessions()}};
 
     // Retrieve room history
     auto history = state_->redis().get_room_history(rooms, yield);
