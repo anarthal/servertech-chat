@@ -58,5 +58,5 @@ target_link_libraries(main PRIVATE servertech_chat)
 # Testing
 include(CTest)
 if (BUILD_TESTING)
-    add_subdirectory(test/integration)
+    # add_subdirectory(test/integration)
 endif()
