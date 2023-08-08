@@ -17,7 +17,6 @@ jobs:
   deploy:
     name: Build and deploy
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
       - name: Log in to the Container registry
@@ -50,9 +49,9 @@ jobs:
       
       - name: Run integration tests
         run: |
-          pip install -r server/test/integration-python/requirements.txt
+          pip install -r server/test/integration/requirements.txt
           docker compose up -d
-          python server/test/integration-python/main.py
+          pytest
           docker compose down
         
       - name: Push Docker image
