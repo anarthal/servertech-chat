@@ -4,10 +4,7 @@ permissions:
   id-token: write # Required to login to AWS
   contents: read  # Required for actions/checkout
 
-on:
-  push:
-    branches:
-      - master
+on: push
 
 env:
   AWS_REGION: eu-north-1
@@ -42,7 +39,24 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v3
 
-      - name: Build and push Docker image
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          load: true
+          tags: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}, ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Run integration tests
+        run: |
+          pip install -r server/test/integration-python/requirements.txt
+          docker compose up -d
+          python server/test/integration-python/main.py
+          docker compose down
+        
+      - name: Push Docker image
+        if: github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -52,6 +66,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Fill in the new image ID in the Amazon ECS task definition
+        if: github.ref == 'refs/heads/master'
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
@@ -60,6 +75,7 @@ jobs:
           image: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}
 
       - name: Deploy Amazon ECS task definition
+        if: github.ref == 'refs/heads/master'
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
