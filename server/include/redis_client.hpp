@@ -60,8 +60,6 @@ public:
         boost::span<const message> messages,
         boost::asio::yield_context yield
     );
-
-    boost::redis::connection& connection() noexcept;
 };
 
 }  // namespace chat

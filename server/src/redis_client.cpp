@@ -40,7 +40,7 @@ chat::redis_client::~redis_client() {}
 void chat::redis_client::start_run()
 {
     const char* host_c_str = std::getenv("REDIS_HOST");
-    std::string host = host_c_str ? host_c_str : "redis";
+    std::string host = host_c_str ? host_c_str : "localhost";
 
     boost::redis::config cfg;
     cfg.addr.host = std::move(host);
@@ -115,5 +115,3 @@ chat::result<std::vector<std::string>> chat::redis_client::store_messages(
     // Parse the response
     return parse_string_list(res);
 }
-
-boost::redis::connection& chat::redis_client::connection() noexcept { return impl_->conn_; }

@@ -36,9 +36,6 @@ public:
     application& operator=(application&&) noexcept;
     ~application();
 
-    // Exposed for testing
-    boost::redis::connection& redis_connection() noexcept;
-
     [[nodiscard]] error_code setup();
 
     // Launches the application and runs until explicitly stopped by stop().

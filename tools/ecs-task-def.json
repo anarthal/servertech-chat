@@ -16,6 +16,12 @@
             "links": [
                 "redis:redis"
             ],
+            "environment": [
+                {
+                    "name": "REDIS_HOST",
+                    "value": "redis"
+                }
+            ],
             "portMappings": [
                 {
                     "containerPort": 80,

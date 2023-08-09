@@ -78,8 +78,3 @@ void chat::application::stop()
     // Stop the io_context. This will cause run() to return
     impl_->ioc.stop();
 }
-
-boost::redis::connection& chat::application::redis_connection() noexcept
-{
-    return impl_->st->redis().connection();
-}
