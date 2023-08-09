@@ -1,53 +1,25 @@
-#!/usr/bin/env python
-
 import json
 from websockets.sync.client import connect
-import pytest
-import redis
 from contextlib import contextmanager
-from .models import HelloEvent, HelloEventPayload, Room, MessageWithoutId, ReceivedMessagesEvent, SentMessagesEvent, SentMessagesEventPayload, User
-
-@pytest.fixture(scope="session", autouse=True)
-def prepare_db(request):
-    redis.Redis().client().flushdb()
+from .models import HelloEvent, MessageWithoutId, ReceivedMessagesEvent, SentMessagesEvent, SentMessagesEventPayload, User
 
 
 def test_hello():
     with connect("ws://localhost:8080") as websocket:
         message = HelloEvent.model_validate_json(websocket.recv(timeout=3))
-        expected = HelloEvent(
-            type="hello",
-            payload=HelloEventPayload(
-                rooms=[
-                    Room(
-                        id="beast",
-                        name="Boost.Beast",
-                        messages=[],
-                        hasMoreMessages=False
-                    ),
-                    Room(
-                        id="async",
-                        name="Boost.Async",
-                        messages=[],
-                        hasMoreMessages=False
-                    ),
-                    Room(
-                        id="db",
-                        name="Database connectors",
-                        messages=[],
-                        hasMoreMessages=False
-                    ),
-                    Room(
-                        id="wasm",
-                        name="Web assembly",
-                        messages=[],
-                        hasMoreMessages=False
-                    ),
-                ]
-            )
-        )
 
-        assert message.model_dump_json() == expected.model_dump_json()
+        # We know which rooms we have, but not the messages they've got
+        expected_rooms = [
+            ("beast", "Boost.Beast"),
+            ("async", "Boost.Async"),
+            ("db", "Database connectors"),
+            ("wasm", "Web assembly"),
+        ]
+
+        for actual, (expected_id, expected_name) in zip(message.payload.rooms, expected_rooms):
+            assert actual.id == expected_id
+            assert actual.name == expected_name
+
 
 # Clean up any received message before closing the socket.
 # There seems to be a race condition that hangs close if we don't do this.
