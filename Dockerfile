@@ -29,7 +29,7 @@ RUN \
 
 # Boost.Redis
 WORKDIR /boost-src/boost_1_82_0
-RUN REDIS_COMMIT=7d162597496becdca3c72820b3c40c84a85debf9 && \
+RUN REDIS_COMMIT=f506e1baee4941bff1f8e2f3aa7e1b9cf08cb199 && \
     git clone --depth 1 https://github.com/boostorg/redis.git libs/redis && \
     cd libs/redis && \
     git fetch origin $REDIS_COMMIT && \
