@@ -68,9 +68,9 @@ COPY client ./
 RUN npm run build
 
 
-# Runtime image
+# Runtime image. curl is required for health checks
 FROM alpine:3.18.2
-RUN apk add openssl libstdc++
+RUN apk add openssl libstdc++ curl
 COPY --from=server-builder /boost/lib /boost/lib
 COPY --from=server-builder /app/__build/main /app/
 COPY --from=client-builder /app/out/ /app/static/

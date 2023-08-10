@@ -7,7 +7,13 @@
         {
             "name": "redis",
             "image": "redis:alpine",
-            "essential": true
+            "essential": true,
+            "healthCheck": {
+                "command": [
+                    "CMD-SHELL",
+                    "redis-cli ping"
+                ]
+            }
         },
         {
             "name": "cppserver",
@@ -28,7 +34,13 @@
                     "hostPort": 80,
                     "protocol": "tcp"
                 }
-            ]
+            ],
+            "healthCheck": {
+                "command": [
+                    "CMD-SHELL",
+                    "curl -f http://localhost/"
+                ]
+            }
         }
     ],
     "volumes": [],
