@@ -32,5 +32,5 @@ The server uses the following Boost libraries:
 
 ## Want to contribute?
 
-Drop us a message in [the cpplang Slack](https://cpplang.slack.com/archives/CD7BDP8AX).
+Drop us a message in [the cpplang Slack](https://cpplang.slack.com/archives/C05MLSQGA01).
 Contributors are more than welcome!
