@@ -31,7 +31,7 @@ class session_map
 {
     struct room_session
     {
-        std::string room_name;
+        std::string room_id;
         std::shared_ptr<websocket_session> session;
 
         const websocket_session* session_ptr() const noexcept { return session.get(); }
@@ -42,7 +42,7 @@ class session_map
         room_session,
         boost::multi_index::indexed_by<
             boost::multi_index::ordered_non_unique<
-                boost::multi_index::member<room_session, std::string, &room_session::room_name>
+                boost::multi_index::member<room_session, std::string, &room_session::room_id>
             >,
             boost::multi_index::ordered_non_unique<
                 boost::multi_index::const_mem_fun<room_session, const websocket_session*, &room_session::session_ptr>
