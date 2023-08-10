@@ -5,6 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <boost/async/main.hpp>
+
 #include <cstdlib>
 #include <iostream>
 
@@ -12,8 +14,9 @@
 #include "error.hpp"
 
 using namespace chat;
+namespace async = boost::async;
 
-int main(int argc, char* argv[])
+async::main co_main(int argc, char* argv[])
 {
     // Check command line arguments.
     if (argc != 4)
@@ -21,7 +24,7 @@ int main(int argc, char* argv[])
         std::cerr << "Usage: " << argv[0] << " <address> <port> <doc_root>\n"
                   << "Example:\n"
                   << "    " << argv[0] << " 0.0.0.0 8080 .\n";
-        return EXIT_FAILURE;
+        co_return EXIT_FAILURE;
     }
 
     // Construct a config object
@@ -31,20 +34,14 @@ int main(int argc, char* argv[])
         static_cast<unsigned short>(std::atoi(argv[2])),  // port
     };
 
-    // Construct an application object
-    chat::application app(std::move(config));
-
-    // Bind the app to the port and launch tasks
-    auto ec = app.setup();
+    // Run the application until completion
+    auto ec = co_await chat::run_application(config);
     if (ec)
     {
         log_error(ec, "Error setting up the application");
-        exit(EXIT_FAILURE);
+        co_return EXIT_FAILURE;
     }
 
-    // Run the application until stopped by a signal
-    app.run_until_completion(true);
-
     // (If we get here, it means we got a SIGINT or SIGTERM)
-    return EXIT_SUCCESS;
+    co_return EXIT_SUCCESS;
 }

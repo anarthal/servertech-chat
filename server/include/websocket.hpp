@@ -9,7 +9,6 @@
 #define SERVERTECHCHAT_SERVER_INCLUDE_WEBSOCKET_HPP
 
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/spawn.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/string_body.hpp>
@@ -18,6 +17,7 @@
 #include <string_view>
 
 #include "error.hpp"
+#include "promise.hpp"
 
 namespace chat {
 
@@ -28,7 +28,7 @@ class websocket
     struct impl;
     std::unique_ptr<impl> impl_;
 
-    error_code write_locked_impl(std::string_view buff, boost::asio::yield_context yield);
+    promise<error_code> write_locked_impl(std::string_view buff);
     void lock_writes_impl() noexcept;
     void unlock_writes_impl() noexcept;
 
@@ -46,16 +46,13 @@ public:
     ~websocket();
 
     // Accepting connections
-    error_code accept(
-        boost::beast::http::request<boost::beast::http::string_body> upgrade_request,
-        boost::asio::yield_context yield
-    );
+    promise<error_code> accept(boost::beast::http::request<boost::beast::http::string_body> upgrade_request);
 
-    // Reading. Only a single concurrent read is allowed
-    result<std::string_view> read(boost::asio::yield_context yield);
+    // Reading. Only a single concurrent read is allowed. The result is valid until the next read
+    promise<result<std::string_view>> read();
 
     // Writing. Multiple concurrent writes are supported.
-    error_code write(std::string_view buff, boost::asio::yield_context yield);
+    promise<error_code> write(std::string_view buff);
 
     // Locks writes until the received guard is destroyed. Other coroutines
     // calling write will be suspended until the guard is released.
@@ -67,14 +64,10 @@ public:
     }
 
     // Writes bypassing the write lock. lock_writes() must have been called before calling this function
-    error_code write_locked(
-        std::string_view buff,
-        [[maybe_unused]] write_guard& guard,
-        boost::asio::yield_context yield
-    )
+    promise<error_code> write_locked(std::string_view buff, [[maybe_unused]] write_guard& guard)
     {
         assert(guard.get() != nullptr);
-        return write_locked_impl(buff, yield);
+        co_return co_await write_locked_impl(buff);
     }
 };
 

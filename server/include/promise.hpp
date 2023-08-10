@@ -5,15 +5,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_REDIS_FWD_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_REDIS_FWD_HPP
+#ifndef SERVERTECHCHAT_SERVER_INCLUDE_PROMISE_HPP
+#define SERVERTECHCHAT_SERVER_INCLUDE_PROMISE_HPP
 
-namespace boost {
-namespace redis {
+#include <boost/async/promise.hpp>
 
-class connection;
+namespace chat {
 
-}  // namespace redis
-}  // namespace boost
+template <class T>
+using promise = boost::async::promise<T>;
+
+}  // namespace chat
 
 #endif

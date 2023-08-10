@@ -8,15 +8,13 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_REDIS_CLIENT_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_REDIS_CLIENT_HPP
 
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/spawn.hpp>
 #include <boost/core/span.hpp>
 
 #include <string_view>
 #include <vector>
 
 #include "error.hpp"
-#include "redis_fwd.hpp"
+#include "promise.hpp"
 #include "serialization.hpp"
 
 namespace chat {
@@ -34,7 +32,7 @@ public:
     redis_client& operator=(redis_client&&) noexcept;
     ~redis_client();
 
-    void start_run();
+    promise<void> run();
     void cancel();
 
     // The maximum number of messages for a room that get retrieved in a single go
@@ -42,23 +40,19 @@ public:
 
     // Retrieves a full batch of room history for several rooms
     // TODO: we could just retrieve the 1st message for all except the 1st room
-    result<std::vector<std::vector<message>>> get_room_history(
-        boost::span<const room> rooms,
-        boost::asio::yield_context yield
-    );
+    using multiroom_history_t = std::vector<std::vector<message>>;
+    promise<result<multiroom_history_t>> get_room_history(boost::span<const room> rooms);
 
     // Retrieves a batch of room history for a certain room, starting on a given message ID
-    result<std::vector<message>> get_room_history(
+    promise<result<std::vector<message>>> get_room_history(
         std::string_view room_id,
-        std::string_view last_message_id,
-        boost::asio::yield_context yield
+        std::string_view last_message_id
     );
 
     // Returns a list with IDs for the newly inserted messages
-    result<std::vector<std::string>> store_messages(
+    promise<result<std::vector<std::string>>> store_messages(
         std::string_view room_id,
-        boost::span<const message> messages,
-        boost::asio::yield_context yield
+        boost::span<const message> messages
     );
 };
 

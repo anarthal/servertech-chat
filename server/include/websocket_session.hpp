@@ -8,8 +8,6 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_WEBSOCKET_SESSION_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_WEBSOCKET_SESSION_HPP
 
-#include <boost/asio/spawn.hpp>
-
 #include <memory>
 #include <string>
 
@@ -29,7 +27,7 @@ class websocket_session : public std::enable_shared_from_this<websocket_session>
 public:
     websocket_session(websocket socket, std::shared_ptr<shared_state> state);
 
-    void run(boost::asio::yield_context yield);
+    promise<void> run();
 
     websocket& get_websocket() noexcept { return ws_; }
 };

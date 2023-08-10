@@ -8,27 +8,22 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_LISTENER_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_LISTENER_HPP
 
-#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
 #include <memory>
 
 #include "error.hpp"
+#include "promise.hpp"
 
 namespace chat {
 
 // Forward declaration
 class shared_state;
 
-class listener
-{
-    boost::asio::ip::tcp::acceptor acceptor_;
-
-public:
-    listener(boost::asio::any_io_executor ex);
-    error_code setup(boost::asio::ip::tcp::endpoint listening_endpoint);
-    void run_until_completion(std::shared_ptr<shared_state> state);
-};
+promise<error_code> run_listener(
+    boost::asio::ip::tcp::endpoint listening_endpoint,
+    std::shared_ptr<shared_state> state
+);
 
 }  // namespace chat
 

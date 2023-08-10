@@ -20,14 +20,17 @@
 #include <boost/beast/version.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
 #include <boost/config.hpp>
+#include <boost/core/ignore_unused.hpp>
 
 #include <filesystem>
 
 #include "error.hpp"
+#include "use_nothrow_op.hpp"
 #include "websocket_session.hpp"
 
 namespace beast = boost::beast;
 namespace http = boost::beast::http;
+using namespace chat;
 
 // Return a reasonable mime type based on the extension of a file.
 static beast::string_view mime_type(beast::string_view path)
@@ -207,13 +210,11 @@ static boost::beast::http::message_generator handle_request(
     return res;
 }
 
-void chat::run_http_session(
+promise<void> chat::run_http_session(
     boost::asio::ip::tcp::socket&& socket,
-    std::shared_ptr<shared_state> state,
-    boost::asio::yield_context yield
+    std::shared_ptr<shared_state> state
 )
 {
-    error_code ec;
     boost::beast::flat_buffer buff;
     boost::beast::tcp_stream stream_(std::move(socket));
 
@@ -230,16 +231,17 @@ void chat::run_http_session(
         stream_.expires_after(std::chrono::seconds(30));
 
         // Read a request
-        http::async_read(stream_, buff, parser.get(), yield[ec]);
+        auto [ec, size] = co_await http::async_read(stream_, buff, parser.get(), use_nothrow_op);
+        boost::ignore_unused(size);
 
         // This means they closed the connection
         if (ec == http::error::end_of_stream)
         {
             stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
-            return;
+            co_return;
         }
         else if (ec)
-            return log_error(ec, "read");
+            co_return log_error(ec, "read");
 
         // See if it is a WebSocket Upgrade
         if (boost::beast::websocket::is_upgrade(parser.get()))
@@ -249,14 +251,14 @@ void chat::run_http_session(
             websocket ws(stream_.release_socket(), std::move(buff));
 
             // Perform the session handshake
-            ec = ws.accept(parser.release(), yield);
+            ec = co_await ws.accept(parser.release());
             if (ec)
-                return log_error(ec, "websocket accept");
+                co_return log_error(ec, "websocket accept");
 
             // Create a session object and run it
             auto websocket_sess = std::make_shared<websocket_session>(std::move(ws), state);
-            websocket_sess->run(yield);
-            return;
+            co_await websocket_sess->run();
+            co_return;
         }
 
         // Handle request
@@ -266,16 +268,16 @@ void chat::run_http_session(
         bool keep_alive = msg.keep_alive();
 
         // Send the response
-        beast::async_write(stream_, std::move(msg), yield[ec]);
+        std::tie(ec, size) = co_await beast::async_write(stream_, std::move(msg), use_nothrow_op);
         if (ec)
-            return log_error(ec, "write");
+            co_return log_error(ec, "write");
 
         if (!keep_alive)
         {
             // This means we should close the connection, usually because
             // the response indicated the "Connection: close" semantic.
             stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
-            return;
+            co_return;
         }
     }
 }

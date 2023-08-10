@@ -8,20 +8,15 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_HTTP_SESSION_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_HTTP_SESSION_HPP
 
-#include <boost/asio/spawn.hpp>
-
 #include <cstddef>
 #include <memory>
 
+#include "promise.hpp"
 #include "shared_state.hpp"
 
 namespace chat {
 
-void run_http_session(
-    boost::asio::ip::tcp::socket&& socket,
-    std::shared_ptr<shared_state> state,
-    boost::asio::yield_context yield
-);
+promise<void> run_http_session(boost::asio::ip::tcp::socket&& socket, std::shared_ptr<shared_state> state);
 
 }  // namespace chat
 

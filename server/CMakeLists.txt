@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(servertech_chat)
 
-find_package(Boost REQUIRED COMPONENTS headers context json)
+find_package(Boost REQUIRED COMPONENTS headers json async)
 find_package(OpenSSL REQUIRED)
 
 # This library is consumed by the actual server and the tests
@@ -33,8 +33,8 @@ target_link_libraries(
     servertech_chat
     PUBLIC
     Boost::headers
-    Boost::context
     Boost::json
+    Boost::async
     OpenSSL::Crypto
     OpenSSL::SSL
 )

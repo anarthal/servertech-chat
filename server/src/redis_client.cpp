@@ -7,8 +7,9 @@
 
 #include "redis_client.hpp"
 
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/detached.hpp>
+#include <boost/asio/as_tuple.hpp>
+#include <boost/async/op.hpp>
+#include <boost/core/ignore_unused.hpp>
 #include <boost/redis/connection.hpp>
 #include <boost/redis/response.hpp>
 
@@ -17,6 +18,9 @@
 
 #include "error.hpp"
 #include "serialization.hpp"
+#include "use_nothrow_op.hpp"
+
+using namespace chat;
 
 struct chat::redis_client::impl
 {
@@ -37,7 +41,7 @@ chat::redis_client& chat::redis_client::operator=(redis_client&& rhs) noexcept
 
 chat::redis_client::~redis_client() {}
 
-void chat::redis_client::start_run()
+promise<void> chat::redis_client::run()
 {
     const char* host_c_str = std::getenv("REDIS_HOST");
     std::string host = host_c_str ? host_c_str : "localhost";
@@ -45,14 +49,13 @@ void chat::redis_client::start_run()
     boost::redis::config cfg;
     cfg.addr.host = std::move(host);
     cfg.health_check_interval = std::chrono::seconds::zero();
-    impl_->conn_.async_run(cfg, {}, boost::asio::detached);
+    co_await impl_->conn_.async_run(cfg, {}, boost::async::use_op);
 }
 
 void chat::redis_client::cancel() { impl_->conn_.cancel(); }
 
-chat::result<std::vector<std::vector<chat::message>>> chat::redis_client::get_room_history(
-    boost::span<const room> rooms,
-    boost::asio::yield_context yield
+promise<result<redis_client::multiroom_history_t>> chat::redis_client::get_room_history(
+    boost::span<const room> rooms
 )
 {
     assert(!rooms.empty());
@@ -63,20 +66,19 @@ chat::result<std::vector<std::vector<chat::message>>> chat::redis_client::get_ro
         req.push("XREVRANGE", room.id, "+", "-", "COUNT", message_batch_size);
 
     boost::redis::generic_response res;
-    chat::error_code ec;
 
-    impl_->conn_.async_exec(req, res, yield[ec]);
+    auto [ec, ign] = co_await impl_->conn_.async_exec(req, res, use_nothrow_op);
+    boost::ignore_unused(ign);
 
     if (ec)
-        return ec;
+        co_return ec;
 
-    return chat::parse_room_history_batch(res);
+    co_return chat::parse_room_history_batch(res);
 }
 
-chat::result<std::vector<chat::message>> chat::redis_client::get_room_history(
+promise<result<std::vector<message>>> chat::redis_client::get_room_history(
     std::string_view room_id,
-    std::string_view last_message_id,
-    boost::asio::yield_context yield
+    std::string_view last_message_id
 )
 {
     // Compose the request. TODO: this yields a repeated message
@@ -85,19 +87,18 @@ chat::result<std::vector<chat::message>> chat::redis_client::get_room_history(
 
     // Execute it
     boost::redis::generic_response res;
-    chat::error_code ec;
-    impl_->conn_.async_exec(req, res, yield[ec]);
+    auto [ec, ign] = co_await impl_->conn_.async_exec(req, res, use_nothrow_op);
+    boost::ignore_unused(ign);
     if (ec)
-        return ec;
+        co_return ec;
 
     // Parse it
-    return chat::parse_room_history(res);
+    co_return chat::parse_room_history(res);
 }
 
-chat::result<std::vector<std::string>> chat::redis_client::store_messages(
+promise<result<std::vector<std::string>>> chat::redis_client::store_messages(
     std::string_view room_id,
-    boost::span<const message> messages,
-    boost::asio::yield_context yield
+    boost::span<const message> messages
 )
 {
     // Compose the request
@@ -107,11 +108,11 @@ chat::result<std::vector<std::string>> chat::redis_client::store_messages(
 
     // Execute it
     boost::redis::generic_response res;
-    error_code ec;
-    impl_->conn_.async_exec(req, res, yield[ec]);
+    auto [ec, ign] = co_await impl_->conn_.async_exec(req, res, use_nothrow_op);
+    boost::ignore_unused(ign);
     if (ec)
-        return ec;
+        co_return ec;
 
     // Parse the response
-    return parse_string_list(res);
+    co_return parse_string_list(res);
 }

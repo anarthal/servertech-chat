@@ -12,7 +12,7 @@
 #include <string>
 
 #include "error.hpp"
-#include "redis_fwd.hpp"
+#include "promise.hpp"
 
 namespace chat {
 
@@ -23,27 +23,7 @@ struct application_config
     unsigned short port;
 };
 
-class application
-{
-    struct impl;
-    std::unique_ptr<impl> impl_;
-
-public:
-    application(application_config config);
-    application(const application&) = delete;
-    application(application&&) noexcept;
-    application& operator=(const application&) = delete;
-    application& operator=(application&&) noexcept;
-    ~application();
-
-    [[nodiscard]] error_code setup();
-
-    // Launches the application and runs until explicitly stopped by stop().
-    // If with_signal_handlers, registers signal handlers that call stop()
-    void run_until_completion(bool with_signal_handlers);
-
-    void stop();
-};
+promise<error_code> run_application(const application_config& cfg);
 
 }  // namespace chat
 
