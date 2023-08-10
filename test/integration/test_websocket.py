@@ -123,6 +123,10 @@ def test_new_messages_appear_in_history():
         ws1.send(msg_1.model_dump_json())
         ws1.send(msg_2.model_dump_json())
 
+        # Receive the sent messages. This guarantees that the server has received and processed them
+        ReceivedMessagesEvent.model_validate_json(ws1.recv())
+        ReceivedMessagesEvent.model_validate_json(ws1.recv())
+
         # Connect another websocket and read the hello
         with connect_websocket() as ws2:
             hello_2 = HelloEvent.model_validate_json(ws2.recv(timeout=1))

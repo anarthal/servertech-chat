@@ -136,11 +136,13 @@ void chat::websocket_session::run(boost::asio::yield_context yield)
 {
     error_code ec;
 
+    // Lock writes in the websocket. This ensures that no message is written before the hello.
+    auto write_guard = ws_.lock_writes();
+
     // Get the rooms the user is in
     auto rooms = get_rooms();
 
-    // Add the session to the map. TODO: this can introduce race conditions in the client.
-    // Make sure queue updates until the hello is sent
+    // Add the session to the map
     state_->sessions().add_session(shared_from_this(), rooms);
     session_map_guard guard{this, session_map_deleter{state_->sessions()}};
 
@@ -153,9 +155,12 @@ void chat::websocket_session::run(boost::asio::yield_context yield)
     for (std::size_t i = 0; i < rooms.size(); ++i)
         rooms[i].messages = std::move(history.value()[i]);
     auto hello = serialize_hello_event(hello_event{std::move(rooms)});
-    ec = ws_.unguarded_write(hello, yield);
+    ec = ws_.write_locked(hello, write_guard, yield);
     if (ec)
         return fail(ec, "Sending hello event");
+
+    // Once the hello is sent, we can start sending message through the websocket
+    write_guard.reset();
 
     // Read subsequent messages from the websocket and dispatch them
     while (true)

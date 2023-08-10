@@ -16,18 +16,18 @@
 #include <memory>
 #include <string_view>
 
+#include "async_mutex.hpp"
 #include "error.hpp"
 
 struct chat::websocket::impl
 {
     boost::beast::websocket::stream<boost::beast::tcp_stream> ws;
     boost::beast::flat_buffer read_buffer;
-    std::deque<boost::asio::experimental::channel<void(error_code)>*> pending_requests;
+    async_mutex write_mtx_;
     bool reading{false};
-    bool writing{false};
 
     impl(boost::asio::ip::tcp::socket&& sock, boost::beast::flat_buffer&& buff)
-        : ws(std::move(sock)), read_buffer(std::move(buff))
+        : ws(std::move(sock)), read_buffer(std::move(buff)), write_mtx_(ws.get_executor())
     {
     }
 
@@ -36,21 +36,10 @@ struct chat::websocket::impl
         void operator()(impl* self) const noexcept { self->reading = false; }
     };
     using read_guard = std::unique_ptr<impl, read_guard_deleter>;
-    read_guard mark_as_reading() noexcept
+    read_guard lock_reads() noexcept
     {
         reading = true;
         return read_guard(this);
-    }
-
-    struct write_guard_deleter
-    {
-        void operator()(impl* self) const noexcept { self->writing = false; }
-    };
-    using write_guard = std::unique_ptr<impl, write_guard_deleter>;
-    write_guard mark_as_writing() noexcept
-    {
-        writing = true;
-        return write_guard(this);
     }
 };
 
@@ -109,7 +98,7 @@ chat::result<std::string_view> chat::websocket::read(boost::asio::yield_context 
     error_code ec;
 
     {
-        auto guard = impl_->mark_as_reading();
+        auto guard = impl_->lock_reads();
         impl_->read_buffer.clear();
         impl_->ws.async_read(impl_->read_buffer, yield[ec]);
     }
@@ -121,43 +110,31 @@ chat::result<std::string_view> chat::websocket::read(boost::asio::yield_context 
     return res;
 }
 
-chat::error_code chat::websocket::unguarded_write(std::string_view buff, boost::asio::yield_context yield)
+chat::error_code chat::websocket::write_locked_impl(std::string_view buff, boost::asio::yield_context yield)
 {
-    assert(!impl_->writing);
+    assert(impl_->write_mtx_.locked());
 
     error_code ec;
 
-    {
-        auto guard = impl_->mark_as_writing();
-        impl_->ws.async_write(boost::asio::buffer(buff), yield[ec]);
-        std::cout << "(WRITE) " << buff << std::endl;
-    }
-
-    if (!impl_->pending_requests.empty())
-    {
-        bool ok = impl_->pending_requests.front()->try_send(error_code());
-        assert(ok);
-        impl_->pending_requests.pop_front();
-    }
+    impl_->ws.async_write(boost::asio::buffer(buff), yield[ec]);
+    std::cout << "(WRITE) " << buff << std::endl;
 
     return ec;
 }
 
 chat::error_code chat::websocket::write(std::string_view message, boost::asio::yield_context yield)
 {
-    if (!impl_->writing)
-    {
-        return unguarded_write(message, yield);
-    }
-    else
-    {
-        boost::asio::experimental::channel<void(error_code)> chan{impl_->ws.get_executor(), 1};
-        impl_->pending_requests.push_back(&chan);
+    // Wait for the connection to become iddle
+    auto guard = impl_->write_mtx_.lock_with_guard(yield);
 
-        error_code ec;
-        chan.async_receive(yield[ec]);
-        assert(!ec);
-
-        return unguarded_write(message, yield);
-    }
+    // Write
+    return write_locked_impl(message, yield);
 }
+
+void chat::websocket::lock_writes_impl() noexcept
+{
+    [[maybe_unused]] bool ok = impl_->write_mtx_.try_lock();
+    assert(ok);
+}
+
+void chat::websocket::unlock_writes_impl() noexcept { impl_->write_mtx_.unlock(); }
