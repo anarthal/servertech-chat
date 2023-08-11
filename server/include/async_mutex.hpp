@@ -60,9 +60,10 @@ public:
     // Try to acquire without suspending
     bool try_lock() noexcept
     {
-        if (!locked_)
-            locked_ = true;
-        return locked_;
+        if (locked_)
+            return false;
+        locked_ = true;
+        return true;
     }
 
     // Unlock. Needs to be locked

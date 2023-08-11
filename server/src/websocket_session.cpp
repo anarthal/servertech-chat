@@ -21,9 +21,10 @@
 #include <string_view>
 #include <type_traits>
 
+#include "api_serialization.hpp"
 #include "error.hpp"
 #include "redis_client.hpp"
-#include "serialization.hpp"
+#include "session_map.hpp"
 #include "shared_state.hpp"
 #include "websocket.hpp"
 

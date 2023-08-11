@@ -41,9 +41,15 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v4
         with:
-          context: .
           load: true
           tags: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}, ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Run server unit tests
+        uses: docker/build-push-action@v4
+        with:
+          target: server-tests
           cache-from: type=gha
           cache-to: type=gha,mode=max
       

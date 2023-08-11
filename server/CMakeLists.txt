@@ -18,14 +18,15 @@ add_library(
     src/boost_asio.cpp
     src/boost_beast.cpp
     src/boost_redis.cpp
-    src/http_session.cpp
     src/listener.cpp
-    src/shared_state.cpp
+    src/http_session.cpp
+    src/websocket.cpp
     src/websocket_session.cpp
-    src/serialization.cpp
+    src/shared_state.cpp
+    src/redis_serialization.cpp
+    src/api_serialization.cpp
     src/error.cpp
     src/redis_client.cpp
-    src/websocket.cpp
     src/application.cpp
 )
 target_include_directories(servertech_chat PUBLIC include)
@@ -58,5 +59,5 @@ target_link_libraries(main PRIVATE servertech_chat)
 # Testing
 include(CTest)
 if (BUILD_TESTING)
-    # add_subdirectory(test/integration)
+    add_subdirectory(test)
 endif()

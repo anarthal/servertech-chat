@@ -16,7 +16,7 @@
 #include <utility>
 
 #include "error.hpp"
-#include "serialization.hpp"
+#include "redis_serialization.hpp"
 
 struct chat::redis_client::impl
 {

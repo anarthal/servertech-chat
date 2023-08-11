@@ -8,7 +8,7 @@
 #
 # Build the server
 #
-FROM alpine:3.18.2 AS server-builder
+FROM alpine:3.18.2 AS server-builder-base
 
 # Packages
 RUN apk update && \
@@ -38,13 +38,28 @@ RUN REDIS_COMMIT=f506e1baee4941bff1f8e2f3aa7e1b9cf08cb199 && \
 # Build
 RUN \
     ./bootstrap.sh && \
-    ./b2 --with-json --with-context -d0 --prefix=/boost install
+    ./b2 --with-json --with-context --with-test -d0 --prefix=/boost install
 
-# The actual server
+# Copy the server files
 WORKDIR /app
 COPY server/ ./
+
+#
+# Build the server tests. This is an optional step
+#
+FROM server-builder-base AS server-tests
 WORKDIR /app/__build
-RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Release .. && \
+RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON .. && \
+    cmake --build . --parallel 8
+RUN ctest --output-on-failure
+
+
+#
+# Build the actual server
+#
+FROM server-builder-base AS server-builder
+WORKDIR /app/__build
+RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF .. && \
     cmake --build . --parallel 8
 
 #
@@ -71,7 +86,11 @@ RUN npm run build
 # Runtime image. curl is required for health checks
 FROM alpine:3.18.2
 RUN apk add openssl libstdc++ curl
-COPY --from=server-builder /boost/lib /boost/lib
+COPY --from=server-builder \
+    /boost/lib/libboost_container.so* \
+    /boost/lib/libboost_context.so* \
+    /boost/lib/libboost_json.so* \
+    /boost/lib/
 COPY --from=server-builder /app/__build/main /app/
 COPY --from=client-builder /app/out/ /app/static/
 

@@ -15,9 +15,9 @@
 #include <string_view>
 #include <vector>
 
+#include "business.hpp"
 #include "error.hpp"
 #include "redis_fwd.hpp"
-#include "serialization.hpp"
 
 namespace chat {
 
