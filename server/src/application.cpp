@@ -10,9 +10,13 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/async/with.hpp>
+#include <boost/system/errc.hpp>
+
+#include <coroutine>
 
 #include "error.hpp"
 #include "listener.hpp"
+#include "promise.hpp"
 #include "redis_client.hpp"
 #include "shared_state.hpp"
 
@@ -20,16 +24,31 @@ using namespace chat;
 
 namespace {
 
-struct redis_deleter
+class redis_runner
 {
-    void operator()(redis_client* cli) const noexcept { cli->cancel(); }
+    std::shared_ptr<shared_state> st_;
+    promise<error_code> runner_promise_;
+
+public:
+    redis_runner(std::shared_ptr<shared_state> st) : st_(std::move(st)), runner_promise_(st_->redis().run())
+    {
+    }
+
+    promise<void> await_exit(std::exception_ptr)
+    {
+        st_->redis().cancel();
+        auto ec = co_await runner_promise_;
+        if (ec && ec != boost::system::errc::operation_canceled)
+            log_error(ec, "Running Redis client");
+    }
 };
-using redis_guard = std::unique_ptr<redis_client, redis_deleter>;
 
 }  // namespace
 
 promise<error_code> chat::run_application(const application_config& config)
 {
+    error_code ec;
+
     // Create objects
     boost::asio::ip::tcp::endpoint listening_endpoint{boost::asio::ip::make_address(config.ip), config.port};
     auto st = std::make_shared<shared_state>(
@@ -38,9 +57,10 @@ promise<error_code> chat::run_application(const application_config& config)
     );
 
     // Launch a Redis client in the background. Cancel it on exit
-    +st->redis().run();
-    redis_guard guard{&st->redis()};
+    co_await boost::async::with(redis_runner(st), [&](redis_runner&) -> promise<void> {
+        // Run the listening loop
+        ec = co_await run_listener(listening_endpoint, st);
+    });
 
-    // Run the listening loop
-    co_return co_await run_listener(listening_endpoint, st);
+    co_return ec;
 }

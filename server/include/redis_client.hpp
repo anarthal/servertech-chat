@@ -32,7 +32,7 @@ public:
     redis_client& operator=(redis_client&&) noexcept;
     ~redis_client();
 
-    promise<void> run();
+    promise<error_code> run();
     void cancel();
 
     // The maximum number of messages for a room that get retrieved in a single go

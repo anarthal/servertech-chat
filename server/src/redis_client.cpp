@@ -41,7 +41,7 @@ chat::redis_client& chat::redis_client::operator=(redis_client&& rhs) noexcept
 
 chat::redis_client::~redis_client() {}
 
-promise<void> chat::redis_client::run()
+promise<error_code> chat::redis_client::run()
 {
     const char* host_c_str = std::getenv("REDIS_HOST");
     std::string host = host_c_str ? host_c_str : "localhost";
@@ -49,7 +49,8 @@ promise<void> chat::redis_client::run()
     boost::redis::config cfg;
     cfg.addr.host = std::move(host);
     cfg.health_check_interval = std::chrono::seconds::zero();
-    co_await impl_->conn_.async_run(cfg, {}, boost::async::use_op);
+    auto [ec] = co_await impl_->conn_.async_run(cfg, {}, use_nothrow_op);
+    co_return ec;
 }
 
 void chat::redis_client::cancel() { impl_->conn_.cancel(); }
