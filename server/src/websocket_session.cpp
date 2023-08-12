@@ -8,6 +8,7 @@
 #include "websocket_session.hpp"
 
 #include <boost/asio/buffer.hpp>
+#include <boost/async/with.hpp>
 #include <boost/beast/core/buffers_to_string.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/websocket/error.hpp>
@@ -123,9 +124,13 @@ struct event_handler_visitor
 
 struct session_map_deleter
 {
-    chat::session_map& sessmap;
+    chat::session_map* sessmap{};
 
-    void operator()(chat::websocket_session* sess) const noexcept { sessmap.remove_session(*sess); }
+    void operator()(chat::websocket_session* sess) const noexcept
+    {
+        if (sessmap)
+            sessmap->remove_session(*sess);
+    }
 };
 
 using session_map_guard = std::unique_ptr<chat::websocket_session, session_map_deleter>;
@@ -134,31 +139,41 @@ using session_map_guard = std::unique_ptr<chat::websocket_session, session_map_d
 
 promise<void> chat::websocket_session::run()
 {
+    session_map_guard map_guard;
+    error_code ec;
+
     // Lock writes in the websocket. This ensures that no message is written before the hello.
-    auto write_guard = ws_.lock_writes();
+    co_await boost::async::with(
+        ws_.lock_writes(),
+        [self = shared_from_this(), &map_guard, &ec](websocket::write_guard guard) -> promise<void> {
+            // Get the rooms the user is in
+            auto rooms = get_rooms();
 
-    // Get the rooms the user is in
-    auto rooms = get_rooms();
+            // Add the session to the map
+            self->state_->sessions().add_session(self, rooms);
+            map_guard = session_map_guard{self.get(), session_map_deleter{&self->state_->sessions()}};
 
-    // Add the session to the map
-    state_->sessions().add_session(shared_from_this(), rooms);
-    session_map_guard guard{this, session_map_deleter{state_->sessions()}};
+            // Retrieve room history
+            auto history = co_await self->state_->redis().get_room_history(rooms);
+            if (history.has_error())
+            {
+                ec = history.error();
+                co_return fail(history.error(), "Retrieving chat history");
+            }
 
-    // Retrieve room history
-    auto history = co_await state_->redis().get_room_history(rooms);
-    if (history.has_error())
-        co_return fail(history.error(), "Retrieving chat history");
-
-    // Send the hello event
-    for (std::size_t i = 0; i < rooms.size(); ++i)
-        rooms[i].messages = std::move(history.value()[i]);
-    auto hello = serialize_hello_event(hello_event{std::move(rooms)});
-    auto ec = co_await ws_.write_locked(hello, write_guard);
-    if (ec)
-        co_return fail(ec, "Sending hello event");
+            // Send the hello event
+            for (std::size_t i = 0; i < rooms.size(); ++i)
+                rooms[i].messages = std::move(history.value()[i]);
+            auto hello = serialize_hello_event(hello_event{std::move(rooms)});
+            ec = co_await self->ws_.write_locked(hello, guard);
+            if (ec)
+                co_return fail(ec, "Sending hello event");
+        }
+    );
 
     // Once the hello is sent, we can start sending message through the websocket
-    write_guard.reset();
+    if (ec)
+        co_return;
 
     // Read subsequent messages from the websocket and dispatch them
     while (true)

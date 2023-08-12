@@ -30,12 +30,7 @@ class websocket
 
     promise<error_code> write_locked_impl(std::string_view buff);
     void lock_writes_impl() noexcept;
-    void unlock_writes_impl() noexcept;
-
-    struct write_guard_deleter
-    {
-        void operator()(websocket* sock) const noexcept { sock->unlock_writes_impl(); }
-    };
+    promise<void> unlock_writes_impl() noexcept;
 
 public:
     websocket(boost::asio::ip::tcp::socket sock, boost::beast::flat_buffer buffer);
@@ -56,17 +51,26 @@ public:
 
     // Locks writes until the received guard is destroyed. Other coroutines
     // calling write will be suspended until the guard is released.
-    using write_guard = std::unique_ptr<websocket, write_guard_deleter>;
+    struct write_guard
+    {
+        websocket* self;
+
+        promise<void> await_exit(std::exception_ptr) const
+        {
+            if (self)
+                co_await self->unlock_writes_impl();
+        }
+    };
     write_guard lock_writes()
     {
         lock_writes_impl();
-        return write_guard(this);
+        return write_guard{this};
     }
 
     // Writes bypassing the write lock. lock_writes() must have been called before calling this function
     promise<error_code> write_locked(std::string_view buff, [[maybe_unused]] write_guard& guard)
     {
-        assert(guard.get() != nullptr);
+        assert(guard.self != nullptr);
         co_return co_await write_locked_impl(buff);
     }
 };

@@ -31,7 +31,7 @@ struct chat::websocket::impl
     bool reading{false};
 
     impl(boost::asio::ip::tcp::socket&& sock, boost::beast::flat_buffer&& buff)
-        : ws(std::move(sock)), read_buffer(std::move(buff)), write_mtx_(ws.get_executor())
+        : ws(std::move(sock)), read_buffer(std::move(buff))
     {
     }
 
@@ -137,4 +137,4 @@ void chat::websocket::lock_writes_impl() noexcept
     assert(ok);
 }
 
-void chat::websocket::unlock_writes_impl() noexcept { impl_->write_mtx_.unlock(); }
+promise<void> chat::websocket::unlock_writes_impl() noexcept { co_await impl_->write_mtx_.unlock(); }
