@@ -25,6 +25,9 @@ promise<error_code> chat::run_listener(
 )
 {
     boost::asio::ip::tcp::acceptor acceptor_(co_await boost::async::this_coro::executor);
+
+    // We place all HTTP sessions in a wait_group so that they can run in detached
+    // mode, but they are cancelled on signals. Otherwise, co_main will deadlock on exit.
     boost::async::wait_group gp;
 
     error_code ec;
@@ -62,7 +65,7 @@ promise<error_code> chat::run_listener(
 
         // Launch a new session for this connection.
         // We should return listening for new connections, so this is launched in detached mode
-        gp.reap();
+        gp.reap();  // Remove any completed tasks
         gp.push_back(run_http_session(std::move(sock), state));
     }
 }
