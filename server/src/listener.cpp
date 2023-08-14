@@ -8,6 +8,7 @@
 #include "listener.hpp"
 
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/async/wait_group.hpp>
 
 #include <memory>
 
@@ -24,6 +25,7 @@ promise<error_code> chat::run_listener(
 )
 {
     boost::asio::ip::tcp::acceptor acceptor_(co_await boost::async::this_coro::executor);
+    boost::async::wait_group gp;
 
     error_code ec;
 
@@ -60,6 +62,7 @@ promise<error_code> chat::run_listener(
 
         // Launch a new session for this connection.
         // We should return listening for new connections, so this is launched in detached mode
-        +run_http_session(std::move(sock), state);
+        gp.reap();
+        gp.push_back(run_http_session(std::move(sock), state));
     }
 }

@@ -5,6 +5,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <boost/asio/error.hpp>
 #include <boost/async/main.hpp>
 
 #include <cstdlib>
@@ -36,7 +37,7 @@ async::main co_main(int argc, char* argv[])
 
     // Run the application until completion
     auto ec = co_await chat::run_application(config);
-    if (ec)
+    if (ec != boost::asio::error::operation_aborted)
     {
         log_error(ec, "Error setting up the application");
         co_return EXIT_FAILURE;
