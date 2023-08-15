@@ -56,6 +56,19 @@ class session_map
 public:
     session_map() = default;
 
+    struct session_map_deleter
+    {
+        chat::session_map* sessmap{};
+
+        void operator()(chat::websocket_session* sess) const noexcept
+        {
+            if (sessmap)
+                sessmap->remove_session(*sess);
+        }
+    };
+
+    using session_map_guard = std::unique_ptr<chat::websocket_session, session_map_deleter>;
+
     void add_session(std::shared_ptr<websocket_session> sess, boost::span<const room> rooms)
     {
         for (const auto& room : rooms)
@@ -65,6 +78,15 @@ public:
     }
 
     void remove_session(websocket_session& sess) noexcept { ct_.get<1>().erase(&sess); }
+
+    session_map_guard add_session_guarded(
+        std::shared_ptr<websocket_session> sess,
+        boost::span<const room> rooms
+    )
+    {
+        add_session(sess, rooms);
+        return session_map_guard{sess.get(), session_map_deleter{this}};
+    }
 
     // TODO: we could save a copy here
     auto get_sessions(const std::string& room) { return ct_.equal_range(room); }

@@ -7,17 +7,14 @@
 
 #include "websocket.hpp"
 
-#include <boost/asio/experimental/channel.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/websocket/stream.hpp>
 #include <boost/core/ignore_unused.hpp>
 
-#include <deque>
 #include <memory>
 #include <string_view>
 
-#include "async_mutex.hpp"
 #include "error.hpp"
 #include "use_nothrow_op.hpp"
 
@@ -27,11 +24,11 @@ struct chat::websocket::impl
 {
     boost::beast::websocket::stream<boost::beast::tcp_stream> ws;
     boost::beast::flat_buffer read_buffer;
-    async_mutex write_mtx_;
+    bool writing{false};
     bool reading{false};
 
     impl(boost::asio::ip::tcp::socket&& sock, boost::beast::flat_buffer&& buff)
-        : ws(std::move(sock)), read_buffer(std::move(buff)), write_mtx_(ws.get_executor())
+        : ws(std::move(sock)), read_buffer(std::move(buff))
     {
     }
 
@@ -44,6 +41,17 @@ struct chat::websocket::impl
     {
         reading = true;
         return read_guard(this);
+    }
+
+    struct write_guard_deleter
+    {
+        void operator()(impl* self) const noexcept { self->writing = false; }
+    };
+    using write_guard = std::unique_ptr<impl, write_guard_deleter>;
+    write_guard lock_writes() noexcept
+    {
+        writing = true;
+        return write_guard(this);
     }
 };
 
@@ -110,31 +118,18 @@ promise<result<std::string_view>> chat::websocket::read()
     co_return res;
 }
 
-promise<error_code> chat::websocket::write_locked_impl(std::string_view buff)
+promise<error_code> chat::websocket::write(std::string_view buff)
 {
-    assert(impl_->write_mtx_.locked());
+    assert(!impl_->writing);
 
-    error_code ec;
+    {
+        auto guard = impl_->lock_writes();
+        auto [ec, size] = co_await impl_->ws.async_write(boost::asio::buffer(buff), use_nothrow_op);
+        if (ec)
+            co_return ec;
+        boost::ignore_unused(size);
+    }
 
-    co_await impl_->ws.async_write(boost::asio::buffer(buff), use_nothrow_op);
     std::cout << "(WRITE) " << buff << std::endl;
-
-    co_return ec;
+    co_return error_code();
 }
-
-promise<error_code> chat::websocket::write(std::string_view message)
-{
-    // Wait for the connection to become iddle
-    auto guard = co_await impl_->write_mtx_.lock_with_guard();
-
-    // Write
-    co_return co_await write_locked_impl(message);
-}
-
-void chat::websocket::lock_writes_impl() noexcept
-{
-    [[maybe_unused]] bool ok = impl_->write_mtx_.try_lock();
-    assert(ok);
-}
-
-void chat::websocket::unlock_writes_impl() noexcept { impl_->write_mtx_.unlock(); }
