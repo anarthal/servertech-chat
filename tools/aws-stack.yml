@@ -60,6 +60,8 @@ Resources:
           HealthCheck:
             Command: ["CMD-SHELL", "redis-cli ping"]
       NetworkMode: bridge
+      Memory: "0.75 GB"
+      Cpu: "0.75 vCPU"
 
   # The service for our chat application. This is an instantiation of the
   # task definition, run in a cluster
@@ -113,6 +115,8 @@ Resources:
             - "         --region "
             - !Ref "AWS::Region"
             - |+
+
+
 
 
 
