@@ -30,17 +30,6 @@ Resources:
 
   WebServer:
     Type: "AWS::EC2::Instance"
-    Metadata:
-      AWS::CloudFormation::Init:
-        config:
-          commands:
-            do_init:
-              command: !Sub |
-                docker run -d --name redis redis:alpine &&
-                docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ghcr.io/anarthal-containers/servertech-chat-cppserver:${CppserverTag} &&
-                docker network create chat-net &&
-                docker network connect chat-net redis &&
-                docker network connect chat-net cppserver
     Properties:
       ImageId: ami-0dd6b114ad642596e # Amazon Linux optimized for containers
       SecurityGroups:
@@ -53,7 +42,11 @@ Resources:
           yum install -y aws-cfn-bootstrap
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource WebServer --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServer --region ${AWS::Region}
-          echo ${CppserverTag}
+          docker run -d --name redis redis:alpine
+          docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ghcr.io/anarthal-containers/servertech-chat-cppserver:${CppserverTag}
+          docker network create chat-net
+          docker network connect chat-net redis
+          docker network connect chat-net cppserver
 
   StaticIpAddress:
     Type: "AWS::EC2::EIP"
