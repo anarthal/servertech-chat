@@ -2,14 +2,14 @@ name: Build and deploy
 
 permissions:
   id-token: write # Required to login to AWS
-  contents: read  # Required for actions/checkout
+  contents: read # Required for actions/checkout
 
 on: push
 
 env:
   AWS_REGION: eu-north-1
   ECS_SERVICE: servertech-chat # Identifier of the ECS service object
-  ECS_CLUSTER: servertech-chat-5  # Identifier of the ECS cluster object
+  ECS_CLUSTER: servertech-chat-5 # Identifier of the ECS cluster object
   ECS_TASK_DEFINITION: tools/ecs-task-def.json # path in our repo
   CONTAINER_NAME: servertech-chat-cppserver # name of the container in the ghcr repo
 
@@ -19,78 +19,84 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: anarthal-containers
-          password: ${{ secrets.ANARTHAL_CONTAINERS_TOKEN }}
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ID }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: CloudFormation deploy
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: ChatStack
+          template: tools/aws-stack.yml
 
-      - name: Checkout the code
-        uses: actions/checkout@v3
+      # - name: Log in to the Container registry
+      #   uses: docker/login-action@v2
+      #   with:
+      #     registry: ghcr.io
+      #     username: anarthal-containers
+      #     password: ${{ secrets.ANARTHAL_CONTAINERS_TOKEN }}
 
-      - name: Build Docker image
-        uses: docker/build-push-action@v4
-        with:
-          load: true
-          tags: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}, ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      
-      - name: Run server unit tests
-        uses: docker/build-push-action@v4
-        with:
-          target: server-tests
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-     
-      - name: Run client unit tests
-        uses: docker/build-push-action@v4
-        with:
-          target: client-tests
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      
-      - name: Run integration tests
-        run: |
-          pip install -r test/integration/requirements.txt
-          docker compose up -d
-          pytest
-          docker compose down
-        
-      - name: Push Docker image
-        if: github.ref == 'refs/heads/master'
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}, ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v2
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        if: github.ref == 'refs/heads/master'
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
-          container-name: cppserver
-          image: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}
+      # - name: Checkout the code
+      #   uses: actions/checkout@v3
 
-      - name: Deploy Amazon ECS task definition
-        if: github.ref == 'refs/heads/master'
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+      # - name: Build Docker image
+      #   uses: docker/build-push-action@v4
+      #   with:
+      #     load: true
+      #     tags: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}, ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:latest
+      #     cache-from: type=gha
+      #     cache-to: type=gha,mode=max
+
+      # - name: Run server unit tests
+      #   uses: docker/build-push-action@v4
+      #   with:
+      #     target: server-tests
+      #     cache-from: type=gha
+      #     cache-to: type=gha,mode=max
+
+      # - name: Run client unit tests
+      #   uses: docker/build-push-action@v4
+      #   with:
+      #     target: client-tests
+      #     cache-from: type=gha
+      #     cache-to: type=gha,mode=max
+
+      # - name: Run integration tests
+      #   run: |
+      #     pip install -r test/integration/requirements.txt
+      #     docker compose up -d
+      #     pytest
+      #     docker compose down
+
+      # - name: Push Docker image
+      #   if: github.ref == 'refs/heads/master'
+      #   uses: docker/build-push-action@v4
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}, ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:latest
+      #     cache-from: type=gha
+      #     cache-to: type=gha,mode=max
+
+      # - name: Fill in the new image ID in the Amazon ECS task definition
+      #   if: github.ref == 'refs/heads/master'
+      #   id: task-def
+      #   uses: aws-actions/amazon-ecs-render-task-definition@v1
+      #   with:
+      #     task-definition: ${{ env.ECS_TASK_DEFINITION }}
+      #     container-name: cppserver
+      #     image: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}
+
+      # - name: Deploy Amazon ECS task definition
+      #   if: github.ref == 'refs/heads/master'
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: ${{ steps.task-def.outputs.task-definition }}
+      #     service: ${{ env.ECS_SERVICE }}
+      #     cluster: ${{ env.ECS_CLUSTER }}
+      #     wait-for-service-stability: true

@@ -1,8 +1,8 @@
 AWSTemplateFormatVersion: 2010-09-09
-Parameters:
-  KeyName:
-    Type: "AWS::EC2::KeyPair::KeyName"
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
+# Parameters:
+#   KeyName:
+#     Type: "AWS::EC2::KeyPair::KeyName"
+#     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
 
 Resources:
   # An ECS cluster. This is where our containers run
@@ -94,7 +94,7 @@ Resources:
         - !Ref EcsSecurityGroup
       InstanceType: t3-micro
       IamInstanceProfile: !Ref EC2InstanceProfile
-      KeyName: !Ref KeyName
+      # KeyName: !Ref KeyName
       UserData: !Base64
         "Fn::Join":
           - ""
