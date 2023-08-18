@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  KeyName:
+    Type: "AWS::EC2::KeyPair::KeyName"
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
+
+Resources:
+  # An ECS cluster. This is where our containers run
+  ECSCluster:
+    Type: "AWS::ECS::Cluster"
+
+  # A security group for EC2 instances, to allow inbound traffic
+  EcsSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: ECS Security Group
+      VpcId: vpc-09c12b5006e82e14b # TODO
+
+  # Allow inbound HTTP traffic
+  EcsSecurityGroupHTTPinbound:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      GroupId: !Ref EcsSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+
+  # Allow inbound SSH traffic
+  EcsSecurityGroupSSHinbound:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      GroupId: !Ref EcsSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: 0.0.0.0/0
+
+  # The task definition for the chat application, which includes all the
+  # Docker containers to be used. Includes our compiled server and the Redis DB
+  ChatTaskDefinition:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      Family: !Ref "AWS::StackName"
+      ContainerDefinitions:
+        - Name: cppserver
+          Image: ghcr.io/anarthal-containers/servertech-chat-cppserver
+          Essential: true
+          Links: ["redis:redis "]
+          Environment:
+            - Name: REDIS_HOST
+            - Value: redis
+          PortMappings:
+            - ContainerPort: 80
+          HealthCheck:
+            Command: ["CMD-SHELL", "curl -f http://localhost/"]
+        - Name: redis
+          Image: redis:alpine
+          Essential: true
+          HealthCheck:
+            Command: ["CMD-SHELL", "redis-cli ping"]
+      NetworkMode: bridge
+
+  # The service for our chat application. This is an instantiation of the
+  # task definition, run in a cluster
+  ChatService:
+    Type: "AWS::ECS::Service"
+    Properties:
+      Cluster: !Ref ECSCluster
+      DesiredCount: 1
+      TaskDefinition: !Ref ChatTaskDefinition
+      LaunchType: EC2
+
+  # An auto-scaling group for our cluster. This is an object that tells the
+  # cluster how to create EC2 instances. With this setting, our "cluster"
+  # has only a single machine.
+  ECSAutoScalingGroup:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      LaunchConfigurationName: !Ref ContainerInstancesLaunchConfiguration
+      MinSize: "1"
+      MaxSize: "1"
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: "true"
+
+  # Referenced by the auto-scaling group. This describes how to launch
+  # individual machines.
+  ContainerInstancesLaunchConfiguration:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      ImageId: ami-0dd6b114ad642596e # Amazon Linux optimized for containers
+      SecurityGroups:
+        - !Ref EcsSecurityGroup
+      InstanceType: t3-micro
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      KeyName: !Ref KeyName
+      UserData: !Base64
+        "Fn::Join":
+          - ""
+          - - |
+              #!/bin/bash -xe
+            - echo ECS_CLUSTER=
+            - !Ref ECSCluster
+            - |2
+               >> /etc/ecs/ecs.config
+            - |
+              yum install -y aws-cfn-bootstrap
+            - "/opt/aws/bin/cfn-signal -e $? "
+            - "         --stack "
+            - !Ref "AWS::StackName"
+            - "         --resource ECSAutoScalingGroup "
+            - "         --region "
+            - !Ref "AWS::Region"
+            - |+
+
+  # A role for our EC2 instances. This grants instances permissions on the AWS
+  # API. These calls are required to join the cluster and run the containers
+  EC2Role:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+  # An object required to assign roles to an EC2 instance
+  EC2InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: /
+      Roles:
+        - !Ref EC2Role
