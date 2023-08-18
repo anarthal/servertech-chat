@@ -49,9 +49,11 @@ Resources:
           Links: ["redis:redis"]
           Environment:
             - Name: REDIS_HOST
-            - Value: redis
+              Value: redis
           PortMappings:
             - ContainerPort: 80
+              HostPort: 80
+              Protocol: tcp
           HealthCheck:
             Command: ["CMD-SHELL", "curl -f http://localhost/"]
         - Name: redis
@@ -82,6 +84,7 @@ Resources:
       LaunchConfigurationName: !Ref ContainerInstancesLaunchConfiguration
       MinSize: "1"
       MaxSize: "1"
+      AvailabilityZones: ["eu-north-1a"]
     UpdatePolicy:
       AutoScalingReplacingUpdate:
         WillReplace: "true"
@@ -94,9 +97,9 @@ Resources:
       ImageId: ami-0dd6b114ad642596e # Amazon Linux optimized for containers
       SecurityGroups:
         - !Ref EcsSecurityGroup
-      InstanceType: t3-micro
-      # IamInstanceProfile: !Ref EC2InstanceProfile
-      KeyName: key-00056c79721ec5a4d
+      InstanceType: t3.micro
+      IamInstanceProfile: !Sub "arn:aws:iam::${AWS::AccountId}:instance-profile/ecsInstanceRole"
+      KeyName: ruben-slimbook
       UserData: !Base64
         "Fn::Join":
           - ""
@@ -116,13 +119,14 @@ Resources:
             - !Ref "AWS::Region"
             - |+
 
-
-
-
-
-
-
-
+  # An object required to assign roles to an EC2 instance
+  EC2InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    DependsOn: ECSCluster
+    Properties:
+      Path: /
+      Roles:
+        - !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS"
 
   # # A role for our EC2 instances. This grants instances permissions on the AWS
   # # API. These calls are required to join the cluster and run the containers
@@ -139,11 +143,3 @@ Resources:
   #             - "sts:AssumeRole"
   #     ManagedPolicyArns:
   #       - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
-
-  # # An object required to assign roles to an EC2 instance
-  # EC2InstanceProfile:
-  #   Type: "AWS::IAM::InstanceProfile"
-  #   Properties:
-  #     Path: /
-  #     Roles:
-  #       - !Ref EC2Role
