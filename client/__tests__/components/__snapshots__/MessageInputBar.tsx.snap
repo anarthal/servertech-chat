@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MessageInputBar renders message input bar 1`] = `
+<DocumentFragment>
+  <div
+    class="flex"
+  >
+    <div
+      class="flex-1 flex p-2"
+    >
+      <input
+        class="flex-1 text-xl pl-4 pr-4 pt-2 pb-2 border-0 rounded-xl"
+        placeholder="Type a message..."
+        type="text"
+      />
+    </div>
+  </div>
+</DocumentFragment>
+`;

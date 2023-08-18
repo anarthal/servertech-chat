@@ -1,0 +1,67 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Message MyMessage 1`] = `
+<DocumentFragment>
+  <div
+    class="flex flex-row pt-3 pb-3"
+  >
+    <div
+      class="flex-[4]"
+    />
+    <div
+      class="flex-[6] bg-green-100 rounded-lg pt-4 pl-5 pr-2"
+    >
+      <p
+        class="m-0"
+      >
+        Hello dear!
+      </p>
+      <p
+        class="m-0 pb-2 pr-2 text-xs text-right"
+      >
+        Mar 10, 2020, 10:03 PM
+      </p>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`Message OtherUserMessage 1`] = `
+<DocumentFragment>
+  <div
+    class="flex flex-row pt-3 pb-3"
+  >
+    <div
+      class="pr-5 flex flex-col justify-end"
+    >
+      <div
+        class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-19ilp67-MuiAvatar-root"
+      >
+        F
+      </div>
+      <p
+        class="m-0 pt-1 text-sm"
+      >
+        Fancy user
+      </p>
+    </div>
+    <div
+      class="flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2"
+    >
+      <p
+        class="m-0"
+      >
+        Hello dear!
+      </p>
+      <p
+        class="m-0 pb-2 pr-2 text-xs text-right"
+      >
+        Mar 10, 2020, 10:03 PM
+      </p>
+    </div>
+    <div
+      class="flex-[3]"
+    />
+  </div>
+</DocumentFragment>
+`;

@@ -63,9 +63,9 @@ RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=
     cmake --build . --parallel 8
 
 #
-# Build the client
+# Build the client - setup
 #
-FROM node:18-alpine AS client-builder
+FROM node:18-alpine AS client-builder-base
 
 # Don't send telemetry
 ENV NEXT_TELEMETRY_DISABLED 1
@@ -80,10 +80,24 @@ RUN npm ci
 
 # Application code
 COPY client ./
+
+#
+# Client tests. This is an optional step
+#
+FROM client-builder-base AS client-tests
+
+# Run the tests
+RUN npm run test
+
+#
+# Actually build the client
+#
+FROM client-builder-base AS client-builder
 RUN npm run build
 
-
+#
 # Runtime image. curl is required for health checks
+#
 FROM alpine:3.18.2
 RUN apk add openssl libstdc++ curl
 COPY --from=server-builder \

@@ -1,0 +1,75 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RoomEntry RoomEntry not selected 1`] = `
+<DocumentFragment>
+  <div
+    class="flex pt-2 pl-3 pr-3 cursor-pointer overflow-hidden"
+  >
+    <div
+      class="flex-1 flex p-4 rounded-lg overflow-hidden"
+    >
+      <div
+        class="pr-3 flex flex-col justify-center"
+      >
+        <div
+          class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1ci6vil-MuiAvatar-root"
+        >
+          M
+        </div>
+      </div>
+      <div
+        class="flex-1 flex flex-col overflow-hidden"
+      >
+        <p
+          class="m-0 font-bold pb-2"
+          data-testid="room-name"
+        >
+          My Room
+        </p>
+        <p
+          class="m-0 overflow-hidden text-ellipsis whitespace-nowrap"
+        >
+          What happened?
+        </p>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`RoomEntry RoomEntry selected 1`] = `
+<DocumentFragment>
+  <div
+    class="flex pt-2 pl-3 pr-3 cursor-pointer overflow-hidden"
+  >
+    <div
+      class="flex-1 flex p-4 rounded-lg overflow-hidden"
+    >
+      <div
+        class="pr-3 flex flex-col justify-center"
+      >
+        <div
+          class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1ci6vil-MuiAvatar-root"
+        >
+          M
+        </div>
+      </div>
+      <div
+        class="flex-1 flex flex-col overflow-hidden"
+      >
+        <p
+          class="m-0 font-bold pb-2"
+          data-testid="room-name"
+        >
+          My Room
+        </p>
+        <p
+          class="m-0 overflow-hidden text-ellipsis whitespace-nowrap"
+        >
+          What happened?
+        </p>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;

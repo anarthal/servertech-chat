@@ -1,0 +1,155 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`chat page ChatScreen component 1`] = `
+<DocumentFragment>
+  <div
+    class="flex-1 flex min-h-0"
+  >
+    <div
+      class="flex-1 flex flex-col overflow-y-scroll"
+    >
+      <div
+        class="flex pt-2 pl-3 pr-3 cursor-pointer overflow-hidden"
+      >
+        <div
+          class="flex-1 flex p-4 rounded-lg overflow-hidden"
+        >
+          <div
+            class="pr-3 flex flex-col justify-center"
+          >
+            <div
+              class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-184hllq-MuiAvatar-root"
+            >
+              B
+            </div>
+          </div>
+          <div
+            class="flex-1 flex flex-col overflow-hidden"
+          >
+            <p
+              class="m-0 font-bold pb-2"
+              data-testid="room-name"
+            >
+              Boost.Beast
+            </p>
+            <p
+              class="m-0 overflow-hidden text-ellipsis whitespace-nowrap"
+            >
+              Message 2 beast
+            </p>
+          </div>
+        </div>
+      </div>
+      <div
+        class="flex pt-2 pl-3 pr-3 cursor-pointer overflow-hidden"
+      >
+        <div
+          class="flex-1 flex p-4 rounded-lg overflow-hidden"
+        >
+          <div
+            class="pr-3 flex flex-col justify-center"
+          >
+            <div
+              class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-5bf77t-MuiAvatar-root"
+            >
+              W
+            </div>
+          </div>
+          <div
+            class="flex-1 flex flex-col overflow-hidden"
+          >
+            <p
+              class="m-0 font-bold pb-2"
+              data-testid="room-name"
+            >
+              Web Assembly
+            </p>
+            <p
+              class="m-0 overflow-hidden text-ellipsis whitespace-nowrap"
+            >
+              Message 2 wasm
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex-[3] flex flex-col"
+    >
+      <div
+        class="flex-1 flex flex-col-reverse p-5 overflow-y-scroll"
+      >
+        <div
+          class="flex flex-row pt-3 pb-3"
+        >
+          <div
+            class="flex-[4]"
+          />
+          <div
+            class="flex-[6] bg-green-100 rounded-lg pt-4 pl-5 pr-2"
+          >
+            <p
+              class="m-0"
+            >
+              Message 2 wasm
+            </p>
+            <p
+              class="m-0 pb-2 pr-2 text-xs text-right"
+            >
+              Jan 1, 1970, 1:00 AM
+            </p>
+          </div>
+        </div>
+        <div
+          class="flex flex-row pt-3 pb-3"
+        >
+          <div
+            class="pr-5 flex flex-col justify-end"
+          >
+            <div
+              class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-r4lbtz-MuiAvatar-root"
+            >
+              U
+            </div>
+            <p
+              class="m-0 pt-1 text-sm"
+            >
+              User one
+            </p>
+          </div>
+          <div
+            class="flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2"
+          >
+            <p
+              class="m-0"
+            >
+              Message 1 wasm
+            </p>
+            <p
+              class="m-0 pb-2 pr-2 text-xs text-right"
+            >
+              Jan 1, 1970, 1:00 AM
+            </p>
+          </div>
+          <div
+            class="flex-[3]"
+          />
+        </div>
+      </div>
+      <div
+        class="flex"
+      >
+        <div
+          class="flex-1 flex p-2"
+        >
+          <input
+            class="flex-1 text-xl pl-4 pr-4 pt-2 pb-2 border-0 rounded-xl"
+            placeholder="Type a message..."
+            type="text"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
