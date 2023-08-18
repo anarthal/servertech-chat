@@ -93,8 +93,8 @@ Resources:
       SecurityGroups:
         - !Ref EcsSecurityGroup
       InstanceType: t3-micro
-      IamInstanceProfile: !Ref EC2InstanceProfile
-      # KeyName: !Ref KeyName
+      # IamInstanceProfile: !Ref EC2InstanceProfile
+      KeyName: key-00056c79721ec5a4d
       UserData: !Base64
         "Fn::Join":
           - ""
@@ -114,26 +114,30 @@ Resources:
             - !Ref "AWS::Region"
             - |+
 
-  # A role for our EC2 instances. This grants instances permissions on the AWS
-  # API. These calls are required to join the cluster and run the containers
-  EC2Role:
-    Type: "AWS::IAM::Role"
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
 
-  # An object required to assign roles to an EC2 instance
-  EC2InstanceProfile:
-    Type: "AWS::IAM::InstanceProfile"
-    Properties:
-      Path: /
-      Roles:
-        - !Ref EC2Role
+
+
+
+  # # A role for our EC2 instances. This grants instances permissions on the AWS
+  # # API. These calls are required to join the cluster and run the containers
+  # EC2Role:
+  #   Type: "AWS::IAM::Role"
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service:
+  #               - ec2.amazonaws.com
+  #           Action:
+  #             - "sts:AssumeRole"
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+  # # An object required to assign roles to an EC2 instance
+  # EC2InstanceProfile:
+  #   Type: "AWS::IAM::InstanceProfile"
+  #   Properties:
+  #     Path: /
+  #     Roles:
+  #       - !Ref EC2Role
