@@ -46,7 +46,7 @@ Resources:
         - Name: cppserver
           Image: ghcr.io/anarthal-containers/servertech-chat-cppserver
           Essential: true
-          Links: ["redis:redis "]
+          Links: ["redis:redis"]
           Environment:
             - Name: REDIS_HOST
             - Value: redis
@@ -113,6 +113,8 @@ Resources:
             - "         --region "
             - !Ref "AWS::Region"
             - |+
+
+
 
 
 
