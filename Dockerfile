@@ -45,16 +45,6 @@ WORKDIR /app
 COPY server/ ./
 
 #
-# Build the server tests. This is an optional step
-#
-FROM server-builder-base AS server-tests
-WORKDIR /app/__build
-RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON .. && \
-    cmake --build . --parallel 8
-RUN ctest --output-on-failure
-
-
-#
 # Build the actual server
 #
 FROM server-builder-base AS server-builder
@@ -82,14 +72,6 @@ RUN npm ci
 COPY client ./
 
 #
-# Client tests. This is an optional step
-#
-FROM client-builder-base AS client-tests
-
-# Run the tests
-RUN npm run test
-
-#
 # Actually build the client
 #
 FROM client-builder-base AS client-builder
@@ -110,3 +92,22 @@ COPY --from=client-builder /app/out/ /app/static/
 
 EXPOSE 80
 ENTRYPOINT [ "/app/main", "0.0.0.0", "80", "/app/static/" ]
+
+
+#
+# Build the server tests. This is an optional step
+#
+FROM server-builder-base AS server-tests
+WORKDIR /app/__build
+RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON .. && \
+    cmake --build . --parallel 8
+RUN ctest --output-on-failure
+
+
+#
+# Client tests. This is an optional step
+#
+FROM client-builder-base AS client-tests
+
+# Run the tests
+RUN npm run test
