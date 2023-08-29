@@ -9,41 +9,88 @@ Parameters:
 #     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
 
 Resources:
+  # A VPC to launch our instances in. Creating the VPC as part of the
+  # CloudFormation stack makes the user have to specify less parameters
+  VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "10.22.0.0/24"
+
+  # A subnet inside the above VPC, where our instances will run
+  Subnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: "10.22.0.0/24"
+      AvailabilityZone:
+        Fn::Select: [0, { "Fn::GetAZs": "" }]
+
+  # Boilerplate to allow connectivity for our EC2 instances to the internet
+  InternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+  InternetGatewayVPCAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+  SubnetRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VPC
+  SubnetRoute:
+    Type: "AWS::EC2::Route"
+    DependsOn: InternetGatewayVPCAttachment
+    Properties:
+      RouteTableId: !Ref SubnetRouteTable
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway
+  SubnetRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref SubnetRouteTable
+      SubnetId: !Ref Subnet
+
   # A security group for EC2 instances, to allow inbound traffic
   EcsSecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
       GroupDescription: ECS Security Group
+      VpcId: !Ref VPC
       SecurityGroupIngress:
-        - {
-            "IpProtocol": "tcp",
-            "FromPort": 80,
-            "ToPort": 80,
-            "CidrIp": "0.0.0.0/0",
-          }
-        - {
-            "IpProtocol": "tcp",
-            "FromPort": 22,
-            "ToPort": 22,
-            "CidrIp": "0.0.0.0/0",
-          }
+        # Allow inbound HTTP traffic
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: "0.0.0.0/0"
+        # Allow inbound SSH traffic
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: "0.0.0.0/0"
 
+  # A static IP address. This guarantees that your application will always
+  # run under the same, static IP address even between restarts
   StaticIpAddress:
     Type: "AWS::EC2::EIP"
 
+  # A network adapter that we will attach to our EC2 instance. Used to associate
+  # the IP address and the security group with the instance.
   StaticIpNetworkInterface:
     Type: "AWS::EC2::NetworkInterface"
     Properties:
-      SubnetId: subnet-08c1c87603b0ba109 # TODO
+      SubnetId: !Ref Subnet
       GroupSet:
         - !GetAtt EcsSecurityGroup.GroupId
 
-  EniAssociation:
+  # Associate the IP to the network interface
+  StaticIpAssociation:
     Type: AWS::EC2::EIPAssociation
     Properties:
       AllocationId: !GetAtt StaticIpAddress.AllocationId
       NetworkInterfaceId: !Ref StaticIpNetworkInterface
 
+  # A launch template, describing the instances to be launched. This is used
+  # by the auto-scaling group
   WebServerLaunchTemplate:
     Type: "AWS::EC2::LaunchTemplate"
     Properties:
@@ -65,6 +112,7 @@ Resources:
             docker network connect chat-net cppserver
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region}
 
+  # An auto-scaling group with a single instance
   WebServerGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
@@ -74,6 +122,6 @@ Resources:
         LaunchTemplateId: !Ref WebServerLaunchTemplate
         Version: !GetAtt WebServerLaunchTemplate.LatestVersionNumber
       AvailabilityZones:
-        - eu-north-1a # TODO
+        - Fn::Select: [0, { "Fn::GetAZs": "" }]
     UpdatePolicy:
       AutoScalingRollingUpdate: {}
