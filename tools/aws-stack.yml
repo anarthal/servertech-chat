@@ -28,27 +28,52 @@ Resources:
             "CidrIp": "0.0.0.0/0",
           }
 
-  WebServer:
-    Type: "AWS::EC2::Instance"
-    Properties:
-      ImageId: ami-0dd6b114ad642596e # Amazon Linux optimized for containers
-      SecurityGroups:
-        - !Ref EcsSecurityGroup
-      InstanceType: t3.micro
-      KeyName: ruben-slimbook # TODO: fix this
-      UserData: !Base64
-        "Fn::Sub": |
-          #!/bin/bash -xe
-          yum install -y aws-cfn-bootstrap
-          docker run -d --name redis redis:alpine
-          docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ghcr.io/anarthal-containers/servertech-chat-cppserver:${CppserverTag}
-          docker network create chat-net
-          docker network connect chat-net redis
-          docker network connect chat-net cppserver
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource WebServer --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServer --region ${AWS::Region}
-
   StaticIpAddress:
     Type: "AWS::EC2::EIP"
+
+  StaticIpNetworkInterface:
+    Type: "AWS::EC2::NetworkInterface"
     Properties:
-      InstanceId: !Ref WebServer
+      SubnetId: subnet-08c1c87603b0ba109 # TODO
+      GroupSet:
+        - !GetAtt EcsSecurityGroup.GroupId
+
+  EniAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt StaticIpAddress.AllocationId
+      NetworkInterfaceId: !Ref StaticIpNetworkInterface
+
+  WebServerLaunchTemplate:
+    Type: "AWS::EC2::LaunchTemplate"
+    Properties:
+      LaunchTemplateData:
+        ImageId: ami-0dd6b114ad642596e # Amazon Linux optimized for containers
+        InstanceType: t3.micro
+        KeyName: ruben-slimbook # TODO: fix this
+        NetworkInterfaces:
+          - NetworkInterfaceId: !Ref StaticIpNetworkInterface
+            DeviceIndex: 0
+        UserData: !Base64
+          "Fn::Sub": |
+            #!/bin/bash -xe
+            yum install -y aws-cfn-bootstrap
+            docker run -d --name redis redis:alpine
+            docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ghcr.io/anarthal-containers/servertech-chat-cppserver:${CppserverTag}
+            docker network create chat-net
+            docker network connect chat-net redis
+            docker network connect chat-net cppserver
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region}
+
+  WebServerGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: "1"
+      MaxSize: "1"
+      LaunchTemplate:
+        LaunchTemplateId: !Ref WebServerLaunchTemplate
+        Version: !GetAtt WebServerLaunchTemplate.LatestVersionNumber
+      AvailabilityZones:
+        - eu-north-1a # TODO
+    UpdatePolicy:
+      AutoScalingRollingUpdate: {}
