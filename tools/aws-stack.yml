@@ -9,53 +9,11 @@ Parameters:
 #     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
 
 Resources:
-  # A VPC to launch our instances in. Creating the VPC as part of the
-  # CloudFormation stack makes the user have to specify less parameters
-  VPC:
-    Type: "AWS::EC2::VPC"
-    Properties:
-      CidrBlock: "10.22.0.0/24"
-
-  # A subnet inside the above VPC, where our instances will run
-  Subnet:
-    Type: "AWS::EC2::Subnet"
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: "10.22.0.0/24"
-      AvailabilityZone:
-        Fn::Select: [0, { "Fn::GetAZs": "" }]
-
-  # Boilerplate to allow connectivity for our EC2 instances to the internet
-  InternetGateway:
-    Type: "AWS::EC2::InternetGateway"
-  InternetGatewayVPCAttachment:
-    Type: "AWS::EC2::VPCGatewayAttachment"
-    Properties:
-      InternetGatewayId: !Ref InternetGateway
-      VpcId: !Ref VPC
-  SubnetRouteTable:
-    Type: "AWS::EC2::RouteTable"
-    Properties:
-      VpcId: !Ref VPC
-  SubnetRoute:
-    Type: "AWS::EC2::Route"
-    DependsOn: InternetGatewayVPCAttachment
-    Properties:
-      RouteTableId: !Ref SubnetRouteTable
-      DestinationCidrBlock: "0.0.0.0/0"
-      GatewayId: !Ref InternetGateway
-  SubnetRouteTableAssociation:
-    Type: "AWS::EC2::SubnetRouteTableAssociation"
-    Properties:
-      RouteTableId: !Ref SubnetRouteTable
-      SubnetId: !Ref Subnet
-
-  # A security group for EC2 instances, to allow inbound traffic
+  # A security group for our EC2 instance, to allow inbound traffic
   EcsSecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
       GroupDescription: ECS Security Group
-      VpcId: !Ref VPC
       SecurityGroupIngress:
         # Allow inbound HTTP traffic
         - IpProtocol: tcp
@@ -72,56 +30,50 @@ Resources:
   # run under the same, static IP address even between restarts
   StaticIpAddress:
     Type: "AWS::EC2::EIP"
-
-  # A network adapter that we will attach to our EC2 instance. Used to associate
-  # the IP address and the security group with the instance.
-  StaticIpNetworkInterface:
-    Type: "AWS::EC2::NetworkInterface"
     Properties:
-      SubnetId: !Ref Subnet
-      GroupSet:
-        - !GetAtt EcsSecurityGroup.GroupId
+      InstanceId: !Ref WebServer
 
-  # Associate the IP to the network interface
-  StaticIpAssociation:
-    Type: AWS::EC2::EIPAssociation
+  # The actual EC2 instance that will run our server. UserData contains
+  # a script that is run by the EC2 instance every time it boots. We launch
+  # our Docker containers there. The cloud_final_modules part is required
+  # to ensure that the script is run every time the instance is launched.
+  # Otherwise, it's run only on creation, and updates won't take affect.
+  WebServer:
+    Type: "AWS::EC2::Instance"
     Properties:
-      AllocationId: !GetAtt StaticIpAddress.AllocationId
-      NetworkInterfaceId: !Ref StaticIpNetworkInterface
+      ImageId: ami-0dd6b114ad642596e # Amazon Linux optimized for containers
+      SecurityGroups:
+        - !Ref EcsSecurityGroup
+      InstanceType: t3.micro
+      KeyName: ruben-slimbook # TODO: fix this
+      UserData: !Base64
+        "Fn::Sub": |
+          Content-Type: multipart/mixed; boundary="//"
+          MIME-Version: 1.0
 
-  # A launch template, describing the instances to be launched. This is used
-  # by the auto-scaling group
-  WebServerLaunchTemplate:
-    Type: "AWS::EC2::LaunchTemplate"
-    Properties:
-      LaunchTemplateData:
-        ImageId: ami-0dd6b114ad642596e # Amazon Linux optimized for containers
-        InstanceType: t3.micro
-        KeyName: ruben-slimbook # TODO: fix this
-        NetworkInterfaces:
-          - NetworkInterfaceId: !Ref StaticIpNetworkInterface
-            DeviceIndex: 0
-        UserData: !Base64
-          "Fn::Sub": |
-            #!/bin/bash -xe
-            yum install -y aws-cfn-bootstrap
-            docker run -d --name redis redis:alpine
-            docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ghcr.io/anarthal-containers/servertech-chat-cppserver:${CppserverTag}
-            docker network create chat-net
-            docker network connect chat-net redis
-            docker network connect chat-net cppserver
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region}
+          --//
+          Content-Type: text/cloud-config; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud-config.txt"
 
-  # An auto-scaling group with a single instance
-  WebServerGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      MinSize: "1"
-      MaxSize: "1"
-      LaunchTemplate:
-        LaunchTemplateId: !Ref WebServerLaunchTemplate
-        Version: !GetAtt WebServerLaunchTemplate.LatestVersionNumber
-      AvailabilityZones:
-        - Fn::Select: [0, { "Fn::GetAZs": "" }]
-    UpdatePolicy:
-      AutoScalingRollingUpdate: {}
+          cloud_final_modules:
+          - [scripts-user, always]
+
+          --//
+          Content-Type: text/x-shellscript; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="userdata.txt"
+
+          #!/bin/bash -xe
+          yum install -y aws-cfn-bootstrap
+          docker container prune -f
+          docker network rm chat-net || echo "Network does not exist"
+          docker run -d --name redis redis:alpine
+          docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ghcr.io/anarthal-containers/servertech-chat-cppserver:${CppserverTag}
+          docker network create chat-net
+          docker network connect chat-net redis
+          docker network connect chat-net cppserver
+          docker image prune -f
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region}
