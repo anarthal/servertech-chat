@@ -32,7 +32,7 @@ RUN \
     cd libs/redis && \
     git fetch origin $REDIS_COMMIT && \
     git checkout $REDIS_COMMIT && \
-    cd /boost-src && \
+    cd /boost-src/boost_1_82_0 && \
     ./bootstrap.sh && \
     ./b2 --with-json --with-context --with-test -d0 --prefix=/boost install && \
     cd / && \
