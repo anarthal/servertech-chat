@@ -43,7 +43,6 @@ jobs:
           load: true
           tags: ${{ env.FULL_IMAGE }}:${{ github.sha }}, ${{ env.FULL_IMAGE }}:latest
           cache-from: type=gha
-          # cache-to: type=gha,mode=max
 
       - name: Run server unit tests
         uses: docker/build-push-action@v4
@@ -51,7 +50,7 @@ jobs:
           context: .
           target: server-tests
           cache-from: type=gha
-          # cache-to: type=gha,mode=max
+          cache-to: type=gha
 
       - name: Run client unit tests
         uses: docker/build-push-action@v4
@@ -59,7 +58,7 @@ jobs:
           context: .
           target: client-tests
           cache-from: type=gha
-          # cache-to: type=gha,mode=max
+          cache-to: type=gha
 
       - name: Run integration tests
         run: |
