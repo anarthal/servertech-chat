@@ -49,7 +49,7 @@ Resources:
       ImageId: ami-0dd6b114ad642596e # Amazon Linux optimized for containers
       SecurityGroups:
         - !Ref EcsSecurityGroup
-      InstanceType: t3.micro
+      InstanceType: t2.micro
       KeyName: !If [EnableSSH, !Ref KeyName, !Ref "AWS::NoValue"]
       UserData: !Base64
         "Fn::Sub": |
