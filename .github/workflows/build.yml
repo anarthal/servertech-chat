@@ -3,12 +3,13 @@ name: Build and deploy
 permissions:
   id-token: write # Required to login to AWS
   contents: read # Required for actions/checkout
+  packages: write
 
 on: push
 
 env:
   AWS_REGION: eu-north-1
-  CONTAINER_NAME: servertech-chat-cppserver # name of the container in the ghcr repo. TODO: move this to aws
+  FULL_IMAGE: ghcr.io/${{ github.repository }}
 
 jobs:
   deploy:
@@ -26,8 +27,8 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: anarthal-containers
-          password: ${{ secrets.ANARTHAL_CONTAINERS_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -39,7 +40,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           load: true
-          tags: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}, ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:latest
+          tags: ${{ env.FULL_IMAGE }}:${{ github.sha }}, ${{ env.FULL_IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -70,7 +71,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:${{ github.sha }}, ghcr.io/anarthal-containers/${{ env.CONTAINER_NAME }}:latest
+          tags: ${{ env.FULL_IMAGE }}:${{ github.sha }}, ${{ env.FULL_IMAGE }}:latest
           cache-from: type=gha
 
       - name: CloudFormation deploy
@@ -78,4 +79,4 @@ jobs:
         with:
           name: ServertechChatStack
           template: tools/aws-stack.yml
-          parameter-overrides: "CppserverTag=${{ github.sha }},KeyName=${{ secrets.SSH_KEY_NAME }}"
+          parameter-overrides: "CppserverImage=${{ env.FULL_IMAGE }}:${{ github.sha }},KeyName=${{ secrets.SSH_KEY_NAME }}"

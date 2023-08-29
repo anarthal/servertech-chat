@@ -1,9 +1,8 @@
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
-  CppserverTag:
+  CppserverImage:
     Type: String
-    Description: The Docker tag for the cppserver container
-    Default: latest
+    Description: The Docker fully-qualified image for the cppserver container
   KeyName:
     Type: String
     Description: |
@@ -77,7 +76,7 @@ Resources:
           docker container prune -f
           docker network rm chat-net || echo "Network does not exist"
           docker run -d --name redis redis:alpine
-          docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ghcr.io/anarthal-containers/servertech-chat-cppserver:${CppserverTag}
+          docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ${CppserverImage}
           docker network create chat-net
           docker network connect chat-net redis
           docker network connect chat-net cppserver
