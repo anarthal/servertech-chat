@@ -24,21 +24,20 @@ RUN apk update && \
 # Boost
 WORKDIR /boost-src
 RUN \
+    REDIS_COMMIT=f506e1baee4941bff1f8e2f3aa7e1b9cf08cb199 && \
     wget -q https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.gz && \
-    tar -xf boost_1_82_0.tar.gz
-
-# Boost.Redis
-WORKDIR /boost-src/boost_1_82_0
-RUN REDIS_COMMIT=f506e1baee4941bff1f8e2f3aa7e1b9cf08cb199 && \
+    tar -xf boost_1_82_0.tar.gz && \
+    cd boost_1_82_0 && \
     git clone --depth 1 https://github.com/boostorg/redis.git libs/redis && \
     cd libs/redis && \
     git fetch origin $REDIS_COMMIT && \
-    git checkout $REDIS_COMMIT
-
-# Build
-RUN \
+    git checkout $REDIS_COMMIT && \
+    cd /boost-src && \
     ./bootstrap.sh && \
-    ./b2 --with-json --with-context --with-test -d0 --prefix=/boost install
+    ./b2 --with-json --with-context --with-test -d0 --prefix=/boost install && \
+    cd / && \
+    rm -rf /boost-src
+
 
 # Copy the server files
 WORKDIR /app
@@ -50,7 +49,19 @@ COPY server/ ./
 FROM server-builder-base AS server-builder
 WORKDIR /app/__build
 RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF .. && \
-    cmake --build . --parallel 8
+    cmake --build . --parallel 8 && \
+    cp main /app/main && \
+    rm -rf /app/__build
+
+#
+# Build the server tests. This is an optional step
+#
+FROM server-builder-base AS server-tests
+WORKDIR /app/__build
+RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON .. && \
+    cmake --build . --parallel 8 && \
+    ctest --output-on-failure && \
+    rm -rf /app/__build
 
 #
 # Build the client - setup
@@ -78,6 +89,14 @@ FROM client-builder-base AS client-builder
 RUN npm run build
 
 #
+# Client tests. This is an optional step
+#
+FROM client-builder-base AS client-tests
+
+# Run the tests
+RUN npm run test
+
+#
 # Runtime image. curl is required for health checks
 #
 FROM alpine:3.18.2
@@ -87,27 +106,8 @@ COPY --from=server-builder \
     /boost/lib/libboost_context.so* \
     /boost/lib/libboost_json.so* \
     /boost/lib/
-COPY --from=server-builder /app/__build/main /app/
+COPY --from=server-builder /app/main /app/
 COPY --from=client-builder /app/out/ /app/static/
 
 EXPOSE 80
 ENTRYPOINT [ "/app/main", "0.0.0.0", "80", "/app/static/" ]
-
-
-#
-# Build the server tests. This is an optional step
-#
-FROM server-builder-base AS server-tests
-WORKDIR /app/__build
-RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON .. && \
-    cmake --build . --parallel 8
-RUN ctest --output-on-failure
-
-
-#
-# Client tests. This is an optional step
-#
-FROM client-builder-base AS client-tests
-
-# Run the tests
-RUN npm run test
