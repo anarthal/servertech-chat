@@ -4,9 +4,14 @@ Parameters:
     Type: String
     Description: The Docker tag for the cppserver container
     Default: latest
-#   KeyName:
-#     Type: "AWS::EC2::KeyPair::KeyName"
-#     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
+  KeyName:
+    Type: String
+    Description: |
+      Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
+      Leave it blank to disable SSH access.
+    Default: ""
+Conditions:
+  EnableSSH: !Not [!Equals [!Ref KeyName, ""]]
 
 Resources:
   # A security group for our EC2 instance, to allow inbound traffic
@@ -41,11 +46,12 @@ Resources:
   WebServer:
     Type: "AWS::EC2::Instance"
     Properties:
+      # TODO: is this region-specific?
       ImageId: ami-0dd6b114ad642596e # Amazon Linux optimized for containers
       SecurityGroups:
         - !Ref EcsSecurityGroup
       InstanceType: t3.micro
-      KeyName: ruben-slimbook # TODO: fix this
+      KeyName: !If [EnableSSH, !Ref KeyName, !Ref "AWS::NoValue"]
       UserData: !Base64
         "Fn::Sub": |
           Content-Type: multipart/mixed; boundary="//"
