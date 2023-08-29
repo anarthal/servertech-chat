@@ -42,7 +42,7 @@ jobs:
           context: .
           load: true
           tags: ${{ env.FULL_IMAGE }}:${{ github.sha }}, ${{ env.FULL_IMAGE }}:latest
-          cache-from: type=gha
+          cache-from: type=gha,scope=${{ github.ref }}-image
           cache-to: type=gha,mode=max,scope=${{ github.ref }}-image
 
       - name: Run server unit tests
@@ -50,7 +50,7 @@ jobs:
         with:
           context: .
           target: server-tests
-          cache-from: type=gha
+          cache-from: type=gha,scope=${{ github.ref }}-server-tests
           cache-to: type=gha,mode=max,scope=${{ github.ref }}-server-tests
 
       - name: Run client unit tests
@@ -58,7 +58,7 @@ jobs:
         with:
           context: .
           target: client-tests
-          cache-from: type=gha
+          cache-from: type=gha,scope=${{ github.ref }}-client-tests
           cache-to: type=gha,mode=max,scope=${{ github.ref }}-client-tests
 
       - name: Run integration tests
