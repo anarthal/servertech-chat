@@ -78,8 +78,12 @@ jobs:
 
       - name: CloudFormation deploy
         uses: aws-actions/aws-cloudformation-github-deploy@v1
+        id: cloudformation-deploy
         with:
           name: ServertechChatStack
           template: tools/aws-stack.yml
           parameter-overrides: "CppserverImage=${{ env.FULL_IMAGE }}:${{ github.sha }},KeyName=${{ secrets.SSH_KEY_NAME }}"
           no-fail-on-empty-changeset: "1"
+
+      - name: Print the URL of the listening server
+        run: echo "Server listening at http://${{ steps.cloudformation-deploy.outputs.WebServerIp }}/"

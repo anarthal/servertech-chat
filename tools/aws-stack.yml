@@ -82,3 +82,8 @@ Resources:
           docker network connect chat-net cppserver
           docker image prune -f
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region}
+
+Outputs:
+  WebServerIp:
+    Description: The IP where the webserver is listening
+    Value: !Ref StaticIpAddress
