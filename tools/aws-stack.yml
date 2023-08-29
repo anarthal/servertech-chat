@@ -9,6 +9,11 @@ Parameters:
       Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
       Leave it blank to disable SSH access.
     Default: ""
+  ImageId:
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Description: |
+      The machine image (AMI) to use. Defaults to latest Amazon Linux.
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
 Conditions:
   EnableSSH: !Not [!Equals [!Ref KeyName, ""]]
 
@@ -72,7 +77,7 @@ Resources:
           Content-Disposition: attachment; filename="userdata.txt"
 
           #!/bin/bash -xe
-          yum install -y aws-cfn-bootstrap
+          yum install -y aws-cfn-bootstrap docker
           docker container prune -f
           docker network rm chat-net || echo "Network does not exist"
           docker run -d --name redis redis:alpine
