@@ -3,6 +3,11 @@ name: Build and deploy
 env:
   # Change to whatever AWS region you want your deployments in
   AWS_REGION: eu-north-1
+  # Change this to the EC2 instance type you want to launch. If you're aiming
+  # for free-tier, you should select t2.micro or t3.micro, depending on the region.
+  # t3.micro is available everywhere, but it's only free in regions where t2.micro
+  # is not available
+  AWS_INSTANCE_TYPE: t3.micro
 
 permissions:
   contents: read # Required for actions/checkout
@@ -84,7 +89,10 @@ jobs:
         with:
           name: ServertechChatStack
           template: tools/aws-stack.yml
-          parameter-overrides: "CppserverImage=${{ env.FULL_IMAGE }}:${{ github.sha }},KeyName=${{ secrets.SSH_KEY_NAME }}"
+          parameter-overrides: >
+            CppserverImage=${{ env.FULL_IMAGE }}:${{ github.sha }},
+            KeyName=${{ secrets.SSH_KEY_NAME }},
+            InstanceType=${{ env.AWS_INSTANCE_TYPE }}
           no-fail-on-empty-changeset: "1"
 
       - name: Print the URL of the listening server

@@ -1,5 +1,9 @@
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
+  InstanceType:
+    Type: String
+    Description: The instance EC2 type that will be launched
+    Default: t3.micro
   CppserverImage:
     Type: String
     Description: The Docker fully-qualified image for the cppserver container
@@ -51,6 +55,7 @@ Resources:
     Type: "AWS::EC2::Instance"
     Properties:
       ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
       SecurityGroups:
         - !Ref EcsSecurityGroup
       KeyName: !If [EnableSSH, !Ref KeyName, !Ref "AWS::NoValue"]
