@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  InstanceType:
+    Type: String
+    Description: The instance EC2 type that will be launched
+    Default: t3.micro
+  CppserverImage:
+    Type: String
+    Description: The Docker fully-qualified image for the cppserver container
+  KeyName:
+    Type: String
+    Description: |
+      Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
+      Leave it blank to disable SSH access.
+    Default: ""
+  ImageId:
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Description: |
+      The machine image (AMI) to use. Defaults to latest Amazon Linux.
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+Conditions:
+  EnableSSH: !Not [!Equals [!Ref KeyName, ""]]
+
+Resources:
+  # A security group for our EC2 instance, to allow inbound traffic
+  EcsSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: ECS Security Group
+      SecurityGroupIngress:
+        # Allow inbound HTTP traffic
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: "0.0.0.0/0"
+        # Allow inbound SSH traffic
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: "0.0.0.0/0"
+
+  # A static IP address. This guarantees that your application will always
+  # run under the same, static IP address even between restarts
+  StaticIpAddress:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      InstanceId: !Ref WebServer
+
+  # The actual EC2 instance that will run our server. UserData contains
+  # a script that is run by the EC2 instance every time it boots. We launch
+  # our Docker containers there. The cloud_final_modules part is required
+  # to ensure that the script is run every time the instance is launched.
+  # Otherwise, it's run only on creation, and updates won't take affect.
+  WebServer:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      SecurityGroups:
+        - !Ref EcsSecurityGroup
+      KeyName: !If [EnableSSH, !Ref KeyName, !Ref "AWS::NoValue"]
+      UserData: !Base64
+        "Fn::Sub": |
+          Content-Type: multipart/mixed; boundary="//"
+          MIME-Version: 1.0
+
+          --//
+          Content-Type: text/cloud-config; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud-config.txt"
+
+          cloud_final_modules:
+          - [scripts-user, always]
+
+          --//
+          Content-Type: text/x-shellscript; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="userdata.txt"
+
+          #!/bin/bash -xe
+          yum install -y aws-cfn-bootstrap docker
+          docker container prune -f
+          docker network rm chat-net || echo "Network does not exist"
+          docker run -d --name redis redis:alpine
+          docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ${CppserverImage}
+          docker network create chat-net
+          docker network connect chat-net redis
+          docker network connect chat-net cppserver
+          docker image prune -f
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region}
+
+Outputs:
+  WebServerIp:
+    Description: The IP where the webserver is listening
+    Value: !Ref StaticIpAddress

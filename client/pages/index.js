@@ -33,7 +33,7 @@ export default function Home() {
         <div className={styles.bodycontainer}>
           <div className="text-center p-12">
             <p className="text-3xl p-3 m-0">Welcome to</p>
-            <p className="text-7xl p-3 m-0">BoostServerTech Chat 💬</p>
+            <p className="text-7xl p-3 m-0">💬 BoostServerTech Chat 💬</p>
             <p className="text-xl p-3 m-0">
               A chat app written using the Boost C++ libraries
             </p>
