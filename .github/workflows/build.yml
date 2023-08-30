@@ -89,10 +89,7 @@ jobs:
         with:
           name: ServertechChatStack
           template: tools/aws-stack.yml
-          parameter-overrides: >
-            CppserverImage=${{ env.FULL_IMAGE }}:${{ github.sha }},
-            KeyName=${{ secrets.SSH_KEY_NAME }},
-            InstanceType=${{ env.AWS_INSTANCE_TYPE }}
+          parameter-overrides: CppserverImage=${{ env.FULL_IMAGE }}:${{ github.sha }},KeyName=${{ secrets.SSH_KEY_NAME }},InstanceType=${{ env.AWS_INSTANCE_TYPE }}
           no-fail-on-empty-changeset: "1"
 
       - name: Print the URL of the listening server
