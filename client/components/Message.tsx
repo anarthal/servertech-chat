@@ -9,6 +9,7 @@ function formatDate(date: number): string {
   }).format(new Date(date));
 }
 
+// A message in the conversation screen, sent by a user that's not ourselves
 export const OtherUserMessage = ({
   username,
   content,
@@ -38,6 +39,7 @@ export const OtherUserMessage = ({
   );
 };
 
+// A message in the conversation screen, sent by ourselves
 export const MyMessage = ({
   content,
   timestamp,

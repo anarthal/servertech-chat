@@ -5,11 +5,17 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/signal_set.hpp>
+
 #include <cstdlib>
 #include <iostream>
+#include <string>
 
-#include "application.hpp"
 #include "error.hpp"
+#include "listener.hpp"
+#include "redis_client.hpp"
+#include "shared_state.hpp"
 
 using namespace chat;
 
@@ -24,26 +30,48 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    // Construct a config object
-    chat::application_config config{
-        argv[3],                                          // doc_root
-        argv[1],                                          // ip
-        static_cast<unsigned short>(std::atoi(argv[2])),  // port
-    };
+    // Application config
+    const char* doc_root = argv[3];                               // Path to static files
+    const char* ip = argv[1];                                     // IP where the server will listen
+    auto port = static_cast<unsigned short>(std::atoi(argv[2]));  // Port
 
-    // Construct an application object
-    chat::application app(std::move(config));
+    // An event loop, where the application will run. The server is single-
+    // threaded, so we set the concurrency hint to 1
+    boost::asio::io_context ioc{1};
 
-    // Bind the app to the port and launch tasks
-    auto ec = app.setup();
+    // Singleton objects shared by all connections
+    auto st = std::make_shared<shared_state>(doc_root, redis_client(ioc.get_executor()));
+
+    // The physical endpoint where our server will listen
+    boost::asio::ip::tcp::endpoint listening_endpoint{boost::asio::ip::make_address(ip), port};
+
+    // A signal_set allows us to intercept SIGINT and SIGTERM and
+    // exit gracefully
+    boost::asio::signal_set signals{ioc.get_executor(), SIGINT, SIGTERM};
+
+    // Launch the Redis connection
+    st->redis().start_run();
+
+    // Start listening for HTTP connections. This will run until the context is stopped
+    auto ec = launch_http_listener(ioc.get_executor(), listening_endpoint, st);
     if (ec)
     {
-        log_error(ec, "Error setting up the application");
+        log_error(ec, "Error launching the HTTP listener");
         exit(EXIT_FAILURE);
     }
 
-    // Run the application until stopped by a signal
-    app.run_until_completion(true);
+    // Capture SIGINT and SIGTERM to perform a clean shutdown
+    signals.async_wait([st, &ioc](error_code, int) {
+        // Stop the Redis reconnection loop
+        st->redis().cancel();
+
+        // Stop the io_context. This will cause run() to return
+        ioc.stop();
+    });
+
+    // Run the io_context. This will block until the context is stopped by
+    // a signal and all outstanding async tasks are finished.
+    ioc.run();
 
     // (If we get here, it means we got a SIGINT or SIGTERM)
     return EXIT_SUCCESS;

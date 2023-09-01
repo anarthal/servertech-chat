@@ -7,6 +7,7 @@
 
 #include "listener.hpp"
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 
@@ -18,7 +19,18 @@
 
 using namespace chat;
 
-static void do_listen(
+// An exception handler for coroutines that rethrows any exception thrown by
+// the coroutine. We handle all known error cases with error_code's. If an
+// exception is raised, it's something critical, e.g. out of memory.
+// Re-raising it in the exception handler will case io_context::run()
+// to throw and terminate the program.
+static constexpr auto rethrow_handler = [](std::exception_ptr ex) {
+    if (ex)
+        std::rethrow_exception(ex);
+};
+
+// The actual accept loop, coroutine-based
+static void accept_loop(
     boost::asio::ip::tcp::acceptor acceptor,
     std::shared_ptr<chat::shared_state> st,
     boost::asio::yield_context yield
@@ -26,80 +38,68 @@ static void do_listen(
 {
     error_code ec;
 
+    // We accept connections in an infinite loop. When the io_context is stopped,
+    // coroutines are "cancelled" by throwing an internal exception, exiting
+    // the loop.
     while (true)
     {
+        // Accept a new connection
         auto sock = acceptor.async_accept(yield[ec]);
         if (ec)
             return chat::log_error(ec, "accept");
 
-        // Launch a new session for this connection
+        // Launch a new session for this connection. Each session gets its
+        // own stackful coroutine, so we can get back to listening for new connections.
         boost::asio::spawn(
             sock.get_executor(),
             [state = st, socket = std::move(sock)](boost::asio::yield_context yield) mutable {
                 run_http_session(std::move(socket), std::move(state), yield);
             },
-            // we ignore the result of the session,
-            // most errors are handled with error_code
-            [](std::exception_ptr ex) {
-                // if an exception occurred in the coroutine,
-                // it's something critical, e.g. out of memory
-                // we capture normal errors in the ec
-                // so we just rethrow the exception here,
-                // which will cause `ioc.run()` to throw
-                if (ex)
-                    std::rethrow_exception(ex);
-            }
+            rethrow_handler  // Propagate exceptions to the io_context
         );
     }
 }
 
-listener::listener(boost::asio::any_io_executor ex) : acceptor_(std::move(ex)) {}
-
-error_code listener::setup(boost::asio::ip::tcp::endpoint listening_endpoint)
+error_code chat::launch_http_listener(
+    boost::asio::any_io_executor ex,
+    boost::asio::ip::tcp::endpoint listening_endpoint,
+    std::shared_ptr<shared_state> state
+)
 {
     error_code ec;
 
+    // An object that allows us to acept incoming TCP connections
+    boost::asio::ip::tcp::acceptor acceptor{ex};
+
     // Open the acceptor
-    acceptor_.open(listening_endpoint.protocol(), ec);
+    acceptor.open(listening_endpoint.protocol(), ec);
     if (ec)
         return ec;
 
     // Allow address reuse
-    acceptor_.set_option(boost::asio::socket_base::reuse_address(true), ec);
+    acceptor.set_option(boost::asio::socket_base::reuse_address(true), ec);
     if (ec)
         return ec;
 
     // Bind to the server address
-    acceptor_.bind(listening_endpoint, ec);
+    acceptor.bind(listening_endpoint, ec);
     if (ec)
         return ec;
 
     // Start listening for connections
-    acceptor_.listen(boost::asio::socket_base::max_listen_connections, ec);
+    acceptor.listen(boost::asio::socket_base::max_listen_connections, ec);
     if (ec)
         return ec;
 
-    return error_code();
-}
-
-void listener::run_until_completion(std::shared_ptr<shared_state> state)
-{
-    auto ex = acceptor_.get_executor();
+    // Spawn a coroutine that will accept the connections. From this point,
+    // everything is handled asynchronously, with stackful coroutines.
     boost::asio::spawn(
         std::move(ex),
-        [acceptor = std::move(acceptor_), st = std::move(state)](boost::asio::yield_context yield) mutable {
-            do_listen(std::move(acceptor), std::move(st), yield);
+        [acceptor = std::move(acceptor), st = std::move(state)](boost::asio::yield_context yield) mutable {
+            accept_loop(std::move(acceptor), std::move(st), yield);
         },
-        // we ignore the result of the session,
-        // most errors are handled with error_code
-        [](std::exception_ptr ex) {
-            // if an exception occurred in the coroutine,
-            // it's something critical, e.g. out of memory
-            // we capture normal errors in the ec
-            // so we just rethrow the exception here,
-            // which will cause `ioc.run()` to throw
-            if (ex)
-                std::rethrow_exception(ex);
-        }
+        rethrow_handler  // Propagate exceptions to the io_context
     );
+
+    return error_code();
 }

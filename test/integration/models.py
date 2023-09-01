@@ -1,6 +1,9 @@
 from pydantic import BaseModel, Field
 from typing import List, Literal
 
+# pydantic models describing our API structures. These classes perform
+# automatic validation of JSON data
+
 class User(BaseModel):
     id: str
     username: str
@@ -12,7 +15,8 @@ class MessageWithoutId(BaseModel):
 
 
 class Message(MessageWithoutId):
-    id: str = Field(pattern=r'[0-9]+\-[0-9]+')
+    id: str = Field(pattern=r'[0-9]+\-[0-9]+') # Redis stream ID
+    timestamp: int
 
 
 class Room(BaseModel):

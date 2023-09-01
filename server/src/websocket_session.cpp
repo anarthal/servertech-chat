@@ -28,16 +28,15 @@
 #include "shared_state.hpp"
 #include "websocket.hpp"
 
+using namespace chat;
+
+namespace {
+
 static void fail(chat::error_code ec, char const* what)
 {
     // Don't report these
     if (ec != boost::beast::websocket::error::closed)
         chat::log_error(ec, what);
-}
-
-chat::websocket_session::websocket_session(websocket socket, std::shared_ptr<shared_state> state)
-    : ws_(std::move(socket)), state_(std::move(state))
-{
 }
 
 // TODO: stub for now
@@ -50,8 +49,6 @@ static std::vector<chat::room> get_rooms()
         {"wasm",  "Web assembly"       },
     };
 }
-
-namespace {
 
 struct event_handler_visitor
 {
@@ -90,7 +87,7 @@ struct event_handler_visitor
                 yield.get_executor(),
                 [sess = it->session, stringified_evt](boost::asio::yield_context yield) {
                     chat::error_code ec;
-                    sess->get_websocket().write(*stringified_evt, yield[ec]);
+                    sess->write(*stringified_evt, yield[ec]);
                 },
                 boost::asio::detached
             );
@@ -122,30 +119,30 @@ struct event_handler_visitor
     }
 };
 
-struct session_map_deleter
-{
-    chat::session_map& sessmap;
-
-    void operator()(chat::websocket_session* sess) const noexcept { sessmap.remove_session(*sess); }
-};
-
-using session_map_guard = std::unique_ptr<chat::websocket_session, session_map_deleter>;
-
 }  // namespace
+
+chat::websocket_session::websocket_session(websocket socket, std::shared_ptr<shared_state> state)
+    : ws_(std::move(socket)), state_(std::move(state))
+{
+}
+
+error_code chat::websocket_session::write(std::string_view msg, boost::asio::yield_context yield)
+{
+    return ws_.write(msg, yield);
+}
 
 void chat::websocket_session::run(boost::asio::yield_context yield)
 {
     error_code ec;
 
     // Lock writes in the websocket. This ensures that no message is written before the hello.
-    auto write_guard = ws_.lock_writes();
+    auto write_guard = ws_.lock_writes(yield);
 
     // Get the rooms the user is in
     auto rooms = get_rooms();
 
     // Add the session to the map
-    state_->sessions().add_session(shared_from_this(), rooms);
-    session_map_guard guard{this, session_map_deleter{state_->sessions()}};
+    auto sessmap_guard = state_->sessions().add_session_guarded(shared_from_this(), rooms);
 
     // Retrieve room history
     auto history = state_->redis().get_room_history(rooms, yield);

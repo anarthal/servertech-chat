@@ -108,4 +108,25 @@ BOOST_AUTO_TEST_CASE(remove_session_not_present)
     BOOST_CHECK_NO_THROW(map.remove_session(*sess1));
 }
 
+BOOST_AUTO_TEST_CASE(add_session_guarded)
+{
+    // Data
+    session_map map;
+    auto sess1 = make_session();
+    const room sess1rooms[] = {{"r1"}, {"r2"}};
+
+    {
+        // Add sessions
+        auto guard = map.add_session_guarded(sess1, sess1rooms);
+
+        // Get sessions for r1
+        auto r1_sessions = to_set(map.get_sessions("r1"));
+        BOOST_TEST((r1_sessions == session_set{sess1.get()}));
+    }
+
+    // After the guard goes out of scope, the session is removed
+    auto r1_sessions = to_set(map.get_sessions("r1"));
+    BOOST_TEST(r1_sessions.size() == 0u);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

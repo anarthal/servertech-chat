@@ -5,6 +5,9 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+// Unit test main function. We use this formula, instead of BOOST_TEST_MODULE,
+// to allow precompiling <boost/test/unit_test.hpp>
+
 #include <boost/test/unit_test.hpp>
 
 #ifdef BOOST_TEST_ALTERNATIVE_INIT_API

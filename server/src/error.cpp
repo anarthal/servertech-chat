@@ -9,6 +9,8 @@
 
 #include <iostream>
 
+namespace {
+
 static const char* to_string(chat::errc v) noexcept
 {
     switch (v)
@@ -19,8 +21,7 @@ static const char* to_string(chat::errc v) noexcept
     }
 }
 
-namespace chat {
-
+// Custom category for chat::errc. Exposed by get_chat_category
 class chat_category final : public boost::system::error_category
 {
 public:
@@ -28,9 +29,9 @@ public:
     std::string message(int ev) const final override { return to_string(static_cast<chat::errc>(ev)); }
 };
 
-}  // namespace chat
+static chat_category cat;
 
-static chat::chat_category cat;
+}  // namespace
 
 const boost::system::error_category& chat::get_chat_category() noexcept { return cat; }
 

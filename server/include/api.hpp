@@ -17,18 +17,31 @@
 
 namespace chat {
 
-// Events sent to the client
+// Sent to the client when it connects
 struct hello_event
 {
     std::vector<room> rooms;
 };
 
+// Sent by the client as a request to broadcast messages to other clients
+// in a room. Also sent back to the client, when messages are broadcast.
 struct messages_event
 {
     std::string room_id;
     std::vector<message> messages;
 };
 
+// Sent by the client to request more history for a certain room.
+struct request_room_history_event
+{
+    std::string room_id;
+
+    // ID of the earliest-in-time message that the client has.
+    // This is a pagination mechanism.
+    std::string first_message_id;
+};
+
+// Sent to the client as a response to a request_room_history_event
 struct room_history_event
 {
     std::string room_id;
@@ -36,14 +49,8 @@ struct room_history_event
     bool has_more_messages;
 };
 
-// Events received from the client
-struct request_room_history_event
-{
-    std::string room_id;
-    std::string first_message_id;
-};
-
-// Represents any event that may be received from the client
+// A variant that can represent any event that may be received from the client,
+// or an error_code, if the client sent an invalid message
 using any_client_event = boost::variant2::variant<
     error_code,  // Invalid, used to report errors
     messages_event,

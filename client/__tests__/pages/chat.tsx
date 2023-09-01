@@ -13,6 +13,7 @@ import userEvent from "@testing-library/user-event";
 import { saveUser } from "@/lib/user";
 
 describe("chat page", () => {
+  // Data to mock the server
   const u1: User = { id: "u1", username: "User one" };
   const u2: User = { id: "u2", username: "User two" };
   const beastRoom: Room = {
@@ -81,7 +82,11 @@ describe("chat page", () => {
     expect(asFragment()).toMatchSnapshot();
   });
 
-  describe("full page tests", () => {
+  // ChatPage contains the entire page, including websocket interactions and
+  // state management. We use an in-process, mock webserver to simulate the
+  // C++ server
+  describe("ChatPage", () => {
+    // Data
     const helloEvt: HelloEvent = {
       type: "hello",
       payload: {
@@ -89,12 +94,13 @@ describe("chat page", () => {
       },
     };
 
+    // Cleanup any data and connections from previous tests
     beforeEach(() => {
       WS.clean();
     });
 
     test("Room navigation", async () => {
-      // create a WS instance, listening on port 1234 on localhost
+      // create a WS instance, listening on the expected port
       const server = new WS(process.env.NEXT_PUBLIC_WEBSOCKET_URL);
 
       // render the page. This should connect the websocket

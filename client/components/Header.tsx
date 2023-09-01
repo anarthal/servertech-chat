@@ -2,6 +2,8 @@ import React from "react";
 import Image from "next/image";
 import boostLogo from "@/public/boost.jpg";
 
+// The common Header with the Boost logo shown in all pages
+
 const links = [
   { text: "Source code", href: "https://github.com/anarthal/servertech-chat" },
   { text: "Docs", href: "/" },

@@ -27,11 +27,14 @@ class websocket_session : public std::enable_shared_from_this<websocket_session>
     std::shared_ptr<shared_state> state_;
 
 public:
+    // Constructor. websocket::accept should have already been called
     websocket_session(websocket socket, std::shared_ptr<shared_state> state);
 
+    // Runs the session until the client disconnects or an error occurs
     void run(boost::asio::yield_context yield);
 
-    websocket& get_websocket() noexcept { return ws_; }
+    // Writes a message to the client. Used for message broadcasting
+    error_code write(std::string_view msg, boost::asio::yield_context yield);
 };
 
 }  // namespace chat

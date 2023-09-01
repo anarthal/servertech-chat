@@ -14,9 +14,17 @@
 
 namespace chat {
 
+// Serializes a hello_event object to its JSON string representation.
 std::string serialize_hello_event(const hello_event& evt);
+
+// Serializes a messages_event object to its JSON string representation.
 std::string serialize_messages_event(const messages_event& evt);
+
+// Serializes a room_history_event object to its JSON string representation.
 std::string serialize_room_history_event(const room_history_event& evt);
+
+// Parses a message received from the websocket client into a variant
+// holding any of the valid client-side events.
 any_client_event parse_client_event(std::string_view from);
 
 }  // namespace chat

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 
+// The input bar where the user types messages
 export default function MessageInputBar({
   onMessage,
 }: {
@@ -9,7 +10,10 @@ export default function MessageInputBar({
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      // Focus the input when the user presses any key, to make interaction smoother
       inputRef.current.focus();
+
+      // Invoke the passed callback when Entr is hit, then clear the message
       if (event.key === "Enter") {
         const messageContent = inputRef.current?.value;
         if (messageContent) {

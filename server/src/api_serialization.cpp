@@ -9,16 +9,28 @@
 
 #include <boost/describe/class.hpp>
 #include <boost/json/array.hpp>
+#include <boost/json/object.hpp>
 #include <boost/json/parse.hpp>
 #include <boost/json/serialize.hpp>
 #include <boost/json/value_to.hpp>
 #include <boost/variant2/variant.hpp>
+
+#include <string_view>
 
 #include "timestamp.hpp"
 
 using namespace chat;
 
 namespace chat {
+
+// structs describing the wire format for business objects. Having these separate
+// from business.hpp decouples from wire representation and business objects.
+// It also allows to keep BOOST_DESCRIBE_STRUCT metadata in .cpp files, to
+// improve build times.
+//
+// BOOST_DESCRIBE_STRUCT is used to add reflection capabilities to structs.
+// It's used by boost::json::value_to, value_from and try_value_from to
+// automatically generate JSON parsing/serializing code.
 
 // User wire format
 struct wire_user
@@ -54,6 +66,7 @@ BOOST_DESCRIBE_STRUCT(wire_request_room_history, (), (roomId, firstMessageId))
 
 }  // namespace chat
 
+// Helpers
 static chat::message to_message(chat::wire_message&& from)
 {
     return chat::message{
@@ -87,6 +100,14 @@ static boost::json::array serialize_messages(boost::span<const chat::message> me
     return res;
 }
 
+static std::string serialize_event(std::string_view type, boost::json::object payload)
+{
+    boost::json::object evt;
+    evt.emplace("type", type);
+    evt.emplace("payload", std::move(payload));
+    return boost::json::serialize(evt);
+}
+
 std::string chat::serialize_hello_event(const hello_event& evt)
 {
     // Rooms
@@ -103,44 +124,26 @@ std::string chat::serialize_hello_event(const hello_event& evt)
     }
 
     // Event
-    // clang-format off
-    boost::json::value res{
-        {"type",    "hello"},
-        {"payload", {
-            {"rooms", std::move(json_rooms)},
-        }}
-    };
-    // clang-format on
-    return boost::json::serialize(res);
+    boost::json::object payload;
+    payload.emplace("rooms", std::move(json_rooms));
+    return serialize_event("hello", std::move(payload));
 }
 
 std::string chat::serialize_messages_event(const messages_event& evt)
 {
-    // clang-format off
-    boost::json::value res{
-        {"type",    "messages" },
-        {"payload", {
-            {"roomId", evt.room_id},
-            {"messages", serialize_messages(evt.messages)}
-        }}
-    };
-    // clang-format on
-    return boost::json::serialize(res);
+    boost::json::object payload;
+    payload.emplace("roomId", evt.room_id);
+    payload.emplace("messages", serialize_messages(evt.messages));
+    return serialize_event("messages", std::move(payload));
 }
 
 std::string chat::serialize_room_history_event(const room_history_event& evt)
 {
-    // clang-format off
-    boost::json::value res{
-        {"type",    "roomHistory" },
-        {"payload", {
-            {"roomId", evt.room_id},
-            {"messages", serialize_messages(evt.messages)},
-            {"hasMoreMessages", evt.has_more_messages}
-        }}
-    };
-    // clang-format on
-    return boost::json::serialize(res);
+    boost::json::object payload;
+    payload.emplace("roomId", evt.room_id);
+    payload.emplace("messages", serialize_messages(evt.messages));
+    payload.emplace("hasMoreMessages", evt.has_more_messages);
+    return serialize_event("roomHistory", std::move(payload));
 }
 
 chat::any_client_event chat::parse_client_event(std::string_view from)
@@ -167,6 +170,7 @@ chat::any_client_event chat::parse_client_event(std::string_view from)
         CHAT_RETURN_ERROR(errc::websocket_parse_error)
     const auto& payload = it->value();
 
+    // Parse the message, depending on its type
     if (type == "messages")
     {
         // Parse the payload

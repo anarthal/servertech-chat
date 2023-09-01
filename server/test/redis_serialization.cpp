@@ -22,11 +22,13 @@ using namespace chat;
 
 BOOST_AUTO_TEST_SUITE(redis_serialization)
 
+// Creates a node with array type
 static resp3::node array_node(std::size_t size, std::size_t depth)
 {
     return {resp3::type::array, size, depth, ""};
 }
 
+// Creates a node with string type
 static resp3::node string_node(std::size_t depth, std::string content)
 {
     return {
@@ -39,6 +41,7 @@ static resp3::node string_node(std::size_t depth, std::string content)
 
 BOOST_AUTO_TEST_CASE(parse_room_history_success)
 {
+    // Input data
     std::vector<resp3::node> nodes{
         // top-level node
         array_node(2, 0),
@@ -84,6 +87,7 @@ BOOST_AUTO_TEST_CASE(parse_room_history_success)
 
 BOOST_AUTO_TEST_CASE(parse_room_history_empty)
 {
+    // Input data
     std::vector<resp3::node> nodes{
         // top-level node
         array_node(0, 0),
@@ -99,6 +103,7 @@ BOOST_AUTO_TEST_CASE(parse_room_history_empty)
 
 BOOST_AUTO_TEST_CASE(parse_room_history_error)
 {
+    // Input data
     std::vector<resp3::node> nodes{
         // top-level node
         array_node(1, 0),
@@ -120,6 +125,7 @@ BOOST_AUTO_TEST_CASE(parse_room_history_error)
 
 BOOST_AUTO_TEST_CASE(parse_room_history_batch_success)
 {
+    // Input data
     std::vector<resp3::node> nodes{
         // 1st room top-level node
         array_node(2, 0),
@@ -189,6 +195,7 @@ BOOST_AUTO_TEST_CASE(parse_room_history_batch_success)
 
 BOOST_AUTO_TEST_CASE(parse_room_history_batch_empty)
 {
+    // Input data
     std::vector<resp3::node> nodes{};
 
     // Call the function
@@ -201,6 +208,7 @@ BOOST_AUTO_TEST_CASE(parse_room_history_batch_empty)
 
 BOOST_AUTO_TEST_CASE(parse_room_history_batch_error)
 {
+    // Input data
     std::vector<resp3::node> nodes{
         // top-level node
         array_node(1, 0),
@@ -223,10 +231,11 @@ BOOST_AUTO_TEST_CASE(parse_room_history_batch_error)
 
 BOOST_AUTO_TEST_CASE(parse_string_list_success)
 {
+    // Input data
     std::vector<resp3::node> nodes{string_node(0, "s1"), string_node(0, "s2"), string_node(0, "mykey")};
 
     // Call the function
-    auto res = parse_string_list(nodes);
+    auto res = parse_batch_xadd_response(nodes);
     auto& val = res.value();
 
     // Validate
@@ -235,10 +244,11 @@ BOOST_AUTO_TEST_CASE(parse_string_list_success)
 
 BOOST_AUTO_TEST_CASE(parse_string_list_empty)
 {
+    // Input data
     std::vector<resp3::node> nodes{};
 
     // Call the function
-    auto res = parse_string_list(nodes);
+    auto res = parse_batch_xadd_response(nodes);
     auto& val = res.value();
 
     // Validate
@@ -247,6 +257,7 @@ BOOST_AUTO_TEST_CASE(parse_string_list_empty)
 
 BOOST_AUTO_TEST_CASE(parse_string_list_error)
 {
+    // Input data
     std::vector<resp3::node> nodes{
         string_node(0, "s1"),
         array_node(1, 0),  // This shouldn't be here
@@ -254,12 +265,13 @@ BOOST_AUTO_TEST_CASE(parse_string_list_error)
     };
 
     // Call the function
-    auto res = parse_string_list(nodes);
+    auto res = parse_batch_xadd_response(nodes);
     BOOST_TEST(res.error() == error_code(errc::redis_parse_error));
 }
 
 BOOST_AUTO_TEST_CASE(serialize_redis_message_success)
 {
+    // Input data
     message input{
         "100-10",
         "hello world!",
@@ -267,8 +279,10 @@ BOOST_AUTO_TEST_CASE(serialize_redis_message_success)
         timestamp_t{std::chrono::milliseconds(123)},
     };
 
+    // Call the function
     auto output = serialize_redis_message(input);
 
+    // Validate
     const char*
         expected = R"%({"user":{"id":"user1","username":"name1"},"content":"hello world!","timestamp":123})%";
     BOOST_TEST(output == expected);

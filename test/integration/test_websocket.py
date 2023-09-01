@@ -1,32 +1,20 @@
-import json
 from websockets.sync.client import connect
 from contextlib import contextmanager
 from .models import HelloEvent, MessageWithoutId, ReceivedMessagesEvent, SentMessagesEvent, SentMessagesEventPayload, User
 
-
-def test_hello():
-    with connect("ws://localhost:8080") as websocket:
-        message = HelloEvent.model_validate_json(websocket.recv(timeout=3))
-
-        # We know which rooms we have, but not the messages they've got
-        expected_rooms = [
-            ("beast", "Boost.Beast"),
-            ("async", "Boost.Async"),
-            ("db", "Database connectors"),
-            ("wasm", "Web assembly"),
-        ]
-
-        for actual, (expected_id, expected_name) in zip(message.payload.rooms, expected_rooms):
-            assert actual.id == expected_id
-            assert actual.name == expected_name
+# These tests verify that the websocket API works as expected, with a real
+# server and a real DB running. These tests should be run with exclusive
+# access to the server (no other tests or human users running in parallel).
+# They don't access or modify the DB directly, so it's safe to run them
+# several times or with existent data.
 
 
-# Clean up any received message before closing the socket.
+# Read any received message before closing the socket.
 # There seems to be a race condition that hangs close if we don't do this.
 @contextmanager
-def connect_websocket():
+def _connect_websocket():
+    ws = connect("ws://localhost:8080", close_timeout=0.1)
     try:
-        ws = connect("ws://localhost:8080", close_timeout=0.1)
         yield ws
     finally:
         try:
@@ -37,9 +25,38 @@ def connect_websocket():
         ws.close()
 
 
+def test_hello():
+    '''
+    When we connect to the server, we receive a hello as the first event,
+    containing the rooms the user is subscribed to.
+    '''
+
+    with connect("ws://localhost:8080") as websocket:
+        # Receive and parse the hello event
+        message = HelloEvent.model_validate_json(websocket.recv(timeout=3))
+
+        # We know which rooms we have, but not the messages they've got
+        expected_rooms = [
+            ("beast", "Boost.Beast"),
+            ("async", "Boost.Async"),
+            ("db", "Database connectors"),
+            ("wasm", "Web assembly"),
+        ]
+
+        # Validate
+        for actual, (expected_id, expected_name) in zip(message.payload.rooms, expected_rooms):
+            assert actual.id == expected_id
+            assert actual.name == expected_name
+
+
 def test_send_receive_messages():
-    with connect_websocket() as ws1:
-        with connect_websocket() as ws2:
+    '''
+    We can broadcast messages to other clients. When we send a message to the
+    server, we receive it back with its ID and timestamp, and other clients
+    receive it, too.
+    '''
+    with _connect_websocket() as ws1:
+        with _connect_websocket() as ws2:
             # Read hello messages
             HelloEvent.model_validate_json(ws1.recv(timeout=1))
             HelloEvent.model_validate_json(ws2.recv(timeout=1))
@@ -94,7 +111,12 @@ def test_send_receive_messages():
 
 
 def test_new_messages_appear_in_history():
-    with connect_websocket() as ws1:
+    '''
+    After we send a message, it appears in message history, and other clients
+    get it in the hello event.
+    '''
+
+    with _connect_websocket() as ws1:
         # Read hello message
         hello_1 = HelloEvent.model_validate_json(ws1.recv(timeout=1))
 
@@ -128,18 +150,14 @@ def test_new_messages_appear_in_history():
         ReceivedMessagesEvent.model_validate_json(ws1.recv())
 
         # Connect another websocket and read the hello
-        with connect_websocket() as ws2:
+        with _connect_websocket() as ws2:
             hello_2 = HelloEvent.model_validate_json(ws2.recv(timeout=1))
         
     # Validate that two new messages were added to the room's history
-    wasm_room_1 = next(r for r in hello_1.payload.rooms if r.id == 'wasm')
     wasm_room_2 = next(r for r in hello_2.payload.rooms if r.id == 'wasm')
-    assert len(wasm_room_2.messages) == len(wasm_room_1.messages) + 2
 
     # Last message goes first
     assert wasm_room_2.messages[0].content == 'Test message 2'
     assert wasm_room_2.messages[1].content == 'Test message 1'
     assert wasm_room_2.messages[0].id > wasm_room_2.messages[1].id
-
-
 

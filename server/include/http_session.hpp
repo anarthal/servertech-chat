@@ -13,10 +13,14 @@
 #include <cstddef>
 #include <memory>
 
-#include "shared_state.hpp"
-
 namespace chat {
 
+// Forward declaration
+class shared_state;
+
+// Runs a HTTP session until the connection is closed or an error is encountered.
+// This will serve static files over HTTP or run a websocket session, depending
+// on what the client requested.
 void run_http_session(
     boost::asio::ip::tcp::socket&& socket,
     std::shared_ptr<shared_state> state,

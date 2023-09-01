@@ -17,16 +17,20 @@
 
 #include "business.hpp"
 #include "error.hpp"
-#include "redis_fwd.hpp"
+
+// A high-level, specialized Redis client. It implements the operations
+// required b our server, abstracting away the actual Redis commands.
 
 namespace chat {
 
 class redis_client
 {
+    // Using the pimp idiom to reduce build times
     struct impl;
     std::unique_ptr<impl> impl_;
 
 public:
+    // Constructors, assignments, destructor
     redis_client(boost::asio::any_io_executor ex);
     redis_client(const redis_client&) = delete;
     redis_client(redis_client&&) noexcept;
@@ -34,14 +38,18 @@ public:
     redis_client& operator=(redis_client&&) noexcept;
     ~redis_client();
 
+    // Starts the Redis runner task, in detached mode. This must be called once
+    // to allow other operations to make progress and keep the reconnection loop
+    // running
     void start_run();
+
+    // Cancels the Redis runner task. To be called at shutdown
     void cancel();
 
     // The maximum number of messages for a room that get retrieved in a single go
     static constexpr std::size_t message_batch_size = 100;
 
     // Retrieves a full batch of room history for several rooms
-    // TODO: we could just retrieve the 1st message for all except the 1st room
     result<std::vector<std::vector<message>>> get_room_history(
         boost::span<const room> rooms,
         boost::asio::yield_context yield
@@ -54,6 +62,7 @@ public:
         boost::asio::yield_context yield
     );
 
+    // Inserts a batch of messages into a certain room's history.
     // Returns a list with IDs for the newly inserted messages
     result<std::vector<std::string>> store_messages(
         std::string_view room_id,

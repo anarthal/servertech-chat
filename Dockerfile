@@ -21,7 +21,9 @@ RUN apk update && \
         linux-headers \
         wget
 
-# Boost
+# Boost. Boost.Redis hasn't been integrated into Boost (yet), so we need to
+# manually put it into $BOOST_ROOT/libs before building Boost. Remove intermediate
+# build files to make CI caching lighter
 WORKDIR /boost-src
 RUN \
     REDIS_COMMIT=f506e1baee4941bff1f8e2f3aa7e1b9cf08cb199 && \
@@ -92,15 +94,13 @@ RUN npm run build
 # Client tests. This is an optional step
 #
 FROM client-builder-base AS client-tests
-
-# Run the tests
 RUN npm run test
 
 #
-# Runtime image. curl is required for health checks
+# Runtime image
 #
 FROM alpine:3.18.2
-RUN apk add openssl libstdc++ curl
+RUN apk add openssl libstdc++
 COPY --from=server-builder \
     /boost/lib/libboost_container.so* \
     /boost/lib/libboost_context.so* \

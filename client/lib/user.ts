@@ -1,3 +1,6 @@
+// Functions to operate with users. This does NOT implement proper
+// authentication, and will go away when this feature is implemented
+
 export type User = {
   id: string;
   username: string;

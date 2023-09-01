@@ -22,6 +22,7 @@
 
 using namespace chat;
 
+// Spawns a coroutine, detached. Rethrows any exceptions
 static void spawn_coroutine(
     boost::asio::any_io_executor ex,
     std::function<void(boost::asio::yield_context)> fn
@@ -33,6 +34,7 @@ static void spawn_coroutine(
     });
 }
 
+// Spawns a coroutine and runs it until completion
 static void run_coroutine(void (*fn)(boost::asio::yield_context))
 {
     boost::asio::io_context ctx;

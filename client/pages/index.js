@@ -2,15 +2,16 @@ import Head from "next/head";
 import styles from "@/styles/Home.module.css";
 import Header from "@/components/Header";
 import { TextField, Button } from "@mui/material";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { loadUser, saveUser, createUser } from "@/lib/user";
 import { useRouter } from "next/navigation";
 
-export default function Home() {
+// The home page
+export default function HomePage() {
   const [username, setUserName] = useState("");
   const router = useRouter();
 
-  const onButtonClick = () => {
+  const onButtonClick = useCallback(() => {
     let user = loadUser();
     if (user) {
       user.username = username;
@@ -19,7 +20,12 @@ export default function Home() {
     }
     saveUser(user);
     router.push("/chat");
-  };
+  }, [router, username]);
+
+  const onInputChange = useCallback(
+    (event) => setUserName(event.target.value),
+    [setUserName],
+  );
 
   return (
     <>
@@ -51,7 +57,7 @@ export default function Home() {
                   placeholder="Choose a username..."
                   className="pr-4 pl-4 flex-1"
                   value={username}
-                  onChange={(event) => setUserName(event.target.value)}
+                  onChange={onInputChange}
                 />
                 <Button
                   variant="contained"

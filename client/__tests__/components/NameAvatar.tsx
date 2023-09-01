@@ -11,6 +11,7 @@ describe("NameAvatar", () => {
     // Render
     const { asFragment } = render(<NameAvatar name={name} />);
 
+    // Sanity check
     expect(screen.getByText(initial)).toBeInTheDocument();
 
     // Snapshot test

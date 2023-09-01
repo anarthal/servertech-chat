@@ -12,6 +12,10 @@ import { MyMessage, OtherUserMessage } from "@/components/Message";
 import MessageInputBar from "@/components/MessageInputBar";
 import autoAnimate from "@formkit/auto-animate";
 
+// The chat screen. This component uses React state management using
+// useReducer.
+
+// The type of the state that useReducer handles
 type State = {
   currentUser: User | null;
   loading: boolean;
@@ -19,6 +23,7 @@ type State = {
   currentRoomId: string | null;
 };
 
+// To be dispatched when the hello event is received. Sets the initial state
 type SetInitialStateAction = {
   type: "set_initial_state";
   payload: {
@@ -27,6 +32,7 @@ type SetInitialStateAction = {
   };
 };
 
+// Adds a batch of messages to a certain room
 type AddMessagesAction = {
   type: "add_messages";
   payload: {
@@ -35,6 +41,7 @@ type AddMessagesAction = {
   };
 };
 
+// Sets the current active room (e.g. when the user clicks in a room)
 type SetCurrentRoomAction = {
   type: "set_current_room";
   payload: {
@@ -42,8 +49,10 @@ type SetCurrentRoomAction = {
   };
 };
 
+// Any of the above
 type Action = SetInitialStateAction | AddMessagesAction | SetCurrentRoomAction;
 
+// A Message, either from our user or from another user
 const Message = ({
   userId,
   username,
@@ -70,6 +79,7 @@ const Message = ({
   }
 };
 
+// Helpers to process actions
 const addNewMessages = (
   messages: Message[],
   newMessages: Message[],
@@ -109,23 +119,6 @@ function doAddMessages(state: State, action: AddMessagesAction): State {
   };
 }
 
-function reducer(state: State, action: Action): State {
-  const { type, payload } = action;
-  switch (type) {
-    case "set_initial_state":
-      return doSetInitialState(action);
-    case "add_messages":
-      return doAddMessages(state, action);
-    case "set_current_room":
-      return {
-        ...state,
-        currentRoomId: payload.roomId,
-      };
-    default:
-      return state;
-  }
-}
-
 function getLastMessageTimestamp(room: Room): number {
   return room.messages.length > 0 ? room.messages[0].timestamp : 0;
 }
@@ -146,6 +139,27 @@ function findRoomWithLatestMessage(rooms: Room[]): Room | null {
   }, null);
 }
 
+// The reducer
+function reducer(state: State, action: Action): State {
+  const { type, payload } = action;
+  switch (type) {
+    case "set_initial_state":
+      return doSetInitialState(action);
+    case "add_messages":
+      return doAddMessages(state, action);
+    case "set_current_room":
+      return {
+        ...state,
+        currentRoomId: payload.roomId,
+      };
+    default:
+      return state;
+  }
+}
+
+// Retrieves the websocket URL to connect to. This is either embedded by
+// the client generation process, defaulting to the host and port we're been
+// served from
 function getWebsocketURL(): string {
   const res =
     process.env.NEXT_PUBLIC_WEBSOCKET_URL ||
@@ -167,6 +181,8 @@ export const ChatScreen = ({
   onClickRoom: (roomId: string) => void;
   onMessage: (msg: string) => void;
 }) => {
+  // Animate transitions. We use this instead of useAutoAnimate because the
+  // latter doesn't play well with Jest
   const messagesRef = useCallback((elm) => {
     if (elm) autoAnimate(elm);
   }, []);
@@ -220,7 +236,9 @@ export const ChatScreen = ({
   );
 };
 
-export default function Home() {
+// The actual component
+export default function ChatPage() {
+  // State management
   const [state, dispatch] = useReducer(reducer, {
     currentUser: null,
     loading: true,
@@ -228,6 +246,7 @@ export default function Home() {
     currentRoomId: null,
   });
 
+  // Send a websocket message to the server when the user hits enter
   const onMessageTyped = useCallback(
     (msg: string) => {
       const evt = serializeMessagesEvent(state.currentRoomId, {
@@ -242,6 +261,7 @@ export default function Home() {
     [state.currentUser?.id, state.currentUser?.username, state.currentRoomId],
   );
 
+  // Change the current active room when the user clicks on it
   const onClickRoom = useCallback(
     (roomId: string) => {
       dispatch({ type: "set_current_room", payload: { roomId } });
@@ -249,6 +269,7 @@ export default function Home() {
     [dispatch],
   );
 
+  // Handle server websocket messages
   const onWebsocketMessage = useCallback((event: MessageEvent) => {
     const { type, payload } = parseWebsocketMessage(event.data);
     switch (type) {
@@ -273,8 +294,8 @@ export default function Home() {
     }
   }, []);
 
+  // Create a websocket
   const websocketRef = useRef<WebSocket>(null);
-
   useEffect(() => {
     websocketRef.current = new WebSocket(getWebsocketURL());
     websocketRef.current.addEventListener("message", onWebsocketMessage);
@@ -286,8 +307,10 @@ export default function Home() {
     };
   }, [onWebsocketMessage]);
 
+  // Handle loading state
   if (state.loading) return <p>Loading...</p>;
 
+  // The actual screen
   const currentRoom = state.rooms[state.currentRoomId] || null;
   const rooms = Object.values(state.rooms);
   sortRoomsByLastMessageInplace(rooms);

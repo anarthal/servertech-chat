@@ -1,6 +1,7 @@
 import NameAvatar from "@/components/NameAvatar";
 import { useCallback } from "react";
 
+// A clickable chat room card
 export default function RoomEntry({
   id,
   name,

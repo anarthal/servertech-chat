@@ -21,16 +21,22 @@
 
 namespace chat {
 
-// TODO: can we make this use string_view?
+// Parses the result of getting the history for several rooms, in a batch
+// (i.e. several batched XREVRANGEs)
 result<std::vector<std::vector<message>>> parse_room_history_batch(const boost::redis::generic_response& from
 );
+
+// Parses the result of getting the history for a single room (i.e. a single XREVRANGE)
 result<std::vector<message>> parse_room_history(const boost::redis::generic_response& from);
 
-// XADD pipeline responses. Calling execute with vector<string> doesn't work because
-// Boost.Redis interprets it as a single response containing a list, instead of multiple
-// responses containing a single string
-result<std::vector<std::string>> parse_string_list(const boost::redis::generic_response& from);
+// Parses the response of a batch of XADDs. The response of each XADD is a string,
+// containing the ID of the inserted record. Calling execute with vector<string>
+// doesn't work because Boost.Redis will attempt to parse a single response containing
+// an array of strings, instead of multiple responses with a single string
+result<std::vector<std::string>> parse_batch_xadd_response(const boost::redis::generic_response& from);
 
+// We store messages in streams as serialized JSON objects. Serialize
+// a message into its JSON representation
 std::string serialize_redis_message(const message& msg);
 
 }  // namespace chat

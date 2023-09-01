@@ -8,6 +8,8 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_PCH_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_PCH_HPP
 
+// Precompiled header, to speed-up compilation.
+
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>

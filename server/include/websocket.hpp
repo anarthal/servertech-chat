@@ -25,11 +25,12 @@ namespace chat {
 // and reduces build times by keeping Beast instantiations in a separate .cpp file.
 class websocket
 {
+    // pimpl idiom, to avoid including heavyweight Beast headers
     struct impl;
     std::unique_ptr<impl> impl_;
 
     error_code write_locked_impl(std::string_view buff, boost::asio::yield_context yield);
-    void lock_writes_impl() noexcept;
+    void lock_writes_impl(boost::asio::yield_context yield) noexcept;
     void unlock_writes_impl() noexcept;
 
     struct write_guard_deleter
@@ -38,6 +39,7 @@ class websocket
     };
 
 public:
+    // Constructors, assignments, destructor
     websocket(boost::asio::ip::tcp::socket sock, boost::beast::flat_buffer buffer);
     websocket(const websocket&) = delete;
     websocket(websocket&&) noexcept;
@@ -45,28 +47,33 @@ public:
     websocket& operator=(websocket&&) noexcept;
     ~websocket();
 
-    // Accepting connections
+    // Runs the websocket handshake. Must be called before any other operation
     error_code accept(
         boost::beast::http::request<boost::beast::http::string_body> upgrade_request,
         boost::asio::yield_context yield
     );
 
-    // Reading. Only a single concurrent read is allowed
+    // Reads a message from the client. The returned view is valid until the next
+    // read is performed. Only a single read should be outstanding at each time
+    // (unlike writes, reads are not serialized).
     result<std::string_view> read(boost::asio::yield_context yield);
 
-    // Writing. Multiple concurrent writes are supported.
+    // Writes a message to the client. Writes are serialized: two
+    // concurrent writes can be issued safely against the same websocket.
+    // A write is roughly equivalent to lock_writes() + write_locked() + releasing the guard
     error_code write(std::string_view buff, boost::asio::yield_context yield);
 
-    // Locks writes until the received guard is destroyed. Other coroutines
+    // Locks writes until the returned guard is destroyed. Other coroutines
     // calling write will be suspended until the guard is released.
     using write_guard = std::unique_ptr<websocket, write_guard_deleter>;
-    write_guard lock_writes()
+    write_guard lock_writes(boost::asio::yield_context yield)
     {
-        lock_writes_impl();
+        lock_writes_impl(yield);
         return write_guard(this);
     }
 
-    // Writes bypassing the write lock. lock_writes() must have been called before calling this function
+    // Writes bypassing the write lock. lock_writes() must have been called
+    // before calling this function.
     error_code write_locked(
         std::string_view buff,
         [[maybe_unused]] write_guard& guard,

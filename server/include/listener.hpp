@@ -20,15 +20,14 @@ namespace chat {
 // Forward declaration
 class shared_state;
 
-class listener
-{
-    boost::asio::ip::tcp::acceptor acceptor_;
-
-public:
-    listener(boost::asio::any_io_executor ex);
-    error_code setup(boost::asio::ip::tcp::endpoint listening_endpoint);
-    void run_until_completion(std::shared_ptr<shared_state> state);
-};
+// Launchs a HTTP listener that will accept connections in a loop until
+// the underlying I/O context is stopped. Returns a non-zero error_code
+// if the listener was unable to launch (e.g. the port to bind to is not available).
+error_code launch_http_listener(
+    boost::asio::any_io_executor ex,
+    boost::asio::ip::tcp::endpoint listening_endpoint,
+    std::shared_ptr<shared_state> state
+);
 
 }  // namespace chat
 

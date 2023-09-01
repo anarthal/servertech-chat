@@ -20,10 +20,16 @@
 
 namespace chat {
 
-// An asynchronous mutex to guarantee mutual exclusion in async code
+// An asynchronous mutex to guarantee mutual exclusion in async code. This is
+// similar to Python's asyncio.Mutex. Note that this is not thread-safe - it
+// ensures mutual exclusion between coroutines.
 class async_mutex
 {
+    // Is the mutex locked?
     bool locked_{false};
+
+    // Acts as a condition variable, so that coroutines waiting to acquire
+    // the mutex can be notified when another coroutine releases it
     boost::asio::experimental::channel<void(error_code)> chan_;
 
     struct guard_deleter
@@ -32,6 +38,7 @@ class async_mutex
     };
 
 public:
+    // Constructors, assignments, destructor
     async_mutex(boost::asio::any_io_executor ex) : chan_(std::move(ex)) {}
     async_mutex(const async_mutex&) = delete;
     async_mutex(async_mutex&&) = default;
@@ -50,10 +57,13 @@ public:
         // from the one waked by async_receive, acquire the lock before it. This loop guards against it.
         while (locked_)
         {
+            // Wait to be notified
             error_code ec;
             chan_.async_receive(yield[ec]);
             assert(!ec);
         }
+
+        // Mark as locked
         locked_ = true;
     }
 
@@ -66,15 +76,17 @@ public:
         return true;
     }
 
-    // Unlock. Needs to be locked
+    // Unlock. The mutex must be locked
     void unlock() noexcept
     {
+        // Unlock
         assert(locked_);
         locked_ = false;
+
+        // Notify any waiting coroutines
         chan_.try_send(error_code());
     }
 
-    // RAII-style lock
     using guard = std::unique_ptr<async_mutex, guard_deleter>;
     guard lock_with_guard(boost::asio::yield_context yield)
     {

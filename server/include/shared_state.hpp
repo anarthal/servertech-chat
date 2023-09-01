@@ -15,11 +15,13 @@
 
 namespace chat {
 
+// Forward declaration
 class session_map;
 
-// Represents the shared server state
+// Contains singleton objects shared by all sessions in the server
 class shared_state
 {
+    // pimpl-like idiom to avoid including session_map.hpp
     struct
     {
         std::string doc_root_;

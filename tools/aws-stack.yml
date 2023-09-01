@@ -1,18 +1,36 @@
+#
+# Copyright (c) 2023 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+
+# A CloudFormation stack describing the required infrastructure to run our
+# application in AWS. This is used by the CI to deploy. All of the parameters
+# can be passed by the CI to configure things.
+
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
+  # Some regions support t2.micro and some others do not, so we allow the instance
+  # type to be configured
   InstanceType:
     Type: String
     Description: The instance EC2 type that will be launched
     Default: t3.micro
+  # Full image for the cppserver container (including the tag). Changing this
+  # updates the application to a newer version
   CppserverImage:
     Type: String
     Description: The Docker fully-qualified image for the cppserver container
+  # Optional SSH key pair to enable SSH access to the deployed machine
   KeyName:
     Type: String
     Description: |
       Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
       Leave it blank to disable SSH access.
     Default: ""
+  # AMIs are region-dependant. This construct uses AWS SSM to retrieve the latest
+  # AMI ID for our region.
   ImageId:
     Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
     Description: |
@@ -80,16 +98,16 @@ Resources:
           Content-Disposition: attachment; filename="userdata.txt"
 
           #!/bin/bash -xe
-          yum install -y aws-cfn-bootstrap docker
-          docker container prune -f
-          docker network rm chat-net || echo "Network does not exist"
-          docker run -d --name redis redis:alpine
-          docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ${CppserverImage}
-          docker network create chat-net
+          yum install -y aws-cfn-bootstrap docker # Dependencies
+          docker container prune -f # Remove previous containers
+          docker network rm chat-net || echo "Network does not exist" # Remove previous net
+          docker run -d --name redis redis:alpine # Redis
+          docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ${CppserverImage} # C++ server
+          docker network create chat-net # Connect these two
           docker network connect chat-net redis
           docker network connect chat-net cppserver
-          docker image prune -f
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region}
+          docker image prune -f # Remove unused images
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region} # Signal AWS we're OK
 
 Outputs:
   WebServerIp:

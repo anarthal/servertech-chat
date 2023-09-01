@@ -32,7 +32,8 @@ struct redis_wire_user
 };
 BOOST_DESCRIBE_STRUCT(redis_wire_user, (), (id, username))
 
-// Message as stored in Redis, no ID
+// Message as stored in Redis. Note that this contains no ID, since
+// message IDs are stream IDs.
 struct redis_wire_message
 {
     redis_wire_user user;
@@ -43,7 +44,7 @@ BOOST_DESCRIBE_STRUCT(redis_wire_message, (), (user, content, timestamp))
 
 }  // namespace chat
 
-static chat::message to_message(chat::redis_wire_message&& from, std::string_view id)
+static message to_message(chat::redis_wire_message&& from, std::string_view id)
 {
     return chat::message{
         std::string(id),
@@ -56,14 +57,15 @@ static chat::message to_message(chat::redis_wire_message&& from, std::string_vie
     };
 }
 
-chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_batch(
+result<std::vector<std::vector<message>>> chat::parse_room_history_batch(
     const boost::redis::generic_response& from
 )
 {
-    std::vector<std::vector<chat::message>> res;
+    std::vector<std::vector<message>> res;
     error_code ec;
 
-    // Verify success
+    // Verify success. If any of the nodes contains a Redis error (e.g.
+    // because we sent an invalid command), this will contain an error.
     if (from.has_error())
         CHAT_RETURN_ERROR(errc::redis_parse_error)  // TODO: log diagnostics
     const auto& nodes = from.value();
@@ -95,6 +97,7 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
     {
         if (data.state == wants_level0_list)
         {
+            // The top-level list, indicating a new response
             if (node.data_type != resp3::type::array)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
             if (node.depth != 0u)
@@ -104,15 +107,18 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
         }
         else if (data.state == wants_level0_or_entry_list)
         {
+            // We need either a new response or a new message in the current response
             if (node.data_type != resp3::type::array)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
             if (node.depth == 0u)
             {
+                // New response
                 res.emplace_back();
                 data.state = wants_level0_or_entry_list;
             }
             else if (node.depth == 1u)
             {
+                // New message
                 if (node.aggregate_size != 2u)
                     CHAT_RETURN_ERROR(errc::redis_parse_error)
                 data.state = wants_id;
@@ -124,6 +130,7 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
         }
         else if (data.state == wants_id)
         {
+            // We're waiting for the stream ID field
             if (node.data_type != resp3::type::blob_string)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
             if (node.depth != 2u)
@@ -133,6 +140,7 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
         }
         else if (data.state == wants_attr_list)
         {
+            // We're waiting for the stream record attribute list
             if (node.data_type != resp3::type::array)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
             if (node.depth != 2u)
@@ -143,6 +151,8 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
         }
         else if (data.state == wants_key)
         {
+            // We're in the attribute list, waiting for the key. Our messages
+            // only have one key named "payload"
             if (node.data_type != resp3::type::blob_string)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
             if (node.depth != 3u)
@@ -153,6 +163,8 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
         }
         else if (data.state == wants_value)
         {
+            // We're in the attribute list, waiting for the value. It contains
+            // a JSON payload with the message contents
             if (node.data_type != resp3::type::blob_string)
                 CHAT_RETURN_ERROR(errc::redis_parse_error)
             if (node.depth != 3u)
@@ -166,50 +178,67 @@ chat::result<std::vector<std::vector<chat::message>>> chat::parse_room_history_b
             if (msg.has_error())
                 CHAT_RETURN_ERROR(msg.error())
             res.back().push_back(to_message(std::move(msg.value()), *data.id));
+
+            // Reset parser state
             data.state = wants_level0_or_entry_list;
             data.id = nullptr;
         }
     }
 
+    // Corrupted response: unfinished message or response
     if (data.state != wants_level0_or_entry_list && data.state != wants_level0_list)
         CHAT_RETURN_ERROR(errc::redis_parse_error)
 
     return res;
 }
 
-chat::result<std::vector<chat::message>> chat::parse_room_history(const boost::redis::generic_response& from)
+result<std::vector<message>> chat::parse_room_history(const boost::redis::generic_response& from)
 {
+    // Invoke the batch function and get the first element
     auto res = parse_room_history_batch(from);
     if (res.has_error())
         return res.error();
-    return std::move(res->at(0));
+    if (res->size() != 1u)
+        CHAT_RETURN_ERROR(errc::redis_parse_error)
+    return std::move((*res)[0]);
 }
 
-chat::result<std::vector<std::string>> chat::parse_string_list(const boost::redis::generic_response& from)
+result<std::vector<std::string>> chat::parse_batch_xadd_response(const boost::redis::generic_response& from)
 {
+    // Verify success. If any of the nodes contains a Redis error (e.g.
+    // because we sent an invalid command), this will contain an error.
     if (from.has_error())
         CHAT_RETURN_ERROR(errc::redis_parse_error)  // TODO: log diagnostics
     const auto& nodes = from.value();
 
+    // Pre-allocate memory
     std::vector<std::string> res;
     res.reserve(nodes.size());
+
     for (const auto& node : nodes)
     {
+        // Verify that the shape of the response matches
         if (node.depth != 0u)
             CHAT_RETURN_ERROR(errc::redis_parse_error)
         else if (node.data_type != resp3::type::blob_string)
             CHAT_RETURN_ERROR(errc::redis_parse_error)
+
+        // Add to response
         res.push_back(node.value);
     }
+
     return res;
 }
 
 std::string chat::serialize_redis_message(const message& msg)
 {
-    chat::redis_wire_message redis_msg{
+    // Construct the wire message
+    redis_wire_message redis_msg{
         redis_wire_user{msg.usr.id, msg.usr.username},
         msg.content,
         serialize_timestamp(msg.timestamp),
     };
+
+    // Serialize it to JSON
     return boost::json::serialize(boost::json::value_from(redis_msg));
 }

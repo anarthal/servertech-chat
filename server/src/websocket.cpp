@@ -21,9 +21,16 @@
 
 struct chat::websocket::impl
 {
+    // The actual websocket
     boost::beast::websocket::stream<boost::beast::tcp_stream> ws;
+
+    // Buffer to read data from the client
     boost::beast::flat_buffer read_buffer;
+
+    // Mutex to serialize writes
     async_mutex write_mtx_;
+
+    // Make sure that we don't issue two reads concurrently
     bool reading{false};
 
     impl(boost::asio::ip::tcp::socket&& sock, boost::beast::flat_buffer&& buff)
@@ -31,6 +38,7 @@ struct chat::websocket::impl
     {
     }
 
+    // Sets and clears the reading flag using RAII
     struct read_guard_deleter
     {
         void operator()(impl* self) const noexcept { self->reading = false; }
@@ -97,16 +105,23 @@ chat::result<std::string_view> chat::websocket::read(boost::asio::yield_context 
 
     error_code ec;
 
+    // Perform the read
     {
         auto guard = impl_->lock_reads();
         impl_->read_buffer.clear();
         impl_->ws.async_read(impl_->read_buffer, yield[ec]);
     }
 
+    // Check the result
     if (ec)
         return ec;
+
+    // Convert it to a string_view (no copy is performed)
     auto res = buffer_to_sv(impl_->read_buffer.data());
+
+    // Log it
     std::cout << "(READ) " << res << std::endl;
+
     return res;
 }
 
@@ -116,7 +131,10 @@ chat::error_code chat::websocket::write_locked_impl(std::string_view buff, boost
 
     error_code ec;
 
+    // Perform the write
     impl_->ws.async_write(boost::asio::buffer(buff), yield[ec]);
+
+    // Log it
     std::cout << "(WRITE) " << buff << std::endl;
 
     return ec;
@@ -125,16 +143,15 @@ chat::error_code chat::websocket::write_locked_impl(std::string_view buff, boost
 chat::error_code chat::websocket::write(std::string_view message, boost::asio::yield_context yield)
 {
     // Wait for the connection to become iddle
-    auto guard = impl_->write_mtx_.lock_with_guard(yield);
+    auto guard = lock_writes(yield);
 
     // Write
-    return write_locked_impl(message, yield);
+    return write_locked(message, guard, yield);
 }
 
-void chat::websocket::lock_writes_impl() noexcept
+void chat::websocket::lock_writes_impl(boost::asio::yield_context yield) noexcept
 {
-    [[maybe_unused]] bool ok = impl_->write_mtx_.try_lock();
-    assert(ok);
+    impl_->write_mtx_.lock(yield);
 }
 
 void chat::websocket::unlock_writes_impl() noexcept { impl_->write_mtx_.unlock(); }

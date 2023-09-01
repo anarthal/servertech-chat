@@ -1,3 +1,4 @@
+// Config options for the typescript compiler
 {
   "compilerOptions": {
     "lib": [
@@ -5,6 +6,7 @@
       "dom.iterable",
       "esnext"
     ],
+    // Allow import '@/folder' syntax
     "paths": {
       "@/*": [
         "./*"

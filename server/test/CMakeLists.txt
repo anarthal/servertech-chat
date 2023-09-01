@@ -5,17 +5,20 @@
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #
 
+# We're using Boost.Test as testing framework
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
+# Test list
 add_executable(
     unit_tests
-    entry_point.cpp
+    entry_point.cpp # main() definition
     async_mutex.cpp
     redis_serialization.cpp
     api_serialization.cpp
     session_map.cpp
 )
 
+# Linking against servertech_chat allows us to use the functions under test
 target_link_libraries(
     unit_tests
     PRIVATE
@@ -23,12 +26,14 @@ target_link_libraries(
     Boost::unit_test_framework
 )
 
+# We only precompile Boost.Test headers
 target_precompile_headers(
     unit_tests
     PRIVATE
     <boost/test/unit_test.hpp>
 )
 
+# Make ctest run the unit tests
 add_test(
     NAME unit_tests
     COMMAND unit_tests
