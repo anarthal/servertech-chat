@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.16">
-<title>Untitled</title>
+<title>Instant Deployment: From GitHub Fork to Public Server in Minutes</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -437,48 +437,179 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
+<h1>Instant Deployment: From GitHub Fork to Public Server in Minutes</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_authorizing_github_to_access_aws">Authorizing GitHub to access AWS</a></li>
+<li><a href="#_additional_configuration">Additional configuration</a></li>
+<li><a href="#_troubleshooting">Troubleshooting</a></li>
+</ul>
+</div>
 </div>
 <div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Would you like to have your own running server?</p>
+</div>
+<div class="paragraph">
+<p>You can fork this repository, change the code you need and go live in minutes.
+We&#8217;ve created a GitHub actions workflow that will deploy your code to AWS,
+creating any required infrastructure in the process.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authorizing_github_to_access_aws">Authorizing GitHub to access AWS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After you fork the repository, all you need to do is to authorize GitHub
+to access AWS for deployments. Follow these steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create an <a href="https://aws.amazon.com/">AWS account</a>, if you don&#8217;t have one.</p>
+</li>
+<li>
+<p>Navigate to the <a href="https://console.aws.amazon.com/iamv2/">AWS IAM</a> console.</p>
+</li>
+<li>
+<p>Optional step: create a dedicated AWS user to manage deployments. This is
+considered a security good practice. See TODO for more details.</p>
+</li>
+<li>
+<p>Navigate to the Users section in the left panel, and select the user
+that you want to use for deployments.</p>
+</li>
+<li>
+<p>Navigate to the "Security credentials" tab. Locate the "Access keys" section
+and click on the "Create access key" button.</p>
+</li>
+<li>
+<p>Select the "Application running outside AWS" option and click Next.</p>
+</li>
+<li>
+<p>Click on Create access key. You&#8217;ve just created credentials that GitHub can use.</p>
+</li>
+<li>
+<p>In another tab, navigate to your GitHub repository&#8217;s Settings. On the left menu,
+select Secrets and variables, then Actions.</p>
+</li>
+<li>
+<p>Create a new repository secret named <code>AWS_ACCESS_KEY_ID</code>. Copy the value
+named "Access key" from the IAM console and paste it as the secret&#8217;s value, then hit save.</p>
+</li>
+<li>
+<p>Repeat the same process with a secret named <code>AWS_SECRET_ACCESS_KEY</code>,
+pasting the "Secret access key" from the IAM console.</p>
+</li>
+<li>
+<p>Your integration is ready! Make the changes you want, push them to the
+<code>master</code> branch, and they will be deployed to AWS. You can check your deployment
+status by checking the "Actions" tab of your GitHub repository.</p>
+</li>
+<li>
+<p>Your site is live! You can find the address where your server is listening
+in your GitHub actions logs.
+This address is static and will remain the same on successive deployments.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>If you&#8217;re interested in the details behind automatic deployments, check
+TODO this section.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_additional_configuration">Additional configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There are some extra settings that you may find useful:</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p>Standard, best practice Docker container deployments.</p>
+<p>You can change the AWS region you deploy to by changing the value of
+<code>AWS_REGION</code> in your workflow file, <code>.github/wokflows/build.yml</code>.</p>
 </li>
 <li>
-<p>To get yourself started easily, simple AWS deployment script using the
-GitHub container registry, GitHub actions, and a single AWS EC2 instance that
-runs the containers.</p>
+<p>You can also change the EC2 instance type that is launched from this
+file.</p>
 </li>
 <li>
-<p>How to get started for this simple AWS setup:</p>
-</li>
-<li>
-<p>Fork this repository.</p>
-</li>
-<li>
-<p>Sign up for AWS if you haven&#8217;t already. You should be okay with free-tier</p>
-</li>
-<li>
-<p>Configure GHA to be able to access AWS.
-List the required permissions: ec2, cloudformation, smm read only</p>
-</li>
-<li>
-<p>Make any change, push to master</p>
-</li>
-<li>
-<p>Your site is live! The IP is printed by the CI and will remain stable</p>
-</li>
-<li>
-<p>Link to deployment architecture, provide feedback and blah blah</p>
+<p>If you want to SSH into your machines, follow
+<a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-key-pairs.html">these steps</a>
+to create an EC2 key pair. Then, create a GitHub Actions secret named
+SSH_KEY_NAME containing the Name of the key pair you just created, and trigger
+a deployment.</p>
 </li>
 </ul>
 </div>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting">Troubleshooting</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you&#8217;re having trouble with deployments, here are some ideas you can try:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check your GitHub Actions log. Verify that jobs are being triggered correctly,
+and check which step is failing.</p>
+</li>
+<li>
+<p>If GitHub is complaining about lack of permissions, make sure that the
+user that manages deployments has the following permissions, at least:</p>
+</li>
+<li>
+<p>Full access on EC2 (required to create and run your virtual machines).</p>
+</li>
+<li>
+<p>Full access on CloudFormation (required to trigger deployments).</p>
+</li>
+<li>
+<p>Read access on SSM (used internally).</p>
+</li>
+<li>
+<p>The CI uses CloudFormation to deploy the required infrastructure.
+<a href="https://console.aws.amazon.com/cloudformation/">Access the CloudFormation console</a>
+and check that there is a stack called "ServertechChatStack" with green status.</p>
+</li>
+<li>
+<p>If the stack is in a failed state, select it and review the "Events" section,
+which often provides insights about the problem. You may delete the stack
+before re-running the job.</p>
+</li>
+<li>
+<p>If the stack has been successfully deployed, but still can&#8217;t access the server,
+enable SSH as described above. Look up the EC2 instance in the
+<a href="https://console.aws.amazon.com/ec2/">EC2 console</a> and SSH into it.
+It&#8217;s a regular Linux server with a bunch of Docker containers running in it.</p>
+</li>
+<li>
+<p>Check the <code>/var/log/cloud-init-output.log</code> and <code>/var/log/cloud-init.log</code>
+files.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>We&#8217;re also happy to provide help if you&#8217;re stuck. Please
+<a href="https://github.com/anarthal/servertech-chat/issues/new">open an issue in the repository</a>
+or <a href="https://cpplang.slack.com/archives/C05MLSQGA01">contact us in Slack</a>.</p>
+</div>
+</div>
+</div>
+</div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-04 14:50:14 UTC
+Last updated 2023-09-04 16:30:04 UTC
 </div>
 </div>
 </body>

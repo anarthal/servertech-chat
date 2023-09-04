@@ -437,12 +437,31 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
 <h1>Architecture</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_overview">Overview</a></li>
+<li><a href="#_websocket_api">Websocket API</a></li>
+<li><a href="#_server_architecture">Server architecture</a>
+<ul class="sectlevel2">
+<li><a href="#_async_code">Async code</a></li>
+<li><a href="#_redis">Redis</a></li>
+<li><a href="#_message_broadcasting">Message broadcasting</a></li>
+<li><a href="#_http_and_websockets">HTTP and websockets</a></li>
+<li><a href="#_additional_considerations">Additional considerations</a></li>
+</ul>
+</li>
+<li><a href="#_client_architecture">Client architecture</a></li>
+<li><a href="#_building_and_deploying">Building and deploying</a></li>
+</ul>
+</div>
 </div>
 <div id="content">
-<div id="preamble">
+<div class="sect1">
+<h2 id="_overview">Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>As mentioned (TODO: link), the following diagram depicts the application
@@ -675,7 +694,7 @@ if that&#8217;s the case.
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-04 14:50:14 UTC
+Last updated 2023-09-04 16:30:04 UTC
 </div>
 </div>
 </body>

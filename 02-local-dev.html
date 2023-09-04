@@ -437,9 +437,22 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
 <h1>Running the application locally</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#docker-compose">Docker Compose</a></li>
+<li><a href="#local">Setting up local development</a>
+<ul class="sectlevel2">
+<li><a href="#_building_the_c_server">Building the C++ server</a></li>
+<li><a href="#_running_the_client">Running the client</a></li>
+<li><a href="#_running_the_server_integration_tests">Running the server integration tests</a></li>
+</ul>
+</li>
+</ul>
+</div>
 </div>
 <div id="content">
 <div id="preamble">
@@ -678,7 +691,7 @@ C++ server running on port 8080 to run them - the client is not required.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-04 14:50:14 UTC
+Last updated 2023-09-04 16:30:04 UTC
 </div>
 </div>
 </body>
