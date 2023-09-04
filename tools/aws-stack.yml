@@ -64,6 +64,18 @@ Resources:
     Properties:
       InstanceId: !Ref WebServer
 
+  # An EBS volume to store persistent data. This guarantees that our data
+  # lives even if the EC2 instance is re-created
+  DatabaseVolume:
+    Type: "AWS::EC2::Volume"
+    Properties:
+      # Deploy to the first availability zone for the current region. This
+      # must match the AvailabilityZone in the EC2 instance definition
+      AvailabilityZone: !Select [0, { "Fn::GetAZs": "" }]
+      Encrypted: true
+      VolumeType: gp3
+      Size: 8 # GiB
+
   # The actual EC2 instance that will run our server. UserData contains
   # a script that is run by the EC2 instance every time it boots. We launch
   # our Docker containers there. The cloud_final_modules part is required
@@ -74,8 +86,12 @@ Resources:
     Properties:
       ImageId: !Ref ImageId
       InstanceType: !Ref InstanceType
+      AvailabilityZone: !Select [0, { "Fn::GetAZs": "" }]
       SecurityGroups:
         - !Ref EcsSecurityGroup
+      Volumes:
+        - Device: /dev/xvdk # This name is used in the UserData script to mount the volume
+          VolumeId: !Ref DatabaseVolume
       KeyName: !If [EnableSSH, !Ref KeyName, !Ref "AWS::NoValue"]
       UserData: !Base64
         "Fn::Sub": |
@@ -98,15 +114,31 @@ Resources:
           Content-Disposition: attachment; filename="userdata.txt"
 
           #!/bin/bash -xe
-          yum install -y aws-cfn-bootstrap docker # Dependencies
-          docker container prune -f # Remove previous containers
-          docker network rm chat-net || echo "Network does not exist" # Remove previous net
-          docker run -d --name redis redis:alpine # Redis
-          docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ${CppserverImage} # C++ server
+
+          # Dependencies
+          yum install -y aws-cfn-bootstrap docker 
+
+          # Format (if required) and mount the volume for DB storage
+          if [ "$(file -sL /dev/xvdk)" == "/dev/xvdk: data" ]; then
+              mkfs -t xfs /dev/xvdk
+          fi
+          mkdir -p /data
+          mount /dev/xvdk /data
+
+          # Remove previous containers and networks
+          systemctl start docker
+          docker container prune -f
+          docker network rm chat-net || echo "Network does not exist"
+
+          # Run our application
+          docker run -d --name redis -v /data/redis-data:/data redis:alpine redis-server --appendonly yes
+          docker run -d -p 80:80 -e REDIS_HOST=redis --name cppserver ${CppserverImage}
           docker network create chat-net # Connect these two
           docker network connect chat-net redis
           docker network connect chat-net cppserver
           docker image prune -f # Remove unused images
+
+          # Signal AWS that we're done
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerGroup --region ${AWS::Region} # Signal AWS we're OK
 
 Outputs:

@@ -16,3 +16,4 @@ services:
       - REDIS_HOST=redis
   redis:
     image: "redis:alpine"
+    command: ["redis-server", "--appendonly", "yes"]
