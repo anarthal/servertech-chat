@@ -1,0 +1,100 @@
+= Instant Deployment: From GitHub Fork to Public Server in Minutes
+Rubén Pérez (@anarthal)
+
+Would you like to have your own running server?
+
+You can fork this repository, change the code you need and go live in minutes.
+We've created a GitHub actions workflow that will deploy your code to AWS,
+creating any required infrastructure in the process.
+
+== Authorizing GitHub to access AWS
+
+After you fork the repository, all you need to do is to authorize GitHub
+to access AWS for deployments. Follow these steps:
+
+. Create an https://aws.amazon.com/[AWS account], if you don't have one.
+. Create an IAM user for deployments:
+  - Navigate to the https://console.aws.amazon.com/iamv2/[AWS IAM] console.
+  - Select the "Users" entry in the left menu.
+  - Click the Create user button.
+  - Select a username you like and hit "Next".
+  - In the Permissions screen, select "Attach policies directly. Locate and
+    tick the following policies: `AmazonEC2FullAccess`,
+    `AWSCloudFormationFullAccess` and `AmazonSSMReadOnlyAccess`. Hit "Next".
+  - Review that the three policies have been selected and hit "Create user".
+. Create an access key for the user you just created, so GitHub can
+  impersonate it:
+  - In the IAM console, select the "Users" entry in the left menu, then click
+    on the user you just created.
+  - Navigate to the "Security credentials" tab. Locate the "Access keys" section
+    and click on the "Create access key" button.
+  - Select the "Application running outside AWS" option and click on "Next".
+  - Click on "Create access key".
+. Create GitHub secrets in your repo with the access key details:
+  - In another tab, navigate to your GitHub repository Settings. On the left menu,
+  select "Secrets and variables", then "Actions".
+  - Create a new repository secret named `AWS_ACCESS_KEY_ID`. Copy the value
+  named "Access key" from the IAM console and paste it as the secret's value, then hit save.
+  - Repeat the same process with a secret named `AWS_SECRET_ACCESS_KEY`,
+  pasting the "Secret access key" from the IAM console.
+. Enable GitHub Actions for your repository:
+  - Navigate to the "Actions" tab of your GitHub repo.
+  - Click on the green button to enable them.
+. Your integration is ready! Make the changes you want, push them to the
+  `master` branch, and they will be deployed to AWS. You can check your deployment
+  status by checking the "Actions" tab of your GitHub repository.
+. Your site is live! You can find the address where your server is listening
+  in your GitHub actions logs.
+  This address is static and will remain the same on successive deployments. 
+
+If you're interested in the details behind automatic deployments, check out
+xref:01-architecture#build-deploy[this section].
+
+== Additional configuration
+
+There are some extra settings that you may find useful:
+
+- You can change the AWS region you deploy to by changing the value of
+  `AWS_REGION` in your workflow file, `.github/wokflows/build.yml`.
+- You can also change the EC2 instance type that is launched from this
+  file.
+- If you want to SSH into your machines, follow
+  https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-key-pairs.html[these steps]
+  to create an EC2 key pair. Then, create a GitHub Actions secret named
+  `SSH_KEY_NAME` containing the name of the key pair you just created, and trigger
+  a deployment.
+
+== Troubleshooting
+
+If you're having trouble with deployments, here are some ideas you can try:
+
+* Check your GitHub Actions log. Verify that jobs are being triggered correctly,
+  and check which step is failing.
+* Make sure that the user you created has the right permissions, as described
+  in this document.
+* As part of the CI build, a Docker container is built and stored in the GitHub
+  container registry. AWS virtual machines should be able to access it, so you
+  should enable public read access for this container. This is the default if
+  you forked the repo.
+  If you're working with a private repo, please read how to
+  https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility[make your container public]
+  (the code can still be private). You may want to consider using the
+  https://aws.amazon.com/ecr/[AWS container registry] instead, too.
+* The CI uses CloudFormation to deploy the required infrastructure.
+  https://console.aws.amazon.com/cloudformation/[Access the CloudFormation console]
+  and check that there is a stack called "ServertechChatStack" with green status.
+  You may need to select the region you're using (`eu-north-1` by default).
+* If the stack is in a failed state, select it and review the "Events" section,
+  which often provides insights about the problem. You may delete the stack
+  before re-running the job.
+* If the stack has been successfully deployed, but still can't access the server,
+  enable SSH as described above. Look up the EC2 instance in the
+  https://console.aws.amazon.com/ec2/[EC2 console] (you may need to change region)
+  and SSH into it (username: `ec2-user`). It's a regular Linux server with a bunch
+  of Docker containers running in it.
+* Check the `/var/log/cloud-init-output.log` and `/var/log/cloud-init.log`
+  files.
+
+We're also happy to provide help if you're stuck. Please
+https://github.com/anarthal/servertech-chat/issues/new[open an issue in the repository]
+or https://cpplang.slack.com/archives/C05MLSQGA01[contact us in Slack].

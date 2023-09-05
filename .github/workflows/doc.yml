@@ -1,0 +1,39 @@
+# Builds the docs with asciidoctor and pushes them to the GitHub project pages.
+# This uses classic pages.
+
+name: Docs
+
+# Run only when pushing to master
+on:
+  push:
+    branches:
+      - master
+
+# Required to commit to the gh-pages branch
+permissions:
+  contents: write
+
+jobs:
+  build_docs:
+    runs-on: ubuntu-latest
+    env:
+      DOC_OUTPUT: /tmp/doc
+    steps:
+      # Get the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Build the .adoc files with asciidoctor
+      - name: Build docs with asciidoctor
+        run: |
+          sudo apt-get install -y --no-install-recommends asciidoctor
+          asciidoctor -D docs --backend=html5 -D ${{ env.DOC_OUTPUT }} doc/*.adoc
+          cp doc/*.svg doc/*.jpg ${{ env.DOC_OUTPUT }}/
+          touch ${{ env.DOC_OUTPUT }}/.nojekyll
+
+      # Deploy the built docs to GitHub pages
+      # (this will commit to the gh-pages branch)
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: ${{ env.DOC_OUTPUT }}

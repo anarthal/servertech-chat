@@ -1,0 +1,164 @@
+= Architecture
+Rubén Pérez (@anarthal)
+
+== Overview
+
+The following diagram depicts the application architecture:
+
+image::servertech_arch.jpg[]
+
+== Websocket API
+
+All communication (other than static file serving) currently happens over
+websockets. We plan on adding REST-ful endpoints later, when user authentication
+is introduced.
+
+The diagram below depicts how the API works. All events are JSON encoded.
+
+image::api.svg[]
+
+When the client connects, the server sends a `hello` event, contining all the
+data required by the client to build the UI (i.e. available chat rooms
+and message history).
+
+When the user types a message, the client sends a `messages` event. The server
+persists it to the database and broadcasts it to all clients, including the
+one that originated the message.
+
+On connection, only the latest messages are loaded. The client can request more
+by sending a `requestMessageHistory` event. This implements message pagination
+(but see https://github.com/anarthal/servertech-chat/issues/31[this issue]).
+
+See https://github.com/anarthal/servertech-chat/blob/master/client/lib/apiTypes.ts[this file]
+for a complete reference on API types.
+
+== Server architecture
+
+=== Async code
+
+All I/O is handled asynchronously, using https://boost.org/libs/asio[Boost.Asio].
+The server uses **stackful coroutines** to make async flow easier.
+
+A stackful coroutine is created by calling
+https://www.boost.org/doc/libs/master/doc/html/boost_asio/reference/spawn.html[`boost::asio::spawn`].
+Coroutines pass around a `boost::asio::yield_context` object, which contains
+information about the current coroutine. Any async function can be converted
+into a stackful coroutine by passing a `yield_context` as its last argument
+(we say a `yield_context` is a valid
+https://www.boost.org/doc/libs/1_83_0/doc/html/boost_asio/overview/model/completion_tokens.html[completion token]).
+
+Stackful coroutines enable a similar code structure as pass:[C++]20 coroutines, but
+don't require pass:[C++]20. You can spawn pass:[C++]20 coroutines by calling
+https://www.boost.org/doc/libs/master/doc/html/boost_asio/reference/co_spawn.html[`boost::asio::co_spawn`]
+and using `boost::asio::use_awaitable` as completion token.
+
+The server is single-threaded, which makes development much easier.
+Measurements are still to be performed to determine whether a multi-threaded
+architecture could pay off (see 
+https://github.com/anarthal/servertech-chat/issues/25[this issue]).
+
+=== Redis
+
+We use https://redis.io/docs/data-types/streams/[Redis streams] to store messages.
+These are append-only data structures, similar to a commit log. We use one
+stream per chat room. Each stream element is assigned an ID by Redis. We use
+this ID as message ID. Note that this makes the message ID unique per chat room.
+
+In the future, we plan to offload old messages to another database like MySQL,
+to keep Redis structures small (see
+https://github.com/anarthal/servertech-chat/issues/24[this issue]).
+
+We use https://github.com/boostorg/redis[Boost.Redis] to communicate with
+Redis asynchronously. Following the recommended Boost.Redis architecture,
+the server opens a single Redis connection. Boost.Redis takes care of
+pipelining requests internally to make the most of connection.
+
+The Redis hostname is configured via the environment variable `REDIS_HOST`.
+The Redis instance is never exposed to the internet, so no authentication
+or encryption is set up.
+
+=== Message broadcasting
+
+Messages are broadcast using an in-memory data structure (the `session_map`)
+that uses https://boost.org/libs/multi_index[Boost.MultiIndex].
+This is efficient but contrains the server to a single instance.
+
+It is planned to replace `session_map` with a more scalable mechanism,
+like https://redis.io/docs/interact/pubsub/[Redis channels].
+We've also considered using Redis https://redis.io/commands/xread/[`XREAD`]
+to subscribe to stream changes. However, `XREAD` blocks the connection until
+an update is received, which doesn't work well with Boost.Redis single-connection
+architecture.
+
+=== HTTP and websockets
+
+HTTP and websocket traffic is handled using
+http://www.boost.org/libs/beast[Boost.Beast]. The server uses a listener loop,
+accepting new connections while serving the active ones asynchronously.
+
+https://boost.org/libs/json[Boost.Json] and
+https://boost.org/libs/describe[Boost.Describe] are used to serialize and
+parse API data.
+
+=== Additional considerations
+
+* The server requires pass:[C++]17 to build, since that's the minimum for Boost.Redis
+  to work.
+* The server is built using CMake.
+* We only target Linux servers. The current deployment uses Alpine Linux.
+* The server has unit tests, written using
+  http://www.boost.org/libs/test[Boost.Test].
+* The server has also integration tests, which exercise the server using the
+  API. These tests use a real database, and are written in Python, using
+  https://docs.pytest.org/[pytest].
+
+== Client architecture
+
+The client is web-based and uses https://nextjs.org/[Next.js], 
+https://react.dev/[React] and TypeScript. Styles use 
+https://tailwindcss.com/[Tailwind CSS] and https://mui.com/[the MUI library].
+
+Client files are compiled into regular HTML, CSS and JavaScript files,
+which are then served by the pass:[C++] server as static files.
+
+The client has unit tests written in https://jestjs.io/[Jest].
+
+[#build-deploy]
+== Building and deploying
+
+For local development, you can build your code using your IDE or invoking
+CMake directly. See xref:02-local-dev.adoc#local[this section]
+for further details. Additionally,
+code is built, tested and deployed continuously by a GitHub Actions workflow.
+
+Server and client builds are defined in a single Dockerfile, enabling
+repeatable builds. The CI pipeline uses this Dockerfile to build and test the
+code. Docker caching has been set up to reduce re-build times.
+
+Both client and server are packaged into a single Docker container. This
+container is stored in the
+https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry[GitHub container registry].
+
+Redis is deployed as a separate container. We use a standard Redis image, so
+there is no need to build an image for it.
+
+The server is then deployed to https://aws.amazon.com/[AWS]. We've taken an
+infrastructure-as-code approach, using an https://aws.amazon.com/cloudformation/[AWS CloudFormation]
+stack to create the required infrastructure to run the server.
+
+To facilitate the xref:03-fork-modify-deploy#[fork-modify-deploy workflow], we've tried to
+keep the CloudFormation stack as simple as possible, prioritizing simplicity
+over scalability. It will create the following:
+
+* A single virtual machine (EC2 instance) that runs the Docker containers.
+* A static IP allocation (Elastic IP), to guarantee IP stability.
+* A virtual disk (EBS volume), to store persistent data.
+
+More scalable deployments can make use of https://kubernetes.io/[Kubernetes]
+or https://aws.amazon.com/ecs/[AWS ECS] clusters.
+If that's something of interest to you, please feel free to open an issue.
+
+NOTE: In the current setup, Docker containers in the GitHub container registry
+have public visibility. If you want to make them private, you will need to
+authorize AWS to pull them. We suggest you to move to the
+https://aws.amazon.com/ecr/[AWS container registry], if that's the case.

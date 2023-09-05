@@ -1,0 +1,176 @@
+= Running the application locally
+Rubén Pérez (@anarthal)
+
+Do you want to perform some development?
+
+If you want to try the application locally, make some changes, and see how
+it looks like, we recommend using xref:docker-compose[Docker Compose], since
+it requires very little setup. If you need IDE integration or debugging,
+we recommend xref:local[setting up a development environment].
+
+[#docker-compose]
+== Docker Compose
+
+With https://docs.docker.com/compose/[Docker Compose], you can have a local
+server and client running in minutes. All you need to do is to install
+Docker Compose on your machine.
+
+If you're on Linux, install it with the
+https://docs.docker.com/engine/install/[Docker Engine].
+Otherwise, you can get it by installing
+https://docs.docker.com/desktop/[Docker Desktop].
+
+Once you have it, run the following in the repo root:
+
+[code,bash]
+----
+docker compose up --build
+----
+
+That's it! You can access your local server at http://localhost:8080.
+You don't need to install any toolchain or compiler.
+
+If you want to modify your application, change the files you need and re-run
+the Composer command. Docker will rebuild the application for you before
+launching.
+
+Although this technique works great for a quick test, rebuilds take longer
+than using regular local development, and debugging is more difficult.
+We recommend xref:local[setting up the required tools locally] if you're
+going to go beyond a quick test.
+
+[#local]
+== Setting up local development
+
+Since we're building a pass:[C++] server and a React client, you'll need a bunch of
+tools. We recommend using Linux (or WSL if you're on Windows). We provide
+installation instructions for Ubuntu, but all tools can be installed on any
+other system.
+
+=== Building the pass:[C++] server
+
+The following tools are required:
+
+* A pass:[C++]17 compliant compiler. We recommend
+  using gcc 10 (o above), or clang 11 (or above).
+* CMake 3.16 or above.
+* The OpenSSL development files (C headers and CMake module).
+
+If you're on Ubuntu, you can install them using:
+
+[code,bash]
+----
+sudo apt install g++ cmake libssl-dev
+----
+
+You also need Boost. Since Boost.Redis hasn't been fully integrated into Boost
+yet, you need to do it manually:
+
+[code,bash]
+----
+include::install-boost.sh[]
+----
+
+You'll also need a running Redis server. The easiest way to achieve this is
+with Docker:
+
+[code,bash]
+----
+docker run -d --name redis -p 6379:6379  redis:alpine
+----
+
+Now you can build your server using CMake (possibly from your IDE) by running
+this from the repository root:
+
+[code,bash]
+----
+mkdir build
+cd build
+cmake -DCMAKE_PREFIX_PATH=$HOME/boost ../server
+cmake --build . -j 4
+----
+
+To run your webserver:
+
+[code,bash]
+----
+./main 0.0.0.0 8080 .
+----
+
+To run unit tests:
+
+[code,bash]
+----
+ctest --output-on-failure .
+----
+
+=== Running the client
+
+You need Node 16.14 or later to run the client. You can https://nodejs.org/en/download[download it]
+or https://nodejs.org/en/download/package-manager[install it from a package manager].
+You will also need https://docs.npmjs.com/downloading-and-installing-node-js-and-npm[npm]
+to install packages.
+
+To verify that these tools are working, use:
+
+[code,bash]
+----
+node -v
+npm -v
+----
+
+The next step is to install the Node packages required by the client:
+
+[code,bash]
+----
+cd client
+npm install
+----
+
+Finally, you can run a development version of your client by running the
+following from `client` directory:
+
+[code,bash]
+----
+npm run dev
+----
+
+This will spawn a development server on http://localhost:3000/ with auto-refresh
+enabled (if you change something in the client files, it will hot-reload your
+code). By default, the client attempts to connect to your pass:[C++] server
+on port 8080. You can change this setting by editing the `client/.env.local`
+file.
+
+To run the client unit tests, `cd` into `client` and run:
+
+[code,bash]
+----
+npm run test
+----
+
+=== Running the server integration tests
+
+Integration tests are written in Python. They verify that the server works
+as expected by exercising the websocket API directly. You need the
+pass:[C++] server running on port 8080 to run them - the client is not required.
+
+First, install Python 3 and pip:
+
+[code,bash]
+----
+sudo apt install python3 python3-pip
+----
+
+Then, install the required packages:
+
+[code,bash]
+----
+sudo pip install -r test/integration/requirements.txt
+----
+
+Finally, run the tests:
+
+[code,bash]
+----
+pytest
+----
