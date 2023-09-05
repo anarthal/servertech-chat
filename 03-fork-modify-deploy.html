@@ -471,30 +471,61 @@ to access AWS for deployments. Follow these steps:</p>
 <p>Create an <a href="https://aws.amazon.com/">AWS account</a>, if you don&#8217;t have one.</p>
 </li>
 <li>
+<p>Create an IAM user for deployments:</p>
+<div class="ulist">
+<ul>
+<li>
 <p>Navigate to the <a href="https://console.aws.amazon.com/iamv2/">AWS IAM</a> console.</p>
 </li>
 <li>
-<p>Optional step: create a dedicated AWS user to manage deployments
-<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup>. This is
-considered a security best practice.</p>
+<p>Select the "Users" entry in the left menu.</p>
 </li>
 <li>
-<p>Navigate to the Users section in the left panel, and select the user
-that you want to use for deployments.</p>
+<p>Click the Create user button.</p>
+</li>
+<li>
+<p>Select a username you like and hit "Next".</p>
+</li>
+<li>
+<p>In the Permissions screen, select "Attach policies directly. Locate and
+tick the following policies: <code>AmazonEC2FullAccess</code>,
+<code>AWSCloudFormationFullAccess</code> and <code>AmazonSSMReadOnlyAccess</code>. Hit "Next".</p>
+</li>
+<li>
+<p>Review that the three policies have been selected and hit "Create user".</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Create an access key for the user you just created, so GitHub can
+impersonate it:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>In the IAM console, select the "Users" entry in the left menu, then click
+on the user you just created.</p>
 </li>
 <li>
 <p>Navigate to the "Security credentials" tab. Locate the "Access keys" section
 and click on the "Create access key" button.</p>
 </li>
 <li>
-<p>Select the "Application running outside AWS" option and click Next.</p>
+<p>Select the "Application running outside AWS" option and click on "Next".</p>
 </li>
 <li>
-<p>Click on Create access key. You&#8217;ve just created credentials that GitHub can use.</p>
+<p>Click on "Create access key".</p>
+</li>
+</ul>
+</div>
 </li>
 <li>
-<p>In another tab, navigate to your GitHub repository&#8217;s Settings. On the left menu,
-select Secrets and variables, then Actions.</p>
+<p>Create GitHub secrets in your repo with the access key details:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>In another tab, navigate to your GitHub repository Settings. On the left menu,
+select "Secrets and variables", then "Actions".</p>
 </li>
 <li>
 <p>Create a new repository secret named <code>AWS_ACCESS_KEY_ID</code>. Copy the value
@@ -503,6 +534,22 @@ named "Access key" from the IAM console and paste it as the secret&#8217;s value
 <li>
 <p>Repeat the same process with a secret named <code>AWS_SECRET_ACCESS_KEY</code>,
 pasting the "Secret access key" from the IAM console.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Enable GitHub Actions for your repository:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Navigate to the "Actions" tab of your GitHub repo.</p>
+</li>
+<li>
+<p>Click on the green button to enable them.</p>
+</li>
+</ul>
+</div>
 </li>
 <li>
 <p>Your integration is ready! Make the changes you want, push them to the
@@ -542,7 +589,7 @@ file.</p>
 <p>If you want to SSH into your machines, follow
 <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-key-pairs.html">these steps</a>
 to create an EC2 key pair. Then, create a GitHub Actions secret named
-SSH_KEY_NAME containing the Name of the key pair you just created, and trigger
+<code>SSH_KEY_NAME</code> containing the name of the key pair you just created, and trigger
 a deployment.</p>
 </li>
 </ul>
@@ -562,22 +609,15 @@ a deployment.</p>
 and check which step is failing.</p>
 </li>
 <li>
-<p>If GitHub is complaining about lack of permissions, make sure that the
-user that manages deployments has the following permissions, at least:</p>
+<p>Make sure that the user you created has the right permissions, as described
+in this document.</p>
 </li>
 <li>
-<p>Full access on EC2 (required to create and run your virtual machines).</p>
-</li>
-<li>
-<p>Full access on CloudFormation (required to trigger deployments).</p>
-</li>
-<li>
-<p>Read access on SSM (used internally).</p>
-</li>
-<li>
-<p>AWS virtual machines should be able to access the Docker container built by
-GitHub, which is stored in the GitHub container registry. If you&#8217;ve made your
-repository private, your containers may have become private, too. You should
+<p>As part of the CI build, a Docker container is built and stored in the GitHub
+container registry. AWS virtual machines should be able to access it, so you
+should enable public read access for this container. This is the default if
+you forked the repo.
+If you&#8217;re working with a private repo, please read how to
 <a href="https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility">make your container public</a>
 (the code can still be private). You may want to consider using the
 <a href="https://aws.amazon.com/ecr/">AWS container registry</a> instead, too.</p>
@@ -585,7 +625,8 @@ repository private, your containers may have become private, too. You should
 <li>
 <p>The CI uses CloudFormation to deploy the required infrastructure.
 <a href="https://console.aws.amazon.com/cloudformation/">Access the CloudFormation console</a>
-and check that there is a stack called "ServertechChatStack" with green status.</p>
+and check that there is a stack called "ServertechChatStack" with green status.
+You may need to select the region you&#8217;re using (<code>eu-north-1</code> by default).</p>
 </li>
 <li>
 <p>If the stack is in a failed state, select it and review the "Events" section,
@@ -595,8 +636,9 @@ before re-running the job.</p>
 <li>
 <p>If the stack has been successfully deployed, but still can&#8217;t access the server,
 enable SSH as described above. Look up the EC2 instance in the
-<a href="https://console.aws.amazon.com/ec2/">EC2 console</a> and SSH into it.
-It&#8217;s a regular Linux server with a bunch of Docker containers running in it.</p>
+<a href="https://console.aws.amazon.com/ec2/">EC2 console</a> (you may need to change region)
+and SSH into it (username: <code>ec2-user</code>). It&#8217;s a regular Linux server with a bunch
+of Docker containers running in it.</p>
 </li>
 <li>
 <p>Check the <code>/var/log/cloud-init-output.log</code> and <code>/var/log/cloud-init.log</code>
@@ -612,15 +654,9 @@ or <a href="https://cpplang.slack.com/archives/C05MLSQGA01">contact us in Slack<
 </div>
 </div>
 </div>
-<div id="footnotes">
-<hr>
-<div class="footnote" id="_footnotedef_1">
-<a href="#_footnoteref_1">1</a>. The user should have, at least, read/wriite permissions on EC2 and CloudFormation, and read access to SSM
-</div>
-</div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-05 12:07:12 UTC
+Last updated 2023-09-05 14:10:44 UTC
 </div>
 </div>
 </body>
