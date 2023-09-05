@@ -68,7 +68,7 @@ yet, you need to do it manually:
 
 [code,bash]
 ----
-include::install-boost.sh[]
+include::../tools/install-boost.sh[]
 ----
 
 You'll also need a running Redis server. The easiest way to achieve this is

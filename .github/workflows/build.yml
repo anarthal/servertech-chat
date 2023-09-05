@@ -112,7 +112,7 @@ jobs:
       # Note: if your code is public, your package will be public. If that's not
       # the case, deployments to AWS will require additional credentials
       - name: Push Docker image
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -122,7 +122,7 @@ jobs:
       # Deploy to AWS. This creates any required infrastructure to run your
       # application. You don't need to configure any virtual machines, public IPs, etc.
       - name: CloudFormation deploy
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         id: cloudformation-deploy
         with:
@@ -134,5 +134,5 @@ jobs:
       # Print the URL of the listening server. The IP is allocated the first time
       # you run this workflow, and will remain stable for successive runs.
       - name: Print the URL of the listening server
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         run: echo "Server listening at http://${{ steps.cloudformation-deploy.outputs.WebServerIp }}/"

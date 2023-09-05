@@ -22,24 +22,10 @@ RUN apk update && \
         wget
 
 # Boost. Boost.Redis hasn't been integrated into Boost (yet), so we need to
-# manually put it into $BOOST_ROOT/libs before building Boost. Remove intermediate
-# build files to make CI caching lighter
-WORKDIR /boost-src
-RUN \
-    REDIS_COMMIT=f506e1baee4941bff1f8e2f3aa7e1b9cf08cb199 && \
-    wget -q https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.gz && \
-    tar -xf boost_1_82_0.tar.gz && \
-    cd boost_1_82_0 && \
-    git clone --depth 1 https://github.com/boostorg/redis.git libs/redis && \
-    cd libs/redis && \
-    git fetch origin $REDIS_COMMIT && \
-    git checkout $REDIS_COMMIT && \
-    cd /boost-src/boost_1_82_0 && \
-    ./bootstrap.sh && \
-    ./b2 --with-json --with-context --with-test -d0 --prefix=/boost install && \
-    cd / && \
-    rm -rf /boost-src
-
+# manually put it into $BOOST_ROOT/libs before building Boost. The script
+# removes intermediate build files to make CI caching lighter
+COPY tools/install-boost.sh .
+RUN sh -e install-boost.sh
 
 # Copy the server files
 WORKDIR /app
@@ -50,7 +36,7 @@ COPY server/ ./
 #
 FROM server-builder-base AS server-builder
 WORKDIR /app/__build
-RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF .. && \
+RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/opt/boost -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF .. && \
     cmake --build . --parallel 8 && \
     cp main /app/main && \
     rm -rf /app/__build
@@ -60,7 +46,7 @@ RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=
 #
 FROM server-builder-base AS server-tests
 WORKDIR /app/__build
-RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/boost -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON .. && \
+RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/opt/boost -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON .. && \
     cmake --build . --parallel 8 && \
     ctest --output-on-failure && \
     rm -rf /app/__build
@@ -102,10 +88,10 @@ RUN npm run test
 FROM alpine:3.18.2
 RUN apk add openssl libstdc++
 COPY --from=server-builder \
-    /boost/lib/libboost_container.so* \
-    /boost/lib/libboost_context.so* \
-    /boost/lib/libboost_json.so* \
-    /boost/lib/
+    /opt/boost/lib/libboost_container.so* \
+    /opt/boost/lib/libboost_context.so* \
+    /opt/boost/lib/libboost_json.so* \
+    /opt/boost/lib/
 COPY --from=server-builder /app/main /app/
 COPY --from=client-builder /app/out/ /app/static/
 
