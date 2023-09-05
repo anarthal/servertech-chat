@@ -437,22 +437,9 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article toc2 toc-left">
+<body class="article">
 <div id="header">
 <h1>Running the application locally</h1>
-<div id="toc" class="toc2">
-<div id="toctitle">Table of Contents</div>
-<ul class="sectlevel1">
-<li><a href="#docker-compose">Docker Compose</a></li>
-<li><a href="#local">Setting up local development</a>
-<ul class="sectlevel2">
-<li><a href="#_building_the_c_server">Building the C++ server</a></li>
-<li><a href="#_running_the_client">Running the client</a></li>
-<li><a href="#_running_the_server_integration_tests">Running the server integration tests</a></li>
-</ul>
-</li>
-</ul>
-</div>
 </div>
 <div id="content">
 <div id="preamble">
@@ -471,12 +458,17 @@ we recommend setting up a more traditional environment (please refer to
 <div class="sectionbody">
 <div class="paragraph">
 <p>With <a href="https://docs.docker.com/compose/">Docker Compose</a>, you can have a local
-server and client running in minutes. All you need to do is to
-<a href="https://docs.docker.com/compose/install/">install Docker compose on your machine</a>
-and, in the repo root, run:</p>
+server and client running in minutes. All you need to do is to install
+Docker Compose on your machine.</p>
 </div>
 <div class="paragraph">
-<p>TODO: link to this&#8201;&#8212;&#8201;<a href="https://docs.docker.com/engine/install/" class="bare">https://docs.docker.com/engine/install/</a></p>
+<p>If you&#8217;re on Linux, install it with the
+<a href="https://docs.docker.com/engine/install/">Docker Engine</a>.
+Otherwise, you can get it by installing
+<a href="https://docs.docker.com/desktop/">Docker Desktop</a>.</p>
+</div>
+<div class="paragraph">
+<p>Once you have it, run the following in the repo root:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -567,7 +559,7 @@ rm -rf ~/boost-src</pre>
 </div>
 <div class="paragraph">
 <p>You&#8217;ll also need a running Redis server. The easiest way to achieve this is
-with <a href="https://docs.docker.com/engine/install/ubuntu/">Docker</a>:</p>
+with Docker:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -582,7 +574,10 @@ this from the repository root:</p>
 <div class="content">
 <pre>mkdir build
 cd build
+
+# CMAKE_PREFIX_PATH should point where you installed Boost to
 cmake -DCMAKE_PREFIX_PATH=$HOME/boost ../server
+
 cmake --build . -j 4</pre>
 </div>
 </div>
@@ -678,7 +673,7 @@ C++ server running on port 8080 to run them - the client is not required.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>Finally, to run the tests:</p>
+<p>Finally, run the tests:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -691,7 +686,7 @@ C++ server running on port 8080 to run them - the client is not required.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-04 16:30:04 UTC
+Last updated 2023-09-05 11:25:36 UTC
 </div>
 </div>
 </body>

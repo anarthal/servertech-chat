@@ -437,17 +437,9 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article toc2 toc-left">
+<body class="article">
 <div id="header">
 <h1>Instant Deployment: From GitHub Fork to Public Server in Minutes</h1>
-<div id="toc" class="toc2">
-<div id="toctitle">Table of Contents</div>
-<ul class="sectlevel1">
-<li><a href="#_authorizing_github_to_access_aws">Authorizing GitHub to access AWS</a></li>
-<li><a href="#_additional_configuration">Additional configuration</a></li>
-<li><a href="#_troubleshooting">Troubleshooting</a></li>
-</ul>
-</div>
 </div>
 <div id="content">
 <div id="preamble">
@@ -479,7 +471,7 @@ to access AWS for deployments. Follow these steps:</p>
 </li>
 <li>
 <p>Optional step: create a dedicated AWS user to manage deployments. This is
-considered a security good practice. See TODO for more details.</p>
+considered a security good practice. <sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup>.</p>
 </li>
 <li>
 <p>Navigate to the Users section in the left panel, and select the user
@@ -520,8 +512,8 @@ This address is static and will remain the same on successive deployments.</p>
 </ol>
 </div>
 <div class="paragraph">
-<p>If you&#8217;re interested in the details behind automatic deployments, check
-TODO this section.</p>
+<p>If you&#8217;re interested in the details behind automatic deployments, check out
+<a href="01-architecture.html#build-deploy">this section</a>.</p>
 </div>
 </div>
 </div>
@@ -607,9 +599,15 @@ or <a href="https://cpplang.slack.com/archives/C05MLSQGA01">contact us in Slack<
 </div>
 </div>
 </div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnotedef_1">
+<a href="#_footnoteref_1">1</a>. The user should have, at least, read/wriite permissions on EC2 and CloudFormation, and read access to SSM
+</div>
+</div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-04 16:30:04 UTC
+Last updated 2023-09-05 11:25:36 UTC
 </div>
 </div>
 </body>

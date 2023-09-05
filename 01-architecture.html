@@ -437,35 +437,16 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article toc2 toc-left">
+<body class="article">
 <div id="header">
 <h1>Architecture</h1>
-<div id="toc" class="toc2">
-<div id="toctitle">Table of Contents</div>
-<ul class="sectlevel1">
-<li><a href="#_overview">Overview</a></li>
-<li><a href="#_websocket_api">Websocket API</a></li>
-<li><a href="#_server_architecture">Server architecture</a>
-<ul class="sectlevel2">
-<li><a href="#_async_code">Async code</a></li>
-<li><a href="#_redis">Redis</a></li>
-<li><a href="#_message_broadcasting">Message broadcasting</a></li>
-<li><a href="#_http_and_websockets">HTTP and websockets</a></li>
-<li><a href="#_additional_considerations">Additional considerations</a></li>
-</ul>
-</li>
-<li><a href="#_client_architecture">Client architecture</a></li>
-<li><a href="#_building_and_deploying">Building and deploying</a></li>
-</ul>
-</div>
 </div>
 <div id="content">
 <div class="sect1">
 <h2 id="_overview">Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>As mentioned (TODO: link), the following diagram depicts the application
-architecture:</p>
+<p>The following diagram depicts the application architecture:</p>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -502,11 +483,12 @@ one that originated the message.</p>
 </div>
 <div class="paragraph">
 <p>On connection, only the latest messages are loaded. The client can request more
-by sending a <code>requestMessageHistory</code> event. This implements message pagination.
-TODO: link to issue.</p>
+by sending a <code>requestMessageHistory</code> event. This implements message pagination
+(but see <a href="https://github.com/anarthal/servertech-chat/issues/31">this issue</a>).</p>
 </div>
 <div class="paragraph">
-<p>TODO: link to API spec (probably the one in the client is best).</p>
+<p>See <a href="https://github.com/anarthal/servertech-chat/blob/master/client/lib/apiTypes.ts">this file</a>
+for a complete reference on API types.</p>
 </div>
 </div>
 </div>
@@ -537,7 +519,8 @@ and using <code>boost::asio::use_awaitable</code> as completion token.</p>
 <div class="paragraph">
 <p>The server is single-threaded, which makes development much easier.
 Measurements are still to be performed to determine whether a multi-threaded
-architecture could pay off. (TODO: link to issue)</p>
+architecture could pay off (see
+<a href="https://github.com/anarthal/servertech-chat/issues/25">this issue</a>).</p>
 </div>
 </div>
 <div class="sect2">
@@ -550,7 +533,8 @@ this ID as message ID. Note that this makes message ID unique per chat room.</p>
 </div>
 <div class="paragraph">
 <p>In the future, we plan to offload old messages to another database like MySQL,
-to keep Redis structures small. TODO: link to issue.</p>
+to keep Redis structures small (see
+<a href="https://github.com/anarthal/servertech-chat/issues/24">this issue</a>).</p>
 </div>
 <div class="paragraph">
 <p>We use <a href="https://github.com/boostorg/redis">Boost.Redis</a> to communicate with
@@ -639,11 +623,12 @@ which are then served by the C++ server as static files.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_building_and_deploying">Building and deploying</h2>
+<h2 id="build-deploy">Building and deploying</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>For local development, you can build your code using your IDE or invoking
-CMake directly. See (TODO: link) this section for further details. Additionally,
+CMake directly. See <a href="02-local-dev.html#local">this section</a>
+for further details. Additionally,
 code is built, tested and deployed continiously by a GitHub Actions workflow.</p>
 </div>
 <div class="paragraph">
@@ -666,13 +651,27 @@ infrastructure-as-code approach, using an <a href="https://aws.amazon.com/cloudf
 stack to create the required infrastructure to run the server.</p>
 </div>
 <div class="paragraph">
-<p>To facilitate the (TODO: link) fork-modify-deploy workflow, we&#8217;ve tried to
+<p>To facilitate the <a href="03-fork-modify-deploy.html">fork-modify-deploy workflow</a>, we&#8217;ve tried to
 keep the CloudFormation stack as simple as possible, prioritizing simplicity
-over scalability. CloudFormation currently creates a virtual machine
-(EC2 instance) and a static IP allocation (Elastic IP). More scalable deployments
-can make use of <a href="https://aws.amazon.com/ecs/">AWS ECS</a> or <a href="https://kubernetes.io/">Kubernetes</a>
-clusters. If that&#8217;s something of interest to you, please feel free to open an issue.
-TODO: missing volume</p>
+over scalability. It will create the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A single virtual machine (EC2 instance) that runs the Docker containers.</p>
+</li>
+<li>
+<p>A static IP allocation (Elastic IP), to guarantee IP stability.</p>
+</li>
+<li>
+<p>A virtual disk (EBS volume), to store persistent data.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>More scalable deployments can make use of <a href="https://kubernetes.io/">Kubernetes</a>
+or <a href="https://aws.amazon.com/ecs/">AWS ECS</a> clusters.
+If that&#8217;s something of interest to you, please feel free to open an issue.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -683,8 +682,8 @@ TODO: missing volume</p>
 <td class="content">
 In the current setup, Docker containers in the GitHub container registry
 have public visibility. If you want to make them private, you will need to
-authorize AWS to pull them. We suggest you to move to the <a href="https://aws.amazon.com/ecr/">AWS container registry</a>,
-if that&#8217;s the case.
+authorize AWS to pull them. We suggest you to move to the
+<a href="https://aws.amazon.com/ecr/">AWS container registry</a>, if that&#8217;s the case.
 </td>
 </tr>
 </table>
@@ -694,7 +693,7 @@ if that&#8217;s the case.
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-04 16:30:04 UTC
+Last updated 2023-09-05 11:25:36 UTC
 </div>
 </div>
 </body>

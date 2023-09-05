@@ -448,24 +448,71 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Welcome to BoostServerTech Chat documentation!</p>
 </div>
 <div class="paragraph">
+<p>Be sure to check out our <a href="http://13.48.215.34/">live demo</a>!</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_boostservertech_project">The BoostServerTech project</h2>
+<div class="sectionbody">
+<div class="paragraph">
 <p>This repository contains a chat application written in C++. It&#8217;s part of the
-BoostServerTech (TBC: link) series, a collection of projects to showcase
+<a href="https://docs.google.com/document/d/1ZQrod1crs8EaNLLqSYIRMacwR3Rv0hC5l-gfL-jOp2M">BoostServerTech</a>
+series, a collection of projects to showcase
 how the Boost libraries can be used together to build high-performance
 web servers.</p>
 </div>
 <div class="paragraph">
-<p>TODO: link to application description</p>
+<p>If you&#8217;re a developer looking for inspiration, this project can be useful
+to you in a number of ways:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>It demonstrates how to use Boost libraries for server-side, asynchronous
+networking.</p>
+</li>
+<li>
+<p>It follows Boost and C++ best practices.</p>
+</li>
+<li>
+<p>It can save you setup time by providing a project skeleton you can use for
+your own app. This includes server boilerplate code, a working client,
+tests and CI/CD scripts. You can fork the project, modify it to match
+your needs, and <a href="03-fork-modify-deploy.html">go live in minutes</a>.</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p>Contributions are welcome, as feedback, PRs, suggestions. Feel free to fork-and-modify,
-or even build your own servertech app based on this one and contribute the result!</p>
+<p>If you&#8217;re a Boost contributor, want to become one, or just want to exercise
+your C++ abilities, this project is a good place to start. Please read
+the <a href="#contributing">Contributing</a> section for details.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_a_group_chat_app">A group chat app</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The best way to know the app is to <a href="http://13.48.215.34/">try it!</a>.</p>
 </div>
 <div class="paragraph">
-<p>Everthing is open-source and BSL-licensed.</p>
+<p>Here are some of the current and planned features:</p>
 </div>
-<div class="paragraph">
-<p>TODO: link to live preview
-<a href="00-project.html">Link to project</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p>Users send and receive messages in group chats called "chat rooms".
+Point-to-point messaging is not currently planned.</p>
+</li>
+<li>
+<p>Users can pick their username. Authentication is currently under development.</p>
+</li>
+<li>
+<p>Chat rooms are currently statically defined in the server, but will be
+dynamic in the future.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -498,8 +545,9 @@ or even build your own servertech app based on this one and contribute the resul
 <p>The front-end is served by the C++ server as regular, static files.</p>
 </li>
 <li>
-<p>Both the C++ server and the Redis database are deployed to AWS as Docker containers.
-Deployments are performed automatically by a GitHub Actions pipeline.</p>
+<p>Both the C++ server and the Redis database are deployed to AWS as
+Docker containers. Deployments are performed automatically by
+a GitHub Actions pipeline.</p>
 </li>
 <li>
 <p>The project includes a test suite, including server and client unit tests,
@@ -508,16 +556,8 @@ as well as Python-based integration tests.</p>
 </ul>
 </div>
 <div class="paragraph">
-<p>TODO: put this somewhere
-  Setting up CI/CD workflows is a time-consuming and sometime little overlooked task,
-especially for C++ projects. This project aims to provide
-a good starting point for these t</p>
-</div>
-<div class="paragraph">
-<p>TODO: link to further description</p>
-</div>
-<div class="paragraph">
-<p><a href="01-architecture.html">Link to arch</a></p>
+<p>You can learn more about the project architecture by reading
+<a href="01-architecture.html">this section</a>.</p>
 </div>
 </div>
 </div>
@@ -525,7 +565,7 @@ a good starting point for these t</p>
 <h2 id="_running_the_application_locally">Running the application locally</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>If you&#8217;re got (TODO: link) Docker Compose installed in your machine,
+<p>If you&#8217;ve got Docker Compose installed in your machine,
 you can build and run the entire application by just typing in a terminal:</p>
 </div>
 <div class="listingblock">
@@ -534,15 +574,8 @@ you can build and run the entire application by just typing in a terminal:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>TODO: link to more info.</p>
-</div>
-<div class="paragraph">
-<p>While this is convenient, this approach has some drawbacks. Traditional local
-development allows debugging and better IDE integration. If you want to
-set up proper local development, follow (TODO link) this guide.</p>
-</div>
-<div class="paragraph">
-<p><a href="02-local-dev.html">Link to local dev</a></p>
+<p>If you want to set up a more traditional development environment on your local
+machine, check <a href="02-local-dev.html">this section</a> out.</p>
 </div>
 </div>
 </div>
@@ -550,14 +583,41 @@ set up proper local development, follow (TODO link) this guide.</p>
 <h2 id="_instant_deployment_from_github_fork_to_public_server_in_minutes">Instant Deployment: From GitHub Fork to Public Server in Minutes</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><a href="03-fork-modify-deploy.html">Link to fmd</a></p>
+<p>Would you like to have your own working copy of our application? We&#8217;ve
+enabled a super-simple CI/CD workflow that lets you fork the repository,
+modify what you want and deploy it to AWS in minutes. Check out
+<a href="03-fork-modify-deploy.html">this section</a> to learn more.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="contributing">Contributing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We always welcome contributions! As a fist step, please
+<a href="https://cpplang.slack.com/archives/C05MLSQGA01">join our Slack discussion group</a>
+and have a look at
+<a href="https://github.com/anarthal/servertech-chat/issues">the open issues</a>.</p>
+</div>
+<div class="paragraph">
+<p>You can contribute by submitting PRs, writing docs or tests, or opening
+issues if you&#8217;ve found a bug.</p>
+</div>
+<div class="paragraph">
+<p>If you want to share any piece of feedback with us, either positive or negative,
+you can do so by commenting on
+<a href="https://github.com/anarthal/servertech-chat/issues/40">this issue</a>.</p>
+</div>
+<div class="paragraph">
+<p>If you&#8217;re a Boost author and you would like to showcase your library, you can
+fork this project and modify it to build your own BoostServerTech application.</p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-04 16:30:04 UTC
+Last updated 2023-09-05 11:25:36 UTC
 </div>
 </div>
 </body>
