@@ -5,6 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.16">
+<meta name="author" content="Rubén Pérez (@anarthal)">
 <title>Architecture</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -440,6 +441,9 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <body class="article">
 <div id="header">
 <h1>Architecture</h1>
+<div class="details">
+<span id="author" class="author">Rubén Pérez (@anarthal)</span><br>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
@@ -529,7 +533,7 @@ architecture could pay off (see
 <p>We use <a href="https://redis.io/docs/data-types/streams/">Redis streams</a> to store messages.
 These are append-only data structures, similar to a commit log. We use one
 stream per chat room. Each stream element is assigned an ID by Redis. We use
-this ID as message ID. Note that this makes message ID unique per chat room.</p>
+this ID as message ID. Note that this makes the message ID unique per chat room.</p>
 </div>
 <div class="paragraph">
 <p>In the future, we plan to offload old messages to another database like MySQL,
@@ -558,7 +562,7 @@ This is efficient but contrains the server to a single instance.</p>
 <div class="paragraph">
 <p>It is planned to replace <code>session_map</code> with a more scalable mechanism,
 like <a href="https://redis.io/docs/interact/pubsub/">Redis channels</a>.
-We&#8217;ve also considered using <a href="https://redis.io/commands/xread/" class="bare">https://redis.io/commands/xread/</a> [Redis <code>XREAD</code>]
+We&#8217;ve also considered using Redis <a href="https://redis.io/commands/xread/"><code>XREAD</code></a>
 to subscribe to stream changes. However, <code>XREAD</code> blocks the connection until
 an update is received, which doesn&#8217;t work well with Boost.Redis single-connection
 architecture.</p>
@@ -568,7 +572,7 @@ architecture.</p>
 <h3 id="_http_and_websockets">HTTP and websockets</h3>
 <div class="paragraph">
 <p>HTTP and websocket traffic is handled using
-<a href="http://www.boost.org/libs/beast:">Boost.Beast</a>. The server uses a listener loop,
+<a href="http://www.boost.org/libs/beast">Boost.Beast</a>. The server uses a listener loop,
 accepting new connections while serving the active ones asynchronously.</p>
 </div>
 <div class="paragraph">
@@ -593,7 +597,7 @@ to work.</p>
 </li>
 <li>
 <p>The server has unit tests, written using
-<a href="http://www.boost.org/libs/test:">Boost.Test</a>.</p>
+<a href="http://www.boost.org/libs/test">Boost.Test</a>.</p>
 </li>
 <li>
 <p>The server has also integration tests, which exercise the server using the
@@ -609,8 +613,8 @@ API. These tests use a real database, and are written in Python, using
 <h2 id="_client_architecture">Client architecture</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The client is web-based and uses [Next.js](<a href="https://nextjs.org/" class="bare">https://nextjs.org/</a>),
-[React](<a href="https://react.dev/" class="bare">https://react.dev/</a>) and TypeScript. Styles use
+<p>The client is web-based and uses <a href="https://nextjs.org/">Next.js</a>,
+<a href="https://react.dev/">React</a> and TypeScript. Styles use
 <a href="https://tailwindcss.com/">Tailwind CSS</a> and <a href="https://mui.com/">the MUI library</a>.</p>
 </div>
 <div class="paragraph">
@@ -629,7 +633,7 @@ which are then served by the C++ server as static files.</p>
 <p>For local development, you can build your code using your IDE or invoking
 CMake directly. See <a href="02-local-dev.html#local">this section</a>
 for further details. Additionally,
-code is built, tested and deployed continiously by a GitHub Actions workflow.</p>
+code is built, tested and deployed continuously by a GitHub Actions workflow.</p>
 </div>
 <div class="paragraph">
 <p>Server and client builds are defined in a single Dockerfile, enabling
@@ -693,7 +697,7 @@ authorize AWS to pull them. We suggest you to move to the
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-05 11:25:36 UTC
+Last updated 2023-09-05 12:07:12 UTC
 </div>
 </div>
 </body>

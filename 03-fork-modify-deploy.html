@@ -5,6 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.16">
+<meta name="author" content="Rubén Pérez (@anarthal)">
 <title>Instant Deployment: From GitHub Fork to Public Server in Minutes</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -440,6 +441,9 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <body class="article">
 <div id="header">
 <h1>Instant Deployment: From GitHub Fork to Public Server in Minutes</h1>
+<div class="details">
+<span id="author" class="author">Rubén Pérez (@anarthal)</span><br>
+</div>
 </div>
 <div id="content">
 <div id="preamble">
@@ -470,8 +474,9 @@ to access AWS for deployments. Follow these steps:</p>
 <p>Navigate to the <a href="https://console.aws.amazon.com/iamv2/">AWS IAM</a> console.</p>
 </li>
 <li>
-<p>Optional step: create a dedicated AWS user to manage deployments. This is
-considered a security good practice. <sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup>.</p>
+<p>Optional step: create a dedicated AWS user to manage deployments
+<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup>. This is
+considered a security best practice.</p>
 </li>
 <li>
 <p>Navigate to the Users section in the left panel, and select the user
@@ -570,6 +575,14 @@ user that manages deployments has the following permissions, at least:</p>
 <p>Read access on SSM (used internally).</p>
 </li>
 <li>
+<p>AWS virtual machines should be able to access the Docker container built by
+GitHub, which is stored in the GitHub container registry. If you&#8217;ve made your
+repository private, your containers may have become private, too. You should
+<a href="https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility">make your container public</a>
+(the code can still be private). You may want to consider using the
+<a href="https://aws.amazon.com/ecr/">AWS container registry</a> instead, too.</p>
+</li>
+<li>
 <p>The CI uses CloudFormation to deploy the required infrastructure.
 <a href="https://console.aws.amazon.com/cloudformation/">Access the CloudFormation console</a>
 and check that there is a stack called "ServertechChatStack" with green status.</p>
@@ -607,7 +620,7 @@ or <a href="https://cpplang.slack.com/archives/C05MLSQGA01">contact us in Slack<
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-05 11:25:36 UTC
+Last updated 2023-09-05 12:07:12 UTC
 </div>
 </div>
 </body>

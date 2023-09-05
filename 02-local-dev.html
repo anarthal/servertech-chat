@@ -5,6 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.16">
+<meta name="author" content="Rubén Pérez (@anarthal)">
 <title>Running the application locally</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -440,16 +441,21 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <body class="article">
 <div id="header">
 <h1>Running the application locally</h1>
+<div class="details">
+<span id="author" class="author">Rubén Pérez (@anarthal)</span><br>
+</div>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
+<p>Do you want to perform some development?</p>
+</div>
+<div class="paragraph">
 <p>If you want to try the application locally, make some changes, and see how
 it looks like, we recommend using <a href="#docker-compose">Docker Compose</a>, since
 it requires very little setup. If you need IDE integration or debugging,
-we recommend setting up a more traditional environment (please refer to
-<a href="#local">this section</a>).</p>
+we recommend <a href="#local">setting up a development environment</a>.</p>
 </div>
 </div>
 </div>
@@ -513,7 +519,7 @@ other system.</p>
 using gcc 10 (o above), or clang 11 (or above).</p>
 </li>
 <li>
-<p><a href="https://cmake.org/install/">CMake</a> 3.16 or above.</p>
+<p>CMake 3.16 or above.</p>
 </li>
 <li>
 <p>The OpenSSL development files (C headers and CMake module).</p>
@@ -574,10 +580,7 @@ this from the repository root:</p>
 <div class="content">
 <pre>mkdir build
 cd build
-
-# CMAKE_PREFIX_PATH should point where you installed Boost to
 cmake -DCMAKE_PREFIX_PATH=$HOME/boost ../server
-
 cmake --build . -j 4</pre>
 </div>
 </div>
@@ -661,7 +664,7 @@ C++ server running on port 8080 to run them - the client is not required.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>sudo apt install python3 python-pip</pre>
+<pre>sudo apt install python3 python3-pip</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -686,7 +689,7 @@ C++ server running on port 8080 to run them - the client is not required.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-05 11:25:36 UTC
+Last updated 2023-09-05 12:07:12 UTC
 </div>
 </div>
 </body>
