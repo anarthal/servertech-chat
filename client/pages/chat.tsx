@@ -1,16 +1,17 @@
-import Head from "next/head";
+import Head from "@/components/Head";
 import Header from "@/components/Header";
 import RoomEntry from "@/components/RoomEntry";
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { loadUser, createUser, User } from "@/lib/user";
 import {
   parseWebsocketMessage,
   serializeMessagesEvent,
 } from "@/lib/apiSerialization";
-import { Message, Room } from "@/lib/apiTypes";
+import { ServerMessage, Room, User } from "@/lib/apiTypes";
 import { MyMessage, OtherUserMessage } from "@/components/Message";
 import MessageInputBar from "@/components/MessageInputBar";
 import autoAnimate from "@formkit/auto-animate";
+import { useRouter } from "next/router";
+import { clearHasAuth } from "@/lib/hasAuth";
 
 // The chat screen. This component uses React state management using
 // useReducer.
@@ -37,7 +38,7 @@ type AddMessagesAction = {
   type: "add_messages";
   payload: {
     roomId: string;
-    messages: Message[];
+    messages: ServerMessage[];
   };
 };
 
@@ -60,11 +61,11 @@ const Message = ({
   timestamp,
   currentUserId,
 }: {
-  userId: string;
+  userId: number;
   username: string;
   content: string;
   timestamp: number;
-  currentUserId: string;
+  currentUserId: number;
 }) => {
   if (userId === currentUserId) {
     return <MyMessage content={content} timestamp={timestamp} />;
@@ -81,9 +82,9 @@ const Message = ({
 
 // Helpers to process actions
 const addNewMessages = (
-  messages: Message[],
-  newMessages: Message[],
-): Message[] => {
+  messages: ServerMessage[],
+  newMessages: ServerMessage[],
+): ServerMessage[] => {
   const res = [...newMessages];
   res.reverse();
   return res.concat(messages);
@@ -161,10 +162,10 @@ function reducer(state: State, action: Action): State {
 // the client generation process, defaulting to the host and port we're been
 // served from
 function getWebsocketURL(): string {
-  const res =
+  return (
     process.env.NEXT_PUBLIC_WEBSOCKET_URL ||
-    `ws://${location.hostname}:${location.port}/`;
-  return res;
+    `ws://${location.hostname}:${location.port}/api/ws`
+  );
 }
 
 // Exposed for the sake of testing
@@ -177,7 +178,7 @@ export const ChatScreen = ({
 }: {
   rooms: Room[];
   currentRoom: Room | null;
-  currentUserId: string;
+  currentUserId: number;
   onClickRoom: (roomId: string) => void;
   onMessage: (msg: string) => void;
 }) => {
@@ -236,6 +237,9 @@ export const ChatScreen = ({
   );
 };
 
+// Websocket close code to signal that authentication is required
+const CODE_POLICY_VIOLATION = 1008;
+
 // The actual component
 export default function ChatPage() {
   // State management
@@ -250,15 +254,11 @@ export default function ChatPage() {
   const onMessageTyped = useCallback(
     (msg: string) => {
       const evt = serializeMessagesEvent(state.currentRoomId, {
-        user: {
-          id: state.currentUser.id,
-          username: state.currentUser.username,
-        },
         content: msg,
       });
       websocketRef.current.send(evt);
     },
-    [state.currentUser?.id, state.currentUser?.username, state.currentRoomId],
+    [state.currentRoomId],
   );
 
   // Change the current active room when the user clicks on it
@@ -269,6 +269,8 @@ export default function ChatPage() {
     [dispatch],
   );
 
+  const router = useRouter();
+
   // Handle server websocket messages
   const onWebsocketMessage = useCallback((event: MessageEvent) => {
     const { type, payload } = parseWebsocketMessage(event.data);
@@ -277,12 +279,12 @@ export default function ChatPage() {
         dispatch({
           type: "set_initial_state",
           payload: {
-            currentUser: loadUser() || createUser(),
+            currentUser: payload.me,
             rooms: payload.rooms,
           },
         });
         break;
-      case "messages":
+      case "serverMessages":
         dispatch({
           type: "add_messages",
           payload: {
@@ -294,18 +296,31 @@ export default function ChatPage() {
     }
   }, []);
 
+  const onClose = useCallback(
+    (event: CloseEvent) => {
+      // On authentication failure, the server closes the websocket with this code.
+      if (event.code === CODE_POLICY_VIOLATION) {
+        clearHasAuth();
+        router.replace("/login");
+      }
+    },
+    [router],
+  );
+
   // Create a websocket
   const websocketRef = useRef<WebSocket>(null);
   useEffect(() => {
     websocketRef.current = new WebSocket(getWebsocketURL());
     websocketRef.current.addEventListener("message", onWebsocketMessage);
+    websocketRef.current.addEventListener("close", onClose);
 
     // Close the socket on page close
     return () => {
       websocketRef.current.removeEventListener("message", onWebsocketMessage);
+      websocketRef.current.removeEventListener("close", onClose);
       websocketRef.current.close();
     };
-  }, [onWebsocketMessage]);
+  }, [onWebsocketMessage, onClose]);
 
   // Handle loading state
   if (state.loading) return <p>Loading...</p>;
@@ -317,10 +332,7 @@ export default function ChatPage() {
 
   return (
     <>
-      <Head>
-        <title>BoostServerTech chat</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <Head />
       <div className="flex flex-col h-full">
         <Header />
         <ChatScreen

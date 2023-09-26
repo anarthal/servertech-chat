@@ -1,7 +1,7 @@
 import {
   AnyServerEvent,
   ClientMessagesEvent,
-  MessageWithoutId,
+  ClientMessage,
 } from "@/lib/apiTypes";
 
 // Contains functions to parse raw data into API types and vice-versa
@@ -13,10 +13,10 @@ export function parseWebsocketMessage(s: string): AnyServerEvent {
 
 export function serializeMessagesEvent(
   roomId: string,
-  message: MessageWithoutId,
+  message: ClientMessage,
 ): string {
   const evt: ClientMessagesEvent = {
-    type: "messages",
+    type: "clientMessages",
     payload: {
       roomId,
       messages: [message],

@@ -34,7 +34,7 @@ exports[`Header renders the page header 1`] = `
       >
         <a
           class="no-underline text-2xl text-black"
-          href="/"
+          href="https://anarthal.github.io/servertech-chat/"
         >
           Docs
         </a>

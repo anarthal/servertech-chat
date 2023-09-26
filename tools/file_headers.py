@@ -19,7 +19,6 @@ VERBOSE = False
 REPO_BASE = path.abspath(path.join(path.dirname(path.realpath(__file__)), '..'))
 BASE_FOLDERS = [
     'server',
-    'tools',
 ]
 BASE_FILES = [
     'docker-compose.yml',

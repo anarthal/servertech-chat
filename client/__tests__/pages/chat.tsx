@@ -10,12 +10,15 @@ import {
 } from "@/lib/apiTypes";
 import WS from "jest-websocket-mock";
 import userEvent from "@testing-library/user-event";
-import { saveUser } from "@/lib/user";
+import { useRouter } from "next/router";
+import { clearHasAuth } from "@/lib/hasAuth";
+
+jest.mock("@/lib/hasAuth");
 
 describe("chat page", () => {
   // Data to mock the server
-  const u1: User = { id: "u1", username: "User one" };
-  const u2: User = { id: "u2", username: "User two" };
+  const u1: User = { id: 1, username: "User one" };
+  const u2: User = { id: 2, username: "User two" };
   const beastRoom: Room = {
     id: "beast",
     name: "Boost.Beast",
@@ -58,7 +61,7 @@ describe("chat page", () => {
       <ChatScreen
         rooms={[beastRoom, wasmRoom]}
         currentRoom={wasmRoom}
-        currentUserId="u2"
+        currentUserId={2}
         onClickRoom={jest.fn()}
         onMessage={jest.fn()}
       />,
@@ -90,6 +93,7 @@ describe("chat page", () => {
     const helloEvt: HelloEvent = {
       type: "hello",
       payload: {
+        me: { id: 10, username: "user1" },
         rooms: [beastRoom, wasmRoom, dbRoom, emptyRoom],
       },
     };
@@ -97,6 +101,7 @@ describe("chat page", () => {
     // Cleanup any data and connections from previous tests
     beforeEach(() => {
       WS.clean();
+      jest.clearAllMocks();
     });
 
     test("Room navigation", async () => {
@@ -135,7 +140,6 @@ describe("chat page", () => {
 
     test("Sending and receiving messages", async () => {
       // Set up
-      saveUser(u2);
       const server = new WS(process.env.NEXT_PUBLIC_WEBSOCKET_URL);
 
       // render the page and send the hello
@@ -148,7 +152,7 @@ describe("chat page", () => {
 
       // A message is received, and the target room is not selected
       const serverMsgsEvt: ServerMessagesEvent = {
-        type: "messages",
+        type: "serverMessages",
         payload: {
           roomId: "db",
           messages: [
@@ -173,12 +177,11 @@ describe("chat page", () => {
       userEvent.keyboard("A message for the wasm guys{Enter}");
       const clientMsgsEvt = JSON.parse((await server.nextMessage) as string);
       const expectedClientMsgsEvt: ClientMessagesEvent = {
-        type: "messages",
+        type: "clientMessages",
         payload: {
           roomId: "wasm",
           messages: [
             {
-              user: u2,
               content: "A message for the wasm guys",
             },
           ],
@@ -191,7 +194,7 @@ describe("chat page", () => {
 
       // The server relays it
       const serverMsgsEvt2: ServerMessagesEvent = {
-        type: "messages",
+        type: "serverMessages",
         payload: {
           roomId: "wasm",
           messages: [
@@ -213,6 +216,19 @@ describe("chat page", () => {
       expect(screen.getAllByTestId("room-name")[0]).toHaveTextContent(
         "Web Assembly",
       );
+    });
+
+    test("On authentication failure, navigate to the login page", async () => {
+      // Set up
+      const server = new WS(process.env.NEXT_PUBLIC_WEBSOCKET_URL);
+
+      render(<ChatPage />);
+      await server.connected;
+      server.close({ code: 1008, reason: "", wasClean: true });
+
+      expect(useRouter().replace).toBeCalledTimes(1);
+      expect(useRouter().replace).toBeCalledWith("/login");
+      expect(clearHasAuth).toBeCalledTimes(1);
     });
   });
 });

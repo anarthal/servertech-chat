@@ -104,7 +104,7 @@ jobs:
       - name: Run integration tests
         run: |
           pip install -r test/integration/requirements.txt
-          docker compose up -d
+          docker compose up -d --wait || (docker compose logs; exit 1)
           pytest
           docker compose down
 

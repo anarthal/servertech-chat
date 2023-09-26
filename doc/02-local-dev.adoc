@@ -55,12 +55,13 @@ The following tools are required:
   using gcc 10 (o above), or clang 11 (or above).
 * CMake 3.16 or above.
 * The OpenSSL development files (C headers and CMake module).
+* ICU development files (C headers and CMake module).
 
 If you're on Ubuntu, you can install them using:
 
 [code,bash]
 ----
-sudo apt install g++ cmake libssl-dev
+sudo apt install g++ cmake libssl-dev libicu-dev
 ----
 
 You also need Boost. Since Boost.Redis hasn't been fully integrated into Boost
@@ -77,6 +78,13 @@ with Docker:
 [code,bash]
 ----
 docker run -d --name redis -p 6379:6379  redis:alpine
+----
+
+A MySQL server is also required. Again, we recommend using Docker:
+
+[code,bash]
+----
+docker run -d --name mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:8
 ----
 
 Now you can build your server using CMake (possibly from your IDE) by running
@@ -136,10 +144,16 @@ npm run dev
 ----
 
 This will spawn a development server on http://localhost:3000/ with auto-refresh
-enabled (if you change something in the client files, it will hot-reload your
-code). By default, the client attempts to connect to your pass:[C++] server
-on port 8080. You can change this setting by editing the `client/.env.development`
-file.
+enabled (if you edit client files, your code will be hot-reloaded on file save).
+
+The development server will route any incoming HTTP traffic on a URL
+matching `pass:[http://localhost:3000/api/(.*)]` to the pass:[C++] server on
+`pass:[http://localhost:8080/api/]`. If you're pass:[C++] server is running on
+a different port, edit `client/.env.development` accordingly.
+
+This routing ensures that both static files and the API are served from the same
+origin (which matches the production behavior), avoiding the problems associated
+with cross-origin requests.
 
 To run the client unit tests, `cd` into `client` and run:
 
@@ -151,8 +165,8 @@ npm run test
 === Running the server integration tests
 
 Integration tests are written in Python. They verify that the server works
-as expected by exercising the websocket API directly. You need the
-pass:[C++] server running on port 8080 to run them - the client is not required.
+as expected by exercising the API directly. You need the
+pass:[C++] server running on port 8080 to execute them - the client is not required.
 
 First, install Python 3 and pip:
 

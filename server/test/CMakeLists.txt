@@ -11,11 +11,24 @@ find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 # Test list
 add_executable(
     unit_tests
-    entry_point.cpp # main() definition
-    async_mutex.cpp
-    redis_serialization.cpp
-    api_serialization.cpp
-    session_map.cpp
+    
+    # main() definition
+    entry_point.cpp 
+
+    # Utility functions
+    util/async_mutex.cpp
+    util/base64.cpp
+    util/email.cpp
+    util/scrypt.cpp
+    util/password_hash.cpp
+    util/cookie.cpp
+
+    # Services
+    services/pubsub_service.cpp
+    services/redis_serialization.cpp
+    
+    # API
+    api/api_types.cpp
 )
 
 # Linking against servertech_chat allows us to use the functions under test

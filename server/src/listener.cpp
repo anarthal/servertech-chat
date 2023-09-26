@@ -10,11 +10,13 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
+#include <boost/assert/source_location.hpp>
 
 #include <memory>
 
 #include "error.hpp"
 #include "http_session.hpp"
+#include "services/mysql_client.hpp"
 #include "shared_state.hpp"
 
 using namespace chat;
@@ -37,6 +39,13 @@ static void accept_loop(
 )
 {
     error_code ec;
+
+    // Run DB setup code. If this fails is because something really bad happened
+    // (e.g. the SQL execution failed), so we throw an exception. Network errors
+    // are handled by setup_db.
+    auto err = st->mysql().setup_db(yield);
+    if (err.ec)
+        throw_exception_from_error(err, BOOST_CURRENT_LOCATION);
 
     // We accept connections in an infinite loop. When the io_context is stopped,
     // coroutines are "cancelled" by throwing an internal exception, exiting

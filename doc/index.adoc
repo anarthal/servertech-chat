@@ -48,10 +48,12 @@ image::servertech_arch.jpg[]
 
 - There is a single, pass:[C++] based webserver.
 - Messages are stored in a Redis database, configured with persistence enabled.
+- Objects that don't require low-latency access (such as users) are stored in
+  MySQL.
 - The front-end is web-based, written in https://react.dev/[React].
-- Front-end and back-end communicate using websockets, using an event-based API.
+- Front-end and back-end communicate using a REST API and websockets.
 - The front-end is served by the pass:[C++] server as regular, static files.
-- Both the pass:[C++] server and the Redis database are deployed to AWS as
+- The pass:[C++] server and the two database servers are deployed to AWS as
   Docker containers. Deployments are performed automatically by
   a GitHub Actions pipeline.
 - The project includes a test suite, including server and client unit tests,

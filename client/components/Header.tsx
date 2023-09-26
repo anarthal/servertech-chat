@@ -6,7 +6,7 @@ import boostLogo from "@/public/boost.jpg";
 
 const links = [
   { text: "Source code", href: "https://github.com/anarthal/servertech-chat" },
-  { text: "Docs", href: "/" },
+  { text: "Docs", href: "https://anarthal.github.io/servertech-chat/" },
 ];
 
 export default function Header() {

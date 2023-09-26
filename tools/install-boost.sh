@@ -22,5 +22,5 @@ cd ~/boost-src/boost_$BOOST_VERSION_UNDERSCORE
 # Build and install. Make sure you've got write access to /opt/boost,
 # otherwise change the --prefix argument
 ./bootstrap.sh
-./b2 --with-json --with-context --with-test -d0 --prefix=/opt/boost install
+./b2 --with-json --with-context --with-regex --with-url --with-test -d0 --prefix=/opt/boost install
 rm -rf ~/boost-src

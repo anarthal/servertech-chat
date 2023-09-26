@@ -17,6 +17,7 @@ RUN apk update && \
         cmake \
         ninja \
         openssl-dev \
+        icu-dev \
         git \
         linux-headers \
         wget
@@ -86,14 +87,17 @@ RUN npm run test
 # Runtime image
 #
 FROM alpine:3.18.2
-RUN apk add openssl libstdc++
+RUN apk add openssl icu libstdc++ curl
 COPY --from=server-builder \
     /opt/boost/lib/libboost_container.so* \
     /opt/boost/lib/libboost_context.so* \
     /opt/boost/lib/libboost_json.so* \
+    /opt/boost/lib/libboost_regex.so* \
+    /opt/boost/lib/libboost_url.so* \
     /opt/boost/lib/
 COPY --from=server-builder /app/main /app/
 COPY --from=client-builder /app/out/ /app/static/
 
 EXPOSE 80
 ENTRYPOINT [ "/app/main", "0.0.0.0", "80", "/app/static/" ]
+HEALTHCHECK --start-period=5s CMD [ "curl", "-f", "http://localhost/" ]

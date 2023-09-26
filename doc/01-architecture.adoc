@@ -7,29 +7,35 @@ The following diagram depicts the application architecture:
 
 image::servertech_arch.jpg[]
 
+== REST API
+
+The REST API is used for operations that do not require low latency, like
+account creation and authentication.
+It follows the usual HTTP API conventions, like verbs and status codes.
+Some error responses (like account creation failures) include
+additional error information, in JSON format.
+
 == Websocket API
 
-All communication (other than static file serving) currently happens over
-websockets. We plan on adding REST-ful endpoints later, when user authentication
-is introduced.
+Time-sensitive operations, like sending messages, use websockets.
 
-The diagram below depicts how the API works. All events are JSON encoded.
+The diagram below depicts how the websocket API works. All events are JSON encoded.
 
-image::api.svg[]
+image::ws_api.svg[]
 
 When the client connects, the server sends a `hello` event, contining all the
 data required by the client to build the UI (i.e. available chat rooms
 and message history).
 
-When the user types a message, the client sends a `messages` event. The server
-persists it to the database and broadcasts it to all clients, including the
+When the user types a message, the client sends a `clientMessages` event. The server
+persists it and broadcasts a `serverMessages` event to all clients, including the
 one that originated the message.
 
 On connection, only the latest messages are loaded. The client can request more
 by sending a `requestMessageHistory` event. This implements message pagination
 (but see https://github.com/anarthal/servertech-chat/issues/31[this issue]).
 
-See https://github.com/anarthal/servertech-chat/blob/master/client/lib/apiTypes.ts[this file]
+See https://github.com/anarthal/servertech-chat/blob/master/test/integration/api_types.py[this file]
 for a complete reference on API types.
 
 == Server architecture
@@ -64,7 +70,7 @@ These are append-only data structures, similar to a commit log. We use one
 stream per chat room. Each stream element is assigned an ID by Redis. We use
 this ID as message ID. Note that this makes the message ID unique per chat room.
 
-In the future, we plan to offload old messages to another database like MySQL,
+In the future, we plan to offload old messages to MySQL,
 to keep Redis structures small (see
 https://github.com/anarthal/servertech-chat/issues/24[this issue]).
 
@@ -77,13 +83,49 @@ The Redis hostname is configured via the environment variable `REDIS_HOST`.
 The Redis instance is never exposed to the internet, so no authentication
 or encryption is set up.
 
+=== MySQL
+
+We use MySQL to store users. Future business objects that are not considered
+time-critical will also be stored in MySQL.
+
+We use https://github.com/boostorg/mysql[Boost.MySQL] to communicate with
+MySQL asynchronously. Database setup code (i.e. migrations) are currently
+executed at application startup. A connection is dynamically opened and
+closed for each request (but see
+https://github.com/anarthal/servertech-chat/issues/48[this issue]).
+
+The MySQL hostname is configured via the environment variable `MYSQL_HOST`.
+The MySQL instance is never exposed to the internet, so no strong credentials
+or encryption are set up (but see
+https://github.com/anarthal/servertech-chat/issues/45[this issue]).
+
+=== Authentication
+
+Clients are authenticated using the `/api/login` endpoint, using an email and
+a password as credentials. Self-registration is possible using the `/api/create-account`
+endpoint. At the moment, no email verification is performed
+(see https://github.com/anarthal/servertech-chat/issues/8[this issue]).
+
+Passwords are stored in MySQL, hashed using
+https://en.wikipedia.org/wiki/Scrypt[scrypt].
+
+User sessions are managed using 16-byte session IDs, valid for 7 days and transmitted
+using HTTP cookies. Session IDs are stored in Redis and use Redis' key expiry time feature.
+Cookies use the `HttpOnly` and `SameSite=Strict` attributes to prevent XSS and CSRF
+attacks.
+
+Websocket sessions use credentials included in the HTTP upgrade request that
+initiates the session. If the supplied credentials are invalid, the websocket
+is closed with a certain code straight after the handshake. Doing this allows
+the client to detect missing credentials and redirect the user to the login page.
+
 === Message broadcasting
 
-Messages are broadcast using an in-memory data structure (the `session_map`)
+Messages are broadcast using an in-memory data structure (the `pubsub_service`)
 that uses https://boost.org/libs/multi_index[Boost.MultiIndex].
 This is efficient but contrains the server to a single instance.
 
-It is planned to replace `session_map` with a more scalable mechanism,
+It is planned to replace the `pubsub_service` with a more scalable mechanism,
 like https://redis.io/docs/interact/pubsub/[Redis channels].
 We've also considered using Redis https://redis.io/commands/xread/[`XREAD`]
 to subscribe to stream changes. However, `XREAD` blocks the connection until
@@ -123,6 +165,10 @@ which are then served by the pass:[C++] server as static files.
 
 The client has unit tests written in https://jestjs.io/[Jest].
 
+Client screens are first designed in Figma before being translated into code.
+https://www.figma.com/file/HsppZcF6EgDIBR70QYPAmp/BoostServerTech-chat[This file]
+contains wireframes for this project.
+
 [#build-deploy]
 == Building and deploying
 
@@ -139,8 +185,8 @@ Both client and server are packaged into a single Docker container. This
 container is stored in the
 https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry[GitHub container registry].
 
-Redis is deployed as a separate container. We use a standard Redis image, so
-there is no need to build an image for it.
+Redis and MySQL are deployed as separate containers. We standard Redis and MySQL
+images, so there is no need to build custom images for DBs.
 
 The server is then deployed to https://aws.amazon.com/[AWS]. We've taken an
 infrastructure-as-code approach, using an https://aws.amazon.com/cloudformation/[AWS CloudFormation]

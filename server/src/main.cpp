@@ -14,7 +14,7 @@
 
 #include "error.hpp"
 #include "listener.hpp"
-#include "redis_client.hpp"
+#include "services/redis_client.hpp"
 #include "shared_state.hpp"
 
 using namespace chat;
@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
     boost::asio::io_context ioc{1};
 
     // Singleton objects shared by all connections
-    auto st = std::make_shared<shared_state>(doc_root, redis_client(ioc.get_executor()));
+    auto st = std::make_shared<shared_state>(doc_root, ioc.get_executor());
 
     // The physical endpoint where our server will listen
     boost::asio::ip::tcp::endpoint listening_endpoint{boost::asio::ip::make_address(ip), port};

@@ -1,0 +1,28 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FormCard renders correctly 1`] = `
+<DocumentFragment>
+  <div
+    class="bg-white rounded-2xl p-7 flex flex-col"
+    style="min-width: 50%;"
+  >
+    <p
+      class="text-center text-4xl p-3 m-0"
+    >
+      Hello card
+    </p>
+    <div
+      class="flex justify-center"
+    >
+      <div
+        class="pt-8 pr-5 pl-5 pb-3 flex-1 flex"
+        style="max-width: 40em;"
+      >
+        <p>
+          A child
+        </p>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;

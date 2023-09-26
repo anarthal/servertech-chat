@@ -9,28 +9,54 @@ cmake_minimum_required(VERSION 3.16.0)
 project(servertech_chat)
 
 # Boost.Context is required to run stackful coroutines
-find_package(Boost REQUIRED COMPONENTS headers context json)
+find_package(Boost REQUIRED COMPONENTS headers context json regex url)
 
 # OpenSSL is required by Boost.Redis
 find_package(OpenSSL REQUIRED)
+
+# ICU is required by Boost.Regex
+find_package(ICU COMPONENTS data i18n uc REQUIRED)
 
 # This library is consumed by the actual server and the tests
 add_library(
     servertech_chat
     STATIC
-    src/boost_asio.cpp
-    src/boost_beast.cpp
-    src/boost_redis.cpp
+
+    # Header-only libraries with optional separate-source mode
+    src/separate-compilation/boost_asio.cpp
+    src/separate-compilation/boost_beast.cpp
+    src/separate-compilation/boost_redis.cpp
+    src/separate-compilation/boost_mysql.cpp
+
+    # Utilities
+    src/util/base64.cpp
+    src/util/email.cpp
+    src/util/scrypt.cpp
+    src/util/password_hash.cpp
+    src/util/cookie.cpp
+    src/util/websocket.cpp
+
+    # Services
+    src/services/redis_serialization.cpp
+    src/services/redis_client.cpp
+    src/services/mysql_client.cpp
+    src/services/session_store.cpp
+    src/services/cookie_auth_service.cpp
+    src/services/room_history_service.cpp
+    src/services/pubsub_service.cpp
+
+    # API
+    src/api/api_types.cpp
+    src/api/auth.cpp
+    src/api/chat_websocket.cpp
+
+    # Server
+    src/static_files.cpp
     src/listener.cpp
     src/http_session.cpp
-    src/serve_static_file.cpp
-    src/websocket.cpp
-    src/websocket_session.cpp
+    src/request_context.cpp
     src/shared_state.cpp
-    src/redis_serialization.cpp
-    src/api_serialization.cpp
     src/error.cpp
-    src/redis_client.cpp
 )
 
 target_include_directories(servertech_chat PUBLIC include)
@@ -41,18 +67,24 @@ target_link_libraries(
     Boost::headers
     Boost::context
     Boost::json
+    Boost::regex
+    Boost::url
     OpenSSL::Crypto
     OpenSSL::SSL
+    ICU::data
+    ICU::i18n
+    ICU::uc
 )
 
-# These are required because we're building Boost.Asio and Boost.Beast
-# in separate-compilation mode (see boost_asio.cpp and boost_beast.cpp).
+# These are required because we're building Boost.Asio, Boost.Beast and Boost.MySQL
+# in separate-compilation mode (see boost_asio.cpp, boost_beast.cpp, boost_mysql.cpp).
 # Boost.Redis doesn't need such definition, even when building it like we're doing.
 target_compile_definitions(
     servertech_chat
     PUBLIC
     BOOST_BEAST_SEPARATE_COMPILATION
     BOOST_ASIO_SEPARATE_COMPILATION
+    BOOST_MYSQL_SEPARATE_COMPILATION
 )
 
 # Precompiled headers, to reduce build times

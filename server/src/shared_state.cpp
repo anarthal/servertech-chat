@@ -7,14 +7,25 @@
 
 #include "shared_state.hpp"
 
+#include <boost/asio/any_io_executor.hpp>
+
 #include <memory>
 
-#include "session_map.hpp"
+#include "services/cookie_auth_service.hpp"
+#include "services/mysql_client.hpp"
+#include "services/pubsub_service.hpp"
+#include "services/redis_client.hpp"
 
 using namespace chat;
 
-shared_state::shared_state(std::string doc_root, redis_client redis)
-    : impl_{std::move(doc_root), std::move(redis), std::make_unique<session_map>()}
+shared_state::shared_state(std::string doc_root, boost::asio::any_io_executor ex)
+    : impl_{
+          std::move(doc_root),
+          create_redis_client(ex),
+          create_mysql_client(ex),
+          std::make_unique<cookie_auth_service>(redis(), mysql()),
+          create_pubsub_service(ex),
+      }
 {
 }
 

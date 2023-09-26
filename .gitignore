@@ -14,7 +14,7 @@ compile_commands.json
 .cache/
 __build*__/
 .env
-venv/
+venv-*/
 *.pyc
 __pycache__/
 .pytest_cache/
