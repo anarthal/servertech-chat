@@ -460,19 +460,29 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 </div>
 <div class="sect1">
+<h2 id="_rest_api">REST API</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The REST API is used for operations that do not require low latency, like
+account creation and authentication.
+It follows the usual HTTP API conventions, like verbs and status codes.
+Some error responses (like account creation failures) include
+additional error information, in JSON format.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_websocket_api">Websocket API</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>All communication (other than static file serving) currently happens over
-websockets. We plan on adding REST-ful endpoints later, when user authentication
-is introduced.</p>
+<p>Time-sensitive operations, like sending messages, use websockets.</p>
 </div>
 <div class="paragraph">
-<p>The diagram below depicts how the API works. All events are JSON encoded.</p>
+<p>The diagram below depicts how the websocket API works. All events are JSON encoded.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="api.svg" alt="api">
+<img src="ws_api.svg" alt="ws api">
 </div>
 </div>
 <div class="paragraph">
@@ -481,8 +491,8 @@ data required by the client to build the UI (i.e. available chat rooms
 and message history).</p>
 </div>
 <div class="paragraph">
-<p>When the user types a message, the client sends a <code>messages</code> event. The server
-persists it to the database and broadcasts it to all clients, including the
+<p>When the user types a message, the client sends a <code>clientMessages</code> event. The server
+persists it and broadcasts a <code>serverMessages</code> event to all clients, including the
 one that originated the message.</p>
 </div>
 <div class="paragraph">
@@ -491,7 +501,7 @@ by sending a <code>requestMessageHistory</code> event. This implements message p
 (but see <a href="https://github.com/anarthal/servertech-chat/issues/31">this issue</a>).</p>
 </div>
 <div class="paragraph">
-<p>See <a href="https://github.com/anarthal/servertech-chat/blob/master/client/lib/apiTypes.ts">this file</a>
+<p>See <a href="https://github.com/anarthal/servertech-chat/blob/master/test/integration/api_types.py">this file</a>
 for a complete reference on API types.</p>
 </div>
 </div>
@@ -536,7 +546,7 @@ stream per chat room. Each stream element is assigned an ID by Redis. We use
 this ID as message ID. Note that this makes the message ID unique per chat room.</p>
 </div>
 <div class="paragraph">
-<p>In the future, we plan to offload old messages to another database like MySQL,
+<p>In the future, we plan to offload old messages to MySQL,
 to keep Redis structures small (see
 <a href="https://github.com/anarthal/servertech-chat/issues/24">this issue</a>).</p>
 </div>
@@ -553,14 +563,59 @@ or encryption is set up.</p>
 </div>
 </div>
 <div class="sect2">
+<h3 id="_mysql">MySQL</h3>
+<div class="paragraph">
+<p>We use MySQL to store users. Future business objects that are not considered
+time-critical will also be stored in MySQL.</p>
+</div>
+<div class="paragraph">
+<p>We use <a href="https://github.com/boostorg/mysql">Boost.MySQL</a> to communicate with
+MySQL asynchronously. Database setup code (i.e. migrations) are currently
+executed at application startup. A connection is dynamically opened and
+closed for each request (but see
+<a href="https://github.com/anarthal/servertech-chat/issues/48">this issue</a>).</p>
+</div>
+<div class="paragraph">
+<p>The MySQL hostname is configured via the environment variable <code>MYSQL_HOST</code>.
+The MySQL instance is never exposed to the internet, so no strong credentials
+or encryption are set up (but see
+<a href="https://github.com/anarthal/servertech-chat/issues/45">this issue</a>).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_authentication">Authentication</h3>
+<div class="paragraph">
+<p>Clients are authenticated using the <code>/api/login</code> endpoint, using an email and
+a password as credentials. Self-registration is possible using the <code>/api/create-account</code>
+endpoint. At the moment, no email verification is performed
+(see <a href="https://github.com/anarthal/servertech-chat/issues/8">this issue</a>).</p>
+</div>
+<div class="paragraph">
+<p>Passwords are stored in MySQL, hashed using
+<a href="https://en.wikipedia.org/wiki/Scrypt">scrypt</a>.</p>
+</div>
+<div class="paragraph">
+<p>User sessions are managed using 16-byte session IDs, valid for 7 days and transmitted
+using HTTP cookies. Session IDs are stored in Redis and use Redis' key expiry time feature.
+Cookies use the <code>HttpOnly</code> and <code>SameSite=Strict</code> attributes to prevent XSS and CSRF
+attacks.</p>
+</div>
+<div class="paragraph">
+<p>Websocket sessions use credentials included in the HTTP upgrade request that
+initiates the session. If the supplied credentials are invalid, the websocket
+is closed with a certain code straight after the handshake. Doing this allows
+the client to detect missing credentials and redirect the user to the login page.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_message_broadcasting">Message broadcasting</h3>
 <div class="paragraph">
-<p>Messages are broadcast using an in-memory data structure (the <code>session_map</code>)
+<p>Messages are broadcast using an in-memory data structure (the <code>pubsub_service</code>)
 that uses <a href="https://boost.org/libs/multi_index">Boost.MultiIndex</a>.
 This is efficient but contrains the server to a single instance.</p>
 </div>
 <div class="paragraph">
-<p>It is planned to replace <code>session_map</code> with a more scalable mechanism,
+<p>It is planned to replace the <code>pubsub_service</code> with a more scalable mechanism,
 like <a href="https://redis.io/docs/interact/pubsub/">Redis channels</a>.
 We&#8217;ve also considered using Redis <a href="https://redis.io/commands/xread/"><code>XREAD</code></a>
 to subscribe to stream changes. However, <code>XREAD</code> blocks the connection until
@@ -624,6 +679,11 @@ which are then served by the C++ server as static files.</p>
 <div class="paragraph">
 <p>The client has unit tests written in <a href="https://jestjs.io/">Jest</a>.</p>
 </div>
+<div class="paragraph">
+<p>Client screens are first designed in Figma before being translated into code.
+<a href="https://www.figma.com/file/HsppZcF6EgDIBR70QYPAmp/BoostServerTech-chat">This file</a>
+contains wireframes for this project.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -646,8 +706,8 @@ container is stored in the
 <a href="https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry">GitHub container registry</a>.</p>
 </div>
 <div class="paragraph">
-<p>Redis is deployed as a separate container. We use a standard Redis image, so
-there is no need to build an image for it.</p>
+<p>Redis and MySQL are deployed as separate containers. We standard Redis and MySQL
+images, so there is no need to build custom images for DBs.</p>
 </div>
 <div class="paragraph">
 <p>The server is then deployed to <a href="https://aws.amazon.com/">AWS</a>. We&#8217;ve taken an
@@ -697,7 +757,7 @@ authorize AWS to pull them. We suggest you to move to the
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-05 16:36:05 UTC
+Last updated 2023-09-26 15:22:12 UTC
 </div>
 </div>
 </body>

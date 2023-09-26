@@ -540,16 +540,20 @@ dynamic in the future.</p>
 <p>Messages are stored in a Redis database, configured with persistence enabled.</p>
 </li>
 <li>
+<p>Objects that don&#8217;t require low-latency access (such as users) are stored in
+MySQL.</p>
+</li>
+<li>
 <p>The front-end is web-based, written in <a href="https://react.dev/">React</a>.</p>
 </li>
 <li>
-<p>Front-end and back-end communicate using websockets, using an event-based API.</p>
+<p>Front-end and back-end communicate using a REST API and websockets.</p>
 </li>
 <li>
 <p>The front-end is served by the C++ server as regular, static files.</p>
 </li>
 <li>
-<p>Both the C++ server and the Redis database are deployed to AWS as
+<p>The C++ server and the two database servers are deployed to AWS as
 Docker containers. Deployments are performed automatically by
 a GitHub Actions pipeline.</p>
 </li>
@@ -621,7 +625,7 @@ fork this project and modify it to build your own BoostServerTech application.</
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-05 16:36:05 UTC
+Last updated 2023-09-26 15:22:12 UTC
 </div>
 </div>
 </body>

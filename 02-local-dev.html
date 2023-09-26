@@ -524,6 +524,9 @@ using gcc 10 (o above), or clang 11 (or above).</p>
 <li>
 <p>The OpenSSL development files (C headers and CMake module).</p>
 </li>
+<li>
+<p>ICU development files (C headers and CMake module).</p>
+</li>
 </ul>
 </div>
 <div class="paragraph">
@@ -531,7 +534,7 @@ using gcc 10 (o above), or clang 11 (or above).</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>sudo apt install g++ cmake libssl-dev</pre>
+<pre>sudo apt install g++ cmake libssl-dev libicu-dev</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -564,7 +567,7 @@ cd ~/boost-src/boost_$BOOST_VERSION_UNDERSCORE
 # Build and install. Make sure you've got write access to /opt/boost,
 # otherwise change the --prefix argument
 ./bootstrap.sh
-./b2 --with-json --with-context --with-test -d0 --prefix=/opt/boost install
+./b2 --with-json --with-context --with-regex --with-url --with-test -d0 --prefix=/opt/boost install
 rm -rf ~/boost-src</pre>
 </div>
 </div>
@@ -575,6 +578,14 @@ with Docker:</p>
 <div class="listingblock">
 <div class="content">
 <pre>docker run -d --name redis -p 6379:6379  redis:alpine</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A MySQL server is also required. Again, we recommend using Docker:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>docker run -d --name mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:8</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -643,10 +654,18 @@ following from <code>client</code> directory:</p>
 </div>
 <div class="paragraph">
 <p>This will spawn a development server on <a href="http://localhost:3000/" class="bare">http://localhost:3000/</a> with auto-refresh
-enabled (if you change something in the client files, it will hot-reload your
-code). By default, the client attempts to connect to your C++ server
-on port 8080. You can change this setting by editing the <code>client/.env.development</code>
-file.</p>
+enabled (if you edit client files, your code will be hot-reloaded on file save).</p>
+</div>
+<div class="paragraph">
+<p>The development server will route any incoming HTTP traffic on a URL
+matching <code>http://localhost:3000/api/(.*)</code> to the C++ server on
+<code>http://localhost:8080/api/</code>. If you&#8217;re C++ server is running on
+a different port, edit <code>client/.env.development</code> accordingly.</p>
+</div>
+<div class="paragraph">
+<p>This routing ensures that both static files and the API are served from the same
+origin (which matches the production behavior), avoiding the problems associated
+with cross-origin requests.</p>
 </div>
 <div class="paragraph">
 <p>To run the client unit tests, <code>cd</code> into <code>client</code> and run:</p>
@@ -661,8 +680,8 @@ file.</p>
 <h3 id="_running_the_server_integration_tests">Running the server integration tests</h3>
 <div class="paragraph">
 <p>Integration tests are written in Python. They verify that the server works
-as expected by exercising the websocket API directly. You need the
-C++ server running on port 8080 to run them - the client is not required.</p>
+as expected by exercising the API directly. You need the
+C++ server running on port 8080 to execute them - the client is not required.</p>
 </div>
 <div class="paragraph">
 <p>First, install Python 3 and pip:</p>
@@ -694,7 +713,7 @@ C++ server running on port 8080 to run them - the client is not required.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-05 16:36:05 UTC
+Last updated 2023-09-26 15:22:12 UTC
 </div>
 </div>
 </body>
