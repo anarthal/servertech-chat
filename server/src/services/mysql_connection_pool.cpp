@@ -17,8 +17,10 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/intrusive/link_mode.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/list_hook.hpp>
+#include <boost/intrusive/options.hpp>
 #include <boost/mysql/diagnostics.hpp>
 #include <boost/mysql/handshake_params.hpp>
 #include <boost/mysql/tcp.hpp>
@@ -32,6 +34,11 @@
 #include <utility>
 
 #include "error.hpp"
+
+// TODO: thread-safety
+// TODO: sync functions
+// TODO: timeout for get_connection() returning a descriptive error?
+// TODO: do we want any logging? or any other hook?
 
 using namespace chat;
 
@@ -75,7 +82,7 @@ static error_code sleep(
     return ec;
 }
 
-static boost::mysql::handshake_params hparams(const pool_params& input) noexcept
+static boost::mysql::handshake_params hparams(const mysql_pool_params& input) noexcept
 {
     return {
         input.username,
@@ -88,7 +95,7 @@ static error_with_message do_connect(
     boost::asio::ip::tcp::resolver& resolv,
     boost::mysql::tcp_connection& conn,
     boost::asio::steady_timer& timer,
-    const pool_params& params,
+    const mysql_pool_params& params,
     boost::asio::yield_context yield
 )
 {
@@ -196,7 +203,12 @@ static iddle_wait_result iddle_wait(
         return iddle_wait_result::should_exit;
 }
 
-static void do_close(boost::mysql::tcp_connection&);
+static void do_close(boost::mysql::tcp_connection& conn)
+{
+    // TODO: there should be a better way to handle this
+    auto ex = conn.get_executor();
+    conn = boost::mysql::tcp_connection(std::move(ex));
+}
 
 static bool was_cancelled(error_code ec) noexcept { return ec == boost::asio::error::operation_aborted; }
 
@@ -206,9 +218,10 @@ struct flag_deleter
 };
 using flag_guard = std::unique_ptr<bool, flag_deleter>;
 
-class connection_node : public boost::intrusive::list_base_hook<>
+class connection_node
+    : public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
 {
-    const pool_params* params_;
+    const mysql_pool_params* params_;
     concurrent_channel<void(error_code)>* requests_;
     concurrent_channel<void(error_code, std::unique_ptr<connection_node>)>* responses_;
     std::size_t* num_connections_;
@@ -297,7 +310,7 @@ class connection_node : public boost::intrusive::list_base_hook<>
 
 public:
     connection_node(
-        const pool_params& params,
+        const mysql_pool_params& params,
         concurrent_channel<void(error_code)>& req_chan,
         concurrent_channel<void(error_code, std::unique_ptr<connection_node>)>& res_chan,
         std::size_t& num_connections,
@@ -331,18 +344,18 @@ public:
 
     bool is_iddle() const noexcept { return status == connection_status::iddle; }
     void stop_task() { timer.cancel(); }
-    void mark_as_pending_reset() noexcept { status = connection_status::pending_reset; }
+    void set_status(connection_status new_status) noexcept { status = new_status; }
     const boost::mysql::tcp_connection& get() const noexcept { return conn; }
 };
 
 class connection_list
 {
-    boost::intrusive::list<connection_node> impl_;
+    boost::intrusive::list<connection_node, boost::intrusive::constant_time_size<false>> impl_;
 
 public:
     connection_list() = default;
-    const boost::intrusive::list<connection_node>& get() const noexcept { return impl_; }
-    boost::intrusive::list<connection_node>& get() noexcept { return impl_; }
+    const auto& get() const noexcept { return impl_; }
+    auto& get() noexcept { return impl_; }
     void push_back(std::unique_ptr<connection_node> v) noexcept { impl_.push_back(*v.release()); }
     ~connection_list()
     {
@@ -351,11 +364,11 @@ public:
     }
 };
 
-class connection_pool_impl final : public connection_pool
+class mysql_connection_pool_impl final : public mysql_connection_pool
 {
     std::size_t num_connections_{0};
     bool running_{};
-    pool_params params_;
+    mysql_pool_params params_;
     connection_list conns_;
     concurrent_channel<void(error_code)> requests_;
     concurrent_channel<void(error_code, std::unique_ptr<connection_node>)> responses_;
@@ -370,7 +383,7 @@ class connection_pool_impl final : public connection_pool
     }
 
 public:
-    connection_pool_impl(pool_params&& params, boost::asio::any_io_executor ex)
+    mysql_connection_pool_impl(mysql_pool_params&& params, boost::asio::any_io_executor ex)
         : params_(std::move(params)), requests_(ex, 5), responses_(ex), collection_requests_(ex, 5)
     {
     }
@@ -408,7 +421,8 @@ public:
             conn.stop_task();
     }
 
-    result<pooled_connection> get_connection(boost::asio::yield_context yield) final override
+    result_with_message<mysql_pooled_connection> get_connection(boost::asio::yield_context yield
+    ) final override
     {
         // If there are no available connections but there's room for more, create one.
         // TODO: could we make the internal tasks manage this?
@@ -419,36 +433,43 @@ public:
         error_code ec;
         requests_.async_send(error_code(), yield[ec]);
         if (ec)
-            return ec;
+            return error_with_message{ec};
 
         // Get the response
         auto conn = responses_.async_receive(yield[ec]);
         if (ec)
-            return ec;
-        return pooled_connection(this, conn.release());
+            return error_with_message{ec};
+        return mysql_pooled_connection(this, conn.release());
     }
-    void return_connection_impl(void* conn) noexcept final override
+
+    void return_connection_impl(void* conn, bool should_reset) noexcept final override
     {
         // TODO: this is gonna be a problem when we try to add thread-safety
         assert(conn != nullptr);
         std::unique_ptr<connection_node> node{static_cast<connection_node*>(conn)};
-        node->mark_as_pending_reset();
+        node->set_status(should_reset ? connection_status::pending_reset : connection_status::iddle);
         conns_.push_back(std::move(node));
     }
 };
 
 }  // namespace
 
-pooled_connection::~pooled_connection()
+mysql_pooled_connection::~mysql_pooled_connection()
 {
     if (has_value())
         impl_.pool->return_connection(std::move(*this));
 }
 
-const boost::mysql::tcp_connection* pooled_connection::const_ptr() const noexcept
+const boost::mysql::tcp_connection* mysql_pooled_connection::const_ptr() const noexcept
 {
     assert(has_value());
     return &static_cast<connection_node*>(impl_.conn)->get();
 }
 
-class connection_pool;
+std::unique_ptr<mysql_connection_pool> chat::create_mysql_connection_pool(
+    mysql_pool_params&& params,
+    boost::asio::any_io_executor ex
+)
+{
+    return std::make_unique<mysql_connection_pool_impl>(std::move(params), std::move(ex));
+}

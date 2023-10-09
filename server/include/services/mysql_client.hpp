@@ -35,6 +35,9 @@ public:
     // Should be called once during application startup.
     virtual error_with_message setup_db(boost::asio::yield_context yield) = 0;
 
+    virtual void start_run() = 0;
+    virtual void cancel() = 0;
+
     // Creates a new user object with the given attributes.
     // Returns the ID of the newly created object on success.
     // Retuns errc::username_exists or errc::email_exists if the passed username
