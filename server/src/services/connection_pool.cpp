@@ -8,15 +8,20 @@
 #include "services/connection_pool.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/deferred.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
+#include <boost/asio/experimental/cancellation_condition.hpp>
 #include <boost/asio/experimental/concurrent_channel.hpp>
+#include <boost/asio/experimental/parallel_group.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/list_hook.hpp>
+#include <boost/mysql/diagnostics.hpp>
+#include <boost/mysql/handshake_params.hpp>
 #include <boost/mysql/tcp.hpp>
-#include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -31,9 +36,12 @@
 using namespace chat;
 
 using boost::asio::experimental::concurrent_channel;
+using boost::asio::experimental::make_parallel_group;
+using boost::asio::experimental::wait_for_one;
 
 namespace {
 
+static constexpr std::chrono::seconds resolve_timeout{20};
 static constexpr std::chrono::seconds connect_timeout{20};
 static constexpr std::chrono::seconds ping_timeout{5};
 static constexpr std::chrono::seconds reset_timeout{10};
@@ -55,36 +63,110 @@ static constexpr auto rethrow_handler = [](std::exception_ptr ex) {
         std::rethrow_exception(ex);
 };
 
-// TODO
-static error_with_message do_connect(
-    boost::mysql::tcp_connection& conn,
-    boost::asio::steady_timer& timer,
-    const pool_params& params,
-    boost::asio::yield_context yield
-);
-
-static error_with_message do_reset(
-    boost::mysql::tcp_connection& conn,
-    boost::asio::steady_timer& timer,
-    boost::asio::yield_context yield
-);
-
-static error_with_message do_ping(
-    boost::mysql::tcp_connection& conn,
-    boost::asio::steady_timer& timer,
-    boost::asio::yield_context yield
-);
-
 static error_code sleep(
     boost::asio::steady_timer& timer,
     boost::asio::steady_timer::duration t,
     boost::asio::yield_context yield
 )
 {
-    timer.expires_from_now(t);
     error_code ec;
+    timer.expires_from_now(t);
     timer.async_wait(yield[ec]);
     return ec;
+}
+
+static boost::mysql::handshake_params hparams(const pool_params& input) noexcept
+{
+    return {
+        input.username,
+        input.password,
+        input.database,
+    };
+}
+
+static error_with_message do_connect(
+    boost::asio::ip::tcp::resolver& resolv,
+    boost::mysql::tcp_connection& conn,
+    boost::asio::steady_timer& timer,
+    const pool_params& params,
+    boost::asio::yield_context yield
+)
+{
+    // Resolve the hostname
+    timer.expires_after(resolve_timeout);
+    auto gp = make_parallel_group(
+        resolv.async_resolve(params.hostname, std::to_string(params.port), boost::asio::deferred),
+        timer.async_wait(boost::asio::deferred)
+    );
+    auto [order, resolv_ec, resolv_entries, timer_ec] = gp.async_wait(wait_for_one(), yield);
+    if (resolv_ec)
+        return {resolv_ec};
+    else if (timer_ec)
+        return {timer_ec};
+    else if (order[0] != 0u)
+        CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
+
+    // Connect
+    boost::mysql::diagnostics diag;
+    timer.expires_after(connect_timeout);
+    auto gp2 = make_parallel_group(
+        conn.async_connect(*resolv_entries.begin(), hparams(params), diag, boost::asio::deferred),
+        timer.async_wait(boost::asio::deferred)
+    );
+    auto [order2, connect_ec, timer2_ec] = gp2.async_wait(wait_for_one(), yield);
+    if (connect_ec)
+        return {connect_ec, diag.server_message()};
+    else if (timer2_ec)
+        return {timer2_ec};
+    else if (order2[0] != 0u)
+        CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
+
+    // Done
+    return {};
+}
+
+static error_with_message do_reset(
+    boost::mysql::tcp_connection& conn,
+    boost::asio::steady_timer& timer,
+    boost::asio::yield_context yield
+)
+{
+    boost::mysql::diagnostics diag;
+    timer.expires_after(reset_timeout);
+    auto gp = make_parallel_group(
+        conn.async_reset_connection(diag, boost::asio::deferred),
+        timer.async_wait(boost::asio::deferred)
+    );
+    auto [order, reset_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
+    if (reset_ec)
+        return {reset_ec, diag.server_message()};
+    else if (timer_ec)
+        return {timer_ec};
+    else if (order[0] != 0u)
+        CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
+    return {};
+}
+
+static error_with_message do_ping(
+    boost::mysql::tcp_connection& conn,
+    boost::asio::steady_timer& timer,
+    boost::asio::yield_context yield
+)
+{
+    boost::mysql::diagnostics diag;
+    timer.expires_after(ping_timeout);
+    auto gp = make_parallel_group(
+        conn.async_ping(diag, boost::asio::deferred),
+        timer.async_wait(boost::asio::deferred)
+    );
+    auto [order, ping_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
+    if (ping_ec)
+        return {ping_ec, diag.server_message()};
+    else if (timer_ec)
+        return {timer_ec};
+    else if (order[0] != 0u)
+        CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
+    return {};
 }
 
 enum class iddle_wait_result
@@ -98,7 +180,21 @@ static iddle_wait_result iddle_wait(
     boost::asio::steady_timer& timer,
     concurrent_channel<void(error_code)>& reqs,
     boost::asio::yield_context yield
-);
+)
+{
+    timer.expires_after(healthcheck_interval);
+    auto gp = make_parallel_group(
+        reqs.async_receive(boost::asio::deferred),
+        timer.async_wait(boost::asio::deferred)
+    );
+    auto [order, channel_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
+    if (order[1] == 0u && !timer_ec)
+        return iddle_wait_result::should_send_ping;
+    else if (order[0] == 0u && !channel_ec)
+        return iddle_wait_result::should_send_connection;
+    else
+        return iddle_wait_result::should_exit;
+}
 
 static void do_close(boost::mysql::tcp_connection&);
 
@@ -116,6 +212,7 @@ class connection_node : public boost::intrusive::list_base_hook<>
     concurrent_channel<void(error_code)>* requests_;
     concurrent_channel<void(error_code, std::unique_ptr<connection_node>)>* responses_;
     std::size_t* num_connections_;
+    boost::asio::ip::tcp::resolver resolv;
     boost::mysql::tcp_connection conn;
     connection_status status;
     boost::asio::steady_timer timer;
@@ -138,7 +235,7 @@ class connection_node : public boost::intrusive::list_base_hook<>
         {
             if (status == connection_status::pending_connect)
             {
-                auto err = do_connect(conn, timer, *params_, yield);
+                auto err = do_connect(resolv, conn, timer, *params_, yield);
                 if (err.ec)
                 {
                     if (was_cancelled(err.ec))
@@ -210,6 +307,7 @@ public:
           requests_(&req_chan),
           responses_(&res_chan),
           num_connections_(&num_connections),
+          resolv(ex),
           conn(ex),
           timer(ex),
           status(connection_status::pending_connect)
