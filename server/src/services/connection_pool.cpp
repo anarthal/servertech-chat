@@ -141,9 +141,9 @@ class connection_node : public boost::intrusive::list_base_hook<>
                 auto err = do_connect(conn, timer, *params_, yield);
                 if (err.ec)
                 {
-                    status = connection_status::pending_close;
                     if (was_cancelled(err.ec))
                         return;
+                    status = connection_status::pending_close;
                     err.ec = sleep(timer, between_retries, yield);
                     if (was_cancelled(err.ec))
                         return;
@@ -175,9 +175,9 @@ class connection_node : public boost::intrusive::list_base_hook<>
                 auto err = do_reset(conn, timer, yield);
                 if (err.ec)
                 {
-                    status = connection_status::pending_close;
                     if (was_cancelled(err.ec))
                         return;
+                    status = connection_status::pending_close;
                 }
             }
             else if (status == connection_status::pending_ping)
@@ -185,9 +185,9 @@ class connection_node : public boost::intrusive::list_base_hook<>
                 auto err = do_ping(conn, timer, yield);
                 if (err.ec)
                 {
-                    status = connection_status::pending_close;
                     if (was_cancelled(err.ec))
                         return;
+                    status = connection_status::pending_close;
                 }
             }
             else if (status == connection_status::pending_close)
@@ -233,6 +233,7 @@ public:
 
     bool is_iddle() const noexcept { return status == connection_status::iddle; }
     void stop_task() { timer.cancel(); }
+    void mark_as_pending_reset() noexcept { status = connection_status::pending_reset; }
     const boost::mysql::tcp_connection& get() const noexcept { return conn; }
 };
 
@@ -260,6 +261,7 @@ class connection_pool_impl final : public connection_pool
     connection_list conns_;
     concurrent_channel<void(error_code)> requests_;
     concurrent_channel<void(error_code, std::unique_ptr<connection_node>)> responses_;
+    concurrent_channel<void(error_code, std::unique_ptr<connection_node>)> collection_requests_;
 
     void create_connection()
     {
@@ -271,7 +273,7 @@ class connection_pool_impl final : public connection_pool
 
 public:
     connection_pool_impl(pool_params&& params, boost::asio::any_io_executor ex)
-        : params_(std::move(params)), requests_(ex, 5), responses_(ex)
+        : params_(std::move(params)), requests_(ex, 5), responses_(ex), collection_requests_(ex, 5)
     {
     }
 
@@ -287,14 +289,27 @@ public:
         for (std::size_t i = 0; i < params_.initial_size; ++i)
             create_connection();
 
-        // Launch a task to listen for connection requests
-        //    Keep track of the number of requests that are outstanding
-        //    If there is room for more connections, create and launch a connection task
-        // Launch a task to listen for collection requests
-        //    Mark the connection as pending_reset | iddle
-        //    Launch a connectio task for it
-        // Maybe scan the list of connections periodically, for leaked connections?
+        // Listen for collection requests
+        error_code ec;
+        while (true)
+        {
+            auto conn = collection_requests_.async_receive(yield[ec]);
+            if (ec)
+                return ec;
+            conn->launch_connection_task(requests_.get_executor());
+            conns_.push_back(std::move(conn));
+        }
     }
+
+    void cancel() final override
+    {
+        requests_.close();
+        responses_.close();
+        collection_requests_.close();
+        for (auto& conn : conns_.get())
+            conn.stop_task();
+    }
+
     result<pooled_connection> get_connection(boost::asio::yield_context yield) final override
     {
         // If there are no available connections but there's room for more, create one.
@@ -312,8 +327,16 @@ public:
         auto conn = responses_.async_receive(yield[ec]);
         if (ec)
             return ec;
+        return pooled_connection(this, conn.release());
     }
-    void return_connection(pooled_connection&& conn) noexcept final override {}
+    void return_connection_impl(void* conn) noexcept final override
+    {
+        // TODO: this is gonna be a problem when we try to add thread-safety
+        assert(conn != nullptr);
+        std::unique_ptr<connection_node> node{static_cast<connection_node*>(conn)};
+        node->mark_as_pending_reset();
+        conns_.push_back(std::move(node));
+    }
 };
 
 }  // namespace
@@ -331,510 +354,3 @@ const boost::mysql::tcp_connection* pooled_connection::const_ptr() const noexcep
 }
 
 class connection_pool;
-
-// class pooled_connection_impl
-// {
-// public:
-//     // TODO: mysql is strictly request-reply, so I think this counts as an implicit
-//     // strand. Check this assumption.
-//     tcp_ssl_connection& get() noexcept { return conn_; }
-//     const tcp_ssl_connection& get() const noexcept { return conn_; }
-
-//     inline pooled_connection_impl(connection_pool& pool);
-//     pooled_connection_impl(const pooled_connection_impl&) = delete;
-//     pooled_connection_impl(pooled_connection_impl&&) = delete;
-//     pooled_connection_impl& operator=(const pooled_connection_impl&) = delete;
-//     pooled_connection_impl& operator=(pooled_connection_impl&&) = delete;
-//     inline ~pooled_connection_impl();
-
-// private:
-
-//     template <BOOST_ASIO_COMPLETION_TOKEN_FOR(void(::boost::mysql::error_code)) CompletionToken>
-//     BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(CompletionToken, void(error_code))
-//     async_setup(diagnostics&, CompletionToken&& tok);
-
-//     connection_pool* pool_;
-//     state_t state_{state_t::not_connected};
-//     tcp_ssl_connection conn_;
-//     boost::asio::ip::tcp::resolver resolver_;
-//     boost::asio::steady_timer timer_;
-
-//     struct setup_op;
-//     friend class connection_pool;
-//     friend class pooled_connection;
-// };
-
-// class pooled_connection;
-
-// class connection_pool
-// {
-// public:
-//     connection_pool(
-//         pool_params how_to_connect,
-//         boost::asio::any_io_executor exec,
-//         std::size_t initial_size,
-//         std::size_t max_size
-//     )
-//         : how_to_connect_(std::move(how_to_connect)), max_size_(max_size), cv_(exec)
-//     {
-//         // TODO: honor initial_size
-//         // for (std::size_t i = 0; i < initial_size; ++i)
-//         // {
-//         //     add_connection();
-//         // }
-//     }
-
-//     boost::asio::any_io_executor get_executor() const { return cv_.get_executor(); }
-
-//     template <
-//         BOOST_ASIO_COMPLETION_TOKEN_FOR(void(::boost::mysql::error_code,
-//         ::boost::mysql::pooled_connection))
-//             CompletionToken>
-//     BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(CompletionToken, void(error_code, pooled_connection))
-//     async_get_connection(diagnostics& diag, CompletionToken&& token);
-
-// private:
-//     std::shared_ptr<pooled_connection_impl> find_connection()
-//     {
-//         std::lock_guard<std::mutex> guard(mtx_);
-
-//         // If there are available connections, take one
-//         if (!iddle_conns_.empty())
-//         {
-//             auto conn = iddle_conns_.front();
-//             iddle_conns_.pop_front();
-//             return conn;
-//         }
-
-//         // If the limit allows us, create a new connection
-//         if (num_active_conns_ < max_size_)
-//         {
-//             auto res = std::make_shared<pooled_connection_impl>(*this);
-//             ++num_active_conns_;
-//             return res;
-//         }
-
-//         // No connection available
-//         return nullptr;
-//     }
-
-//     inline void return_connection(std::shared_ptr<pooled_connection_impl> conn)
-//     {
-//         std::lock_guard<std::mutex> guard(mtx_);
-//         conn->state_ = pooled_connection_impl::state_t::pending_reset;
-//         iddle_conns_.push_back(std::move(conn));
-//         cv_.notify_one();
-//     }
-
-//     void on_connection_destroyed()
-//     {
-//         std::lock_guard<std::mutex> guard(mtx_);
-//         --num_active_conns_;
-//         cv_.notify_one();
-//     }
-
-//     // Params
-//     boost::asio::ssl::context ssl_ctx_;
-//     pool_params how_to_connect_;
-//     std::size_t max_size_;
-
-//     // State
-//     std::mutex mtx_;
-//     std::deque<std::shared_ptr<pooled_connection_impl>> iddle_conns_;
-//     boost::sam::condition_variable cv_;
-//     std::size_t num_active_conns_{0};
-
-//     friend class pooled_connection_impl;
-//     friend class pooled_connection;
-//     struct get_connection_op;
-// };
-
-// class pooled_connection
-// {
-//     std::shared_ptr<pooled_connection_impl> impl_{};
-
-// public:
-//     pooled_connection() = default;
-//     pooled_connection(std::shared_ptr<pooled_connection_impl> impl) noexcept : impl_(std::move(impl)) {}
-//     pooled_connection(const pooled_connection&) = delete;
-//     pooled_connection(pooled_connection&& other) noexcept : impl_(std::move(other.impl_))
-//     {
-//         other.impl_ = nullptr;
-//     }
-//     pooled_connection& operator=(const pooled_connection&) = delete;
-//     pooled_connection& operator=(pooled_connection&& other) noexcept
-//     {
-//         std::swap(impl_, other.impl_);
-//         return *this;
-//     }
-//     ~pooled_connection() noexcept
-//     {
-//         if (impl_)
-//         {
-//             auto* pool = impl_->pool_;
-//             pool->return_connection(std::move(impl_));
-//         }
-//     }
-//     tcp_ssl_connection* operator->() noexcept { return &get(); }
-//     const tcp_ssl_connection* operator->() const noexcept { return &get(); }
-//     tcp_ssl_connection& get() noexcept { return impl_->conn_; }
-//     const tcp_ssl_connection& get() const noexcept { return impl_->conn_; }
-// };
-
-// namespace boost {
-// namespace mysql {
-// namespace detail {
-
-// struct initiate_wait
-// {
-//     struct cv_op
-//     {
-//         boost::sam::condition_variable& cv;
-
-//         template <class CompletionToken>
-//         BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(CompletionToken, void(error_code))
-//         operator()(CompletionToken&& token)
-//         {
-//             return cv.async_wait(std::move(token));
-//         }
-//     };
-
-//     struct timer_op
-//     {
-//         std::shared_ptr<boost::asio::steady_timer> timer;
-
-//         template <class CompletionToken>
-//         BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(CompletionToken, void(error_code))
-//         operator()(CompletionToken&& token)
-//         {
-//             constexpr std::chrono::seconds wait_timeout{10};
-//             timer->expires_after(wait_timeout);
-//             return timer->async_wait(std::move(token));
-//         }
-//     };
-
-//     template <typename CompletionHandler>
-//     void operator()(CompletionHandler&& completion_handler, boost::sam::condition_variable& cv) const
-//     {
-//         struct intermediate_handler
-//         {
-//             boost::sam::condition_variable& cv_;
-//             std::shared_ptr<boost::asio::steady_timer> timer_;
-//             typename std::decay<CompletionHandler>::type handler_;
-
-//             // The function call operator matches the completion signature of the
-//             // async_write operation.
-//             void operator()(
-//                 std::array<std::size_t, 2> completion_order,
-//                 boost::system::error_code ec1,
-//                 boost::system::error_code ec2
-//             )
-//             {
-//                 // Deallocate before calling the handler
-//                 timer_.reset();
-
-//                 switch (completion_order[0])
-//                 {
-//                 case 0: handler_(ec1); break;
-//                 case 1: handler_(boost::asio::error::operation_aborted); break;
-//                 }
-
-//                 boost::ignore_unused(ec2);
-//             }
-
-//             // Preserve executor and allocator
-//             using executor_type = boost::asio::associated_executor_t<
-//                 typename std::decay<CompletionHandler>::type,
-//                 boost::sam::condition_variable::executor_type>;
-
-//             executor_type get_executor() const noexcept
-//             {
-//                 return boost::asio::get_associated_executor(handler_, cv_.get_executor());
-//             }
-
-//             using allocator_type = boost::asio::
-//                 associated_allocator_t<typename std::decay<CompletionHandler>::type, std::allocator<void>>;
-
-//             allocator_type get_allocator() const noexcept
-//             {
-//                 return boost::asio::get_associated_allocator(handler_, std::allocator<void>{});
-//             }
-//         };
-
-//         auto timer = std::allocate_shared<boost::asio::steady_timer>(
-//             boost::asio::get_associated_allocator(completion_handler),
-//             cv.get_executor()
-//         );
-//         boost::asio::experimental::make_parallel_group(cv_op{cv}, timer_op{timer})
-//             .async_wait(
-//                 boost::asio::experimental::wait_for_one(),
-//                 intermediate_handler{
-//                     cv,
-//                     std::move(timer),
-//                     std::forward<CompletionHandler>(completion_handler),
-//                 }
-//             );
-//     }
-// };
-
-// template <BOOST_ASIO_COMPLETION_TOKEN_FOR(void(::boost::mysql::error_code)) CompletionToken>
-// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(CompletionToken, void(error_code))
-// async_wait_for(boost::sam::condition_variable& cv, CompletionToken&& token)
-// {
-//     return boost::asio::async_initiate<CompletionToken, void(error_code)>(
-//         initiate_wait{},
-//         token,
-//         std::ref(cv)
-//     );
-// }
-
-// }  // namespace detail
-// }  // namespace mysql
-// }  // namespace boost
-
-// boost::mysql::pooled_connection_impl::pooled_connection_impl(connection_pool& p)
-//     : pool_(&p), conn_(p.get_executor(), p.ssl_ctx_), resolver_(p.get_executor()), timer_(p.get_executor())
-// {
-// }
-
-// boost::mysql::pooled_connection_impl::~pooled_connection_impl() { pool_->on_connection_destroyed(); }
-
-// // TODO: this strategy should be customizable
-// constexpr std::size_t max_num_tries = 2;
-// constexpr std::chrono::milliseconds between_tries{1000};
-
-// struct boost::mysql::pooled_connection_impl::setup_op : boost::asio::coroutine
-// {
-//     pooled_connection_impl& conn_;
-//     diagnostics& diag_;
-//     std::size_t num_tries_{0};
-
-//     setup_op(pooled_connection_impl& conn, diagnostics& diag) : conn_(conn), diag_(diag) {}
-
-//     template <class Self>
-//     void complete(Self& self, error_code ec)
-//     {
-//         self.complete(ec);
-//     }
-
-//     template <class Self>
-//     void complete_ok(Self& self)
-//     {
-//         conn_.state_ = pooled_connection_impl::state_t::in_use;
-//         diag_.clear();
-//         complete(self, error_code());
-//     }
-
-//     template <class Self>
-//     void operator()(
-//         Self& self,
-//         error_code err = {},
-//         boost::asio::ip::tcp::resolver::results_type endpoints = {}
-//     )
-//     {
-//         using st_t = pooled_connection_impl::state_t;
-
-//         BOOST_ASIO_CORO_REENTER(*this)
-//         {
-//             assert(conn_.state_ != st_t::in_use);
-
-//             for (;;)
-//             {
-//                 if (conn_.state_ == st_t::not_connected)
-//                 {
-//                     // Resolve endpoints
-//                     BOOST_ASIO_CORO_YIELD conn_.resolver_.async_resolve(
-//                         conn_.pool_->how_to_connect_.hostname,
-//                         conn_.pool_->how_to_connect_.port,
-//                         std::move(self)
-//                     );
-//                     if (err)
-//                     {
-//                         if (++num_tries_ >= max_num_tries)
-//                         {
-//                             complete(self, err);
-//                             BOOST_ASIO_CORO_YIELD break;
-//                         }
-//                         conn_.timer_.expires_after(between_tries);
-//                         BOOST_ASIO_CORO_YIELD conn_.timer_.async_wait(std::move(self));
-//                         if (err)
-//                         {
-//                             complete(self, err);
-//                             BOOST_ASIO_CORO_YIELD break;
-//                         }
-//                         continue;
-//                     }
-
-//                     // connect
-//                     BOOST_ASIO_CORO_YIELD conn_.conn_.async_connect(
-//                         *endpoints.begin(),
-//                         conn_.pool_->how_to_connect_.hparams(),
-//                         diag_,
-//                         std::move(self)
-//                     );
-//                     if (err)
-//                     {
-//                         if (++num_tries_ >= max_num_tries)
-//                         {
-//                             complete(self, err);
-//                             BOOST_ASIO_CORO_YIELD break;
-//                         }
-//                         conn_.conn_ = tcp_ssl_connection(
-//                             conn_.resolver_.get_executor(),
-//                             conn_.pool_->ssl_ctx_
-//                         );
-//                         conn_.timer_.expires_after(between_tries);
-//                         BOOST_ASIO_CORO_YIELD conn_.timer_.async_wait(std::move(self));
-//                         if (err)
-//                         {
-//                             complete(self, err);
-//                             BOOST_ASIO_CORO_YIELD break;
-//                         }
-//                         continue;
-//                     }
-
-//                     complete_ok(self);
-//                     BOOST_ASIO_CORO_YIELD break;
-//                 }
-
-//                 if (conn_.state_ == st_t::pending_reset)
-//                 {
-//                     BOOST_ASIO_CORO_YIELD conn_.conn_.async_reset_session(std::move(self));
-//                     if (err)
-//                     {
-//                         // Close the connection as gracefully as we can. Ignoring any errors on purpose
-//                         BOOST_ASIO_CORO_YIELD conn_.conn_.async_close(std::move(self));
-
-//                         // Recreate the connection, since SSL streams can't be reconnected.
-//                         // TODO: we could provide a method to reuse the connection's internal buffers while
-//                         // recreating the stream
-//                         conn_.conn_ = tcp_ssl_connection(
-//                             conn_.resolver_.get_executor(),
-//                             conn_.pool_->ssl_ctx_
-//                         );
-
-//                         // Mark it as initial and retry
-//                         conn_.state_ = st_t::not_connected;
-//                         if (++num_tries_ >= max_num_tries)
-//                         {
-//                             complete(self, err);
-//                             BOOST_ASIO_CORO_YIELD break;
-//                         }
-//                         conn_.timer_.expires_after(between_tries);
-//                         BOOST_ASIO_CORO_YIELD conn_.timer_.async_wait(std::move(self));
-//                         if (err)
-//                         {
-//                             complete(self, err);
-//                             BOOST_ASIO_CORO_YIELD break;
-//                         }
-//                         continue;
-//                     }
-//                     complete_ok(self);
-//                     BOOST_ASIO_CORO_YIELD break;
-//                 }
-
-//                 if (conn_.state_ == st_t::iddle)
-//                 {
-//                     BOOST_ASIO_CORO_YIELD conn_.conn_.async_ping(std::move(self));
-//                     if (err)
-//                     {
-//                         // Close the connection as gracefully as we can. Ignoring any errors on purpose
-//                         BOOST_ASIO_CORO_YIELD conn_.conn_.async_close(std::move(self));
-
-//                         // Recreate the connection, since SSL streams can't be reconnected.
-//                         // TODO: we could provide a method to reuse the connection's internal buffers while
-//                         // recreating the stream
-//                         conn_.conn_ = tcp_ssl_connection(
-//                             conn_.resolver_.get_executor(),
-//                             conn_.pool_->ssl_ctx_
-//                         );
-
-//                         // Mark it as initial and retry
-//                         conn_.state_ = st_t::not_connected;
-//                         if (++num_tries_ >= max_num_tries)
-//                         {
-//                             complete(self, err);
-//                             BOOST_ASIO_CORO_YIELD break;
-//                         }
-//                         conn_.timer_.expires_after(between_tries);
-//                         BOOST_ASIO_CORO_YIELD conn_.timer_.async_wait(std::move(self));
-//                         if (err)
-//                         {
-//                             complete(self, err);
-//                             BOOST_ASIO_CORO_YIELD break;
-//                         }
-//                         continue;
-//                     }
-//                     complete_ok(self);
-//                     BOOST_ASIO_CORO_YIELD break;
-//                 }
-//             }
-//         }
-//     }
-// };
-
-// template <BOOST_ASIO_COMPLETION_TOKEN_FOR(void(::boost::mysql::error_code)) CompletionToken>
-// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(CompletionToken, void(boost::mysql::error_code))
-// boost::mysql::pooled_connection_impl::async_setup(diagnostics& diag, CompletionToken&& token)
-// {
-//     return boost::asio::async_compose<CompletionToken, void(error_code)>(
-//         setup_op(*this, diag),
-//         token,
-//         resolver_.get_executor()
-//     );
-// }
-
-// struct boost::mysql::connection_pool::get_connection_op : boost::asio::coroutine
-// {
-//     connection_pool& pool_;
-//     diagnostics& diag_;
-//     std::shared_ptr<pooled_connection_impl> conn_{nullptr};
-
-//     get_connection_op(connection_pool& pool, diagnostics& diag) noexcept : pool_(pool), diag_(diag) {}
-
-//     template <class Self>
-//     void operator()(Self& self, error_code err = {})
-//     {
-//         BOOST_ASIO_CORO_REENTER(*this)
-//         {
-//             while (true)
-//             {
-//                 // Find a connection we can return to the user
-//                 conn_ = pool_.find_connection();
-//                 if (conn_)
-//                 {
-//                     // Setup the connection
-//                     BOOST_ASIO_CORO_YIELD conn_->async_setup(diag_, std::move(self));
-//                     if (err)
-//                     {
-//                         self.complete(err, pooled_connection());
-//                         BOOST_ASIO_CORO_YIELD break;
-//                     }
-
-//                     // Done
-//                     self.complete(error_code(), pooled_connection(conn_));
-//                     BOOST_ASIO_CORO_YIELD break;
-//                 }
-
-//                 // Pool is full and everything is in use - wait
-//                 BOOST_ASIO_CORO_YIELD detail::async_wait_for(pool_.cv_, std::move(self));
-//             }
-//         }
-//     }
-// };
-
-// template <BOOST_ASIO_COMPLETION_TOKEN_FOR(void(::boost::mysql::error_code,
-// ::boost::mysql::pooled_connection))
-//               CompletionToken>
-// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(
-//     CompletionToken,
-//     void(boost::mysql::error_code, boost::mysql::pooled_connection)
-// )
-// boost::mysql::connection_pool::async_get_connection(diagnostics& diag, CompletionToken&& token)
-// {
-//     return boost::asio::async_compose<CompletionToken, void(error_code, pooled_connection)>(
-//         get_connection_op(*this, diag),
-//         token,
-//         cv_
-//     );
-// }

@@ -44,7 +44,6 @@ class pooled_connection
     } impl_;
 
     friend class connection_pool;
-    pooled_connection(connection_pool* pool, void* conn) noexcept : impl_{pool, conn} {}
 
     void* release() noexcept
     {
@@ -60,6 +59,8 @@ class pooled_connection
     }
 
 public:
+    // TODO: hide this
+    pooled_connection(connection_pool* pool, void* conn) noexcept : impl_{pool, conn} {}
     pooled_connection() noexcept = default;
     pooled_connection(const pooled_connection&) = delete;
     pooled_connection(pooled_connection&& rhs) noexcept : impl_(rhs.impl_) { rhs.impl_ = {}; }
@@ -86,6 +87,7 @@ class connection_pool
 public:
     virtual ~connection_pool() {}
     virtual error_code run(boost::asio::yield_context yield) = 0;
+    virtual void cancel() = 0;
     virtual result<pooled_connection> get_connection(boost::asio::yield_context yield) = 0;
     void return_connection(pooled_connection&& conn) noexcept
     {
