@@ -106,12 +106,10 @@ static error_with_message do_connect(
         timer.async_wait(boost::asio::deferred)
     );
     auto [order, resolv_ec, resolv_entries, timer_ec] = gp.async_wait(wait_for_one(), yield);
-    if (resolv_ec)
-        return {resolv_ec};
-    else if (timer_ec)
-        return {timer_ec};
-    else if (order[0] != 0u)
+    if (order[0] != 0u)
         CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
+    else if (resolv_ec)
+        return {resolv_ec};
 
     // Connect
     boost::mysql::diagnostics diag;
@@ -121,12 +119,10 @@ static error_with_message do_connect(
         timer.async_wait(boost::asio::deferred)
     );
     auto [order2, connect_ec, timer2_ec] = gp2.async_wait(wait_for_one(), yield);
-    if (connect_ec)
-        return {connect_ec, diag.server_message()};
-    else if (timer2_ec)
-        return {timer2_ec};
-    else if (order2[0] != 0u)
+    if (order2[0] != 0u)
         CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
+    else if (connect_ec)
+        return {connect_ec, diag.server_message()};
 
     // Done
     return {};
@@ -145,12 +141,10 @@ static error_with_message do_reset(
         timer.async_wait(boost::asio::deferred)
     );
     auto [order, reset_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
-    if (reset_ec)
-        return {reset_ec, diag.server_message()};
-    else if (timer_ec)
-        return {timer_ec};
-    else if (order[0] != 0u)
+    if (order[0] != 0u)
         CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
+    else if (reset_ec)
+        return {reset_ec, diag.server_message()};
     return {};
 }
 
@@ -167,12 +161,10 @@ static error_with_message do_ping(
         timer.async_wait(boost::asio::deferred)
     );
     auto [order, ping_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
-    if (ping_ec)
-        return {ping_ec, diag.server_message()};
-    else if (timer_ec)
-        return {timer_ec};
-    else if (order[0] != 0u)
+    if (order[0] != 0u)
         CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
+    else if (ping_ec)
+        return {ping_ec, diag.server_message()};
     return {};
 }
 
@@ -195,10 +187,10 @@ static iddle_wait_result iddle_wait(
         timer.async_wait(boost::asio::deferred)
     );
     auto [order, channel_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
-    if (order[1] == 0u && !timer_ec)
-        return iddle_wait_result::should_send_ping;
-    else if (order[0] == 0u && !channel_ec)
+    if (order[0] == 0u && !channel_ec)
         return iddle_wait_result::should_send_connection;
+    else if (order[1] == 0u && !timer_ec)
+        return iddle_wait_result::should_send_ping;
     else
         return iddle_wait_result::should_exit;
 }
@@ -289,6 +281,10 @@ class connection_node
                         return;
                     status = connection_status::pending_close;
                 }
+                else
+                {
+                    status = connection_status::iddle;
+                }
             }
             else if (status == connection_status::pending_ping)
             {
@@ -298,6 +294,10 @@ class connection_node
                     if (was_cancelled(err.ec))
                         return;
                     status = connection_status::pending_close;
+                }
+                else
+                {
+                    status = connection_status::iddle;
                 }
             }
             else if (status == connection_status::pending_close)
@@ -448,7 +448,7 @@ public:
         assert(conn != nullptr);
         std::unique_ptr<connection_node> node{static_cast<connection_node*>(conn)};
         node->set_status(should_reset ? connection_status::pending_reset : connection_status::iddle);
-        conns_.push_back(std::move(node));
+        collection_requests_.try_send(error_code(), std::move(node));
     }
 };
 
