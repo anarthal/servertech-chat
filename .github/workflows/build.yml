@@ -43,72 +43,72 @@ jobs:
       FULL_IMAGE: ghcr.io/${{ github.repository }}
 
     steps:
-      # # Log in to the GitHub container registry
-      # - name: Log in to the Container registry
-      #   if: github.ref == 'refs/heads/master'
-      #   uses: docker/login-action@v2
-      #   with:
-      #     registry: ghcr.io
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
+      # Log in to the GitHub container registry
+      - name: Log in to the Container registry
+        # if: github.ref == 'refs/heads/master'
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # # Set up the Docker buildx plugin. This speeds up builds a lot by enabling
-      # # building client and server in parallel
-      # - name: Set up Docker Buildx
-      #   uses: docker/setup-buildx-action@v2
+      # Set up the Docker buildx plugin. This speeds up builds a lot by enabling
+      # building client and server in parallel
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       # git checkout the code
       - name: Checkout the code
         uses: actions/checkout@v3
 
-      # # Build client and server
-      # - name: Build Docker image
-      #   uses: docker/build-push-action@v4
-      #   with:
-      #     context: .
-      #     load: true
-      #     tags: ${{ env.FULL_IMAGE }}:${{ github.sha }}, ${{ env.FULL_IMAGE }}:latest
-      #     cache-from: type=gha,scope=${{ github.ref }}-image
-      #     cache-to: type=gha,mode=max,scope=${{ github.ref }}-image
+      # Build client and server
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          load: true
+          tags: ${{ env.FULL_IMAGE }}:${{ github.sha }}, ${{ env.FULL_IMAGE }}:latest
+          cache-from: type=gha,scope=${{ github.ref }}-image
+          cache-to: type=gha,mode=max,scope=${{ github.ref }}-image
 
-      # # Run the server unit tests. These are coded as an optional build step
-      # # in the Dockerfile. Caching ensures minimal rebuilds.
-      # - name: Run server unit tests
-      #   uses: docker/build-push-action@v4
-      #   with:
-      #     context: .
-      #     target: server-tests
-      #     cache-from: type=gha,scope=${{ github.ref }}-server-tests
-      #     cache-to: type=gha,mode=max,scope=${{ github.ref }}-server-tests
+      # Run the server unit tests. These are coded as an optional build step
+      # in the Dockerfile. Caching ensures minimal rebuilds.
+      - name: Run server unit tests
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          target: server-tests
+          cache-from: type=gha,scope=${{ github.ref }}-server-tests
+          cache-to: type=gha,mode=max,scope=${{ github.ref }}-server-tests
 
-      # # Run the client unit tests. The same consideration apply.
-      # - name: Run client unit tests
-      #   uses: docker/build-push-action@v4
-      #   with:
-      #     context: .
-      #     target: client-tests
-      #     cache-from: type=gha,scope=${{ github.ref }}-client-tests
-      #     cache-to: type=gha,mode=max,scope=${{ github.ref }}-client-tests
+      # Run the client unit tests. The same consideration apply.
+      - name: Run client unit tests
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          target: client-tests
+          cache-from: type=gha,scope=${{ github.ref }}-client-tests
+          cache-to: type=gha,mode=max,scope=${{ github.ref }}-client-tests
 
-      # # Run integration tests. We use the docker-compose.yml file to configure
-      # # a local testing environment with the container we just built.
-      # - name: Run integration tests
-      #   run: |
-      #     pip install -r test/integration/requirements.txt
-      #     docker compose up -d --wait || (docker compose logs; exit 1)
-      #     pytest
-      #     docker compose down
+      # Run integration tests. We use the docker-compose.yml file to configure
+      # a local testing environment with the container we just built.
+      - name: Run integration tests
+        run: |
+          pip install -r test/integration/requirements.txt
+          docker compose up -d --wait || (docker compose logs; exit 1)
+          pytest
+          docker compose down
 
-      # # Push the built container to the GitHub project's container registry.
-      # # Note: if your code is public, your package will be public. If that's not
-      # # the case, deployments to AWS will require additional credentials
-      # - name: Push Docker image
-      #   if: github.ref == 'refs/heads/master'
-      #   uses: docker/build-push-action@v4
-      #   with:
-      #     context: .
-      #     push: true
-      #     tags: ${{ env.FULL_IMAGE }}:${{ github.sha }}, ${{ env.FULL_IMAGE }}:latest
+      # Push the built container to the GitHub project's container registry.
+      # Note: if your code is public, your package will be public. If that's not
+      # the case, deployments to AWS will require additional credentials
+      - name: Push Docker image
+        if: github.ref == 'refs/heads/master'
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ env.FULL_IMAGE }}:${{ github.sha }}, ${{ env.FULL_IMAGE }}:latest
 
       # Deploy to the server
       - name: Deploy
@@ -120,4 +120,4 @@ jobs:
           REMOTE_USER: ${{ secrets.SSH_USERNAME }}
           SOURCE: tools/deploy.sh
           TARGET: /home/${{ secrets.SSH_USERNAME }}/deploy/
-          SCRIPT_AFTER: bash deploy/deploy.sh
+          SCRIPT_AFTER: bash deploy/deploy.sh ${{ env.FULL_IMAGE }}:${{ github.sha }}
