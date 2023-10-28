@@ -2,6 +2,8 @@
 
 set -e 
 
+# Install Docker and start it. Change this if your server has already
+# Docker installed or doesn't use yum and systemctl.
 sudo yum install -y docker
 sudo systemctl start docker
 
@@ -20,4 +22,6 @@ sudo docker network create chat-net
 sudo docker network connect chat-net redis
 sudo docker network connect chat-net mysql
 sudo docker network connect chat-net cppserver
-sudo docker image prune -a -f # Remove unused images
+
+# Remove unused images
+sudo docker image prune -a -f

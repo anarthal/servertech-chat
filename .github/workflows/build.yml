@@ -3,24 +3,15 @@
 # dependencies changed, thanks to Docker caching.
 #
 # When pushing to master, it also pushes the built image to the project's
-# GitHub Container Registry and deploys to AWS.
+# GitHub Container Registry and deploys to the target server.
 #
-# You may configure the values in the env key below to fit your needs.
-# Additionally, you should set the following secrets in your GitHub settings:
-#   AWS_ACCESS_KEY_ID: the key identifier to log in to AWS
-#   AWS_SECRET_ACCESS_KEY: the key secret to log in to AWS
-#   SSH_KEY_NAME (optional): the name of an AWS SSH key pair to allow SSH access
-#                            to the deployed EC2 instance.
+# For this workflow to work, you must set the following secrets in your GitHub settings:
+#   SSH_PRIVATE_KEY: the contents of an SSH private key, to log into your server
+#                    and perform the deployment.
+#   SSH_HOSTNAME: the hostname where the SSH server is listening.
+#   SSH_USERNAME: the SSH username to log in as. This should be "ec2-user" if
+#                 you're using the EC2 instances explained in the tutorial.
 #
-
-env:
-  # Change to whatever AWS region you want your deployments in
-  AWS_REGION: eu-north-1
-  # Change this to the EC2 instance type you want to launch. If you're aiming
-  # for free-tier, you should select t2.micro or t3.micro, depending on the region.
-  # t3.micro is available everywhere, but it's only free in regions where t2.micro
-  # is not available
-  AWS_INSTANCE_TYPE: t3.micro
 
 name: Build and deploy
 
@@ -45,7 +36,7 @@ jobs:
     steps:
       # Log in to the GitHub container registry
       - name: Log in to the Container registry
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -101,18 +92,18 @@ jobs:
 
       # Push the built container to the GitHub project's container registry.
       # Note: if your code is public, your package will be public. If that's not
-      # the case, deployments to AWS will require additional credentials
+      # the case, deployments will require additional credentials
       - name: Push Docker image
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
           tags: ${{ env.FULL_IMAGE }}:${{ github.sha }}, ${{ env.FULL_IMAGE }}:latest
 
-      # Deploy to the server
+      # Deploy to the server. This will copy the tools/deploy.sh script and run it.
       - name: Deploy
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         uses: easingthemes/ssh-deploy@v4
         with:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
