@@ -6,7 +6,7 @@ Read the full docs [here](https://anarthal.github.io/servertech-chat/).
 
 | Build                                                                                              | Docs                                                                                                                                            | Live server                     |
 | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| ![Build Status](https://github.com/anarthal/servertech-chat/actions/workflows/build.yml/badge.svg) | [![Build Status](https://github.com/anarthal/servertech-chat/actions/workflows/doc.yml/badge.svg)](https://anarthal.github.io/servertech-chat/) | [Try it!](http://13.48.215.34/) |
+| ![Build Status](https://github.com/anarthal/servertech-chat/actions/workflows/build.yml/badge.svg) | [![Build Status](https://github.com/anarthal/servertech-chat/actions/workflows/doc.yml/badge.svg)](https://anarthal.github.io/servertech-chat/) | [Try it!](http://16.171.43.27/) |
 
 ## The BoostServerTech project
 
