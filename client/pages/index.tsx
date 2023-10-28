@@ -76,7 +76,7 @@ export default function HomePage() {
         <div className={`${styles.bodycontainer} p-12`}>
           <div className="text-center pb-8">
             <p className="text-3xl p-3 m-0">Welcome to</p>
-            <p className="text-6xl p-3 m-0">💬 BoostServerTech Chat</p>
+            <p className="text-6xl p-3 m-0">💬 BoostServerTech Chat 💬</p>
             <p className="text-xl p-3 m-0">
               A chat app written using the Boost C++ libraries
             </p>
