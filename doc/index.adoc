@@ -3,7 +3,7 @@ Rubén Pérez (@anarthal)
 
 Welcome to BoostServerTech Chat documentation!
 
-Be sure to check out our http://13.48.215.34/[live demo]!
+Be sure to check out our http://16.171.43.27/[live demo]!
 
 == The BoostServerTech project
 
@@ -30,13 +30,13 @@ the xref:contributing[contributing] section for details.
 
 == A group chat app
 
-The best way to know the app is to http://13.48.215.34/[try it!].
+The best way to know the app is to http://16.171.43.27/[try it!].
 
 Here are some of the current and planned features:
 
 - Users send and receive messages in group chats called "chat rooms".
   Point-to-point messaging is not currently planned.
-- Users can pick their username. Authentication is currently under development.
+- Users can create accounts and log in using an email and a password.
 - Chat rooms are currently statically defined in the server, but will be
   dynamic in the future.
 
@@ -53,7 +53,7 @@ image::servertech_arch.jpg[]
 - The front-end is web-based, written in https://react.dev/[React].
 - Front-end and back-end communicate using a REST API and websockets.
 - The front-end is served by the pass:[C++] server as regular, static files.
-- The pass:[C++] server and the two database servers are deployed to AWS as
+- The pass:[C++] server and the two database servers are deployed as
   Docker containers. Deployments are performed automatically by
   a GitHub Actions pipeline.
 - The project includes a test suite, including server and client unit tests,

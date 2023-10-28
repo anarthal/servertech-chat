@@ -185,26 +185,17 @@ Both client and server are packaged into a single Docker container. This
 container is stored in the
 https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry[GitHub container registry].
 
-Redis and MySQL are deployed as separate containers. We standard Redis and MySQL
+Redis and MySQL are deployed as separate containers. We use standard Redis and MySQL
 images, so there is no need to build custom images for DBs.
 
-The server is then deployed to https://aws.amazon.com/[AWS]. We've taken an
-infrastructure-as-code approach, using an https://aws.amazon.com/cloudformation/[AWS CloudFormation]
-stack to create the required infrastructure to run the server.
+The server is then deployed to your Linux server of choice via SSH. The script
+will log into the server, install Docker if not available, and create the
+relevant Docker objects (in a similar way to what Compose does).
 
-To facilitate the xref:03-fork-modify-deploy#[fork-modify-deploy workflow], we've tried to
-keep the CloudFormation stack as simple as possible, prioritizing simplicity
-over scalability. It will create the following:
-
-* A single virtual machine (EC2 instance) that runs the Docker containers.
-* A static IP allocation (Elastic IP), to guarantee IP stability.
-* A virtual disk (EBS volume), to store persistent data.
-
-More scalable deployments can make use of https://kubernetes.io/[Kubernetes]
+More scalable deployments could make use of https://kubernetes.io/[Kubernetes]
 or https://aws.amazon.com/ecs/[AWS ECS] clusters.
 If that's something of interest to you, please feel free to open an issue.
 
 NOTE: In the current setup, Docker containers in the GitHub container registry
 have public visibility. If you want to make them private, you will need to
-authorize AWS to pull them. We suggest you to move to the
-https://aws.amazon.com/ecr/[AWS container registry], if that's the case.
+set up credentials in your server to authorize your deployment script.
