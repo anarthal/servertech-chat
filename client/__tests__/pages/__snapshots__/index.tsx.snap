@@ -58,7 +58,7 @@ exports[`CreateAccountPage page Snapshot test 1`] = `
         <p
           class="text-6xl p-3 m-0"
         >
-          💬 BoostServerTech Chat
+          💬 BoostServerTech Chat 💬
         </p>
         <p
           class="text-xl p-3 m-0"
