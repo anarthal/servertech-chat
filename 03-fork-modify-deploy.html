@@ -453,17 +453,21 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div class="paragraph">
 <p>You can fork this repository, change the code you need and go live in minutes.
-We&#8217;ve created a GitHub actions workflow that will deploy your code to AWS,
-creating any required infrastructure in the process.</p>
+We&#8217;ve created a GitHub actions workflow that will deploy your code to any
+SSH-accessible server. This document provides a guide on how to set up this
+continuous deployment workflow with an AWS EC2 virtual server.</p>
+</div>
+<div class="paragraph">
+<p>We chose AWS EC2 because it&#8217;s quick and easy to set up. If you already have
+a server accessible via SSH, check out <a href="#bring-your-own-server">this section</a>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_authorizing_github_to_access_aws">Authorizing GitHub to access AWS</h2>
+<h2 id="_creating_an_ec2_instance">Creating an EC2 instance</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>After you fork the repository, all you need to do is to authorize GitHub
-to access AWS for deployments. Follow these steps:</p>
+<p>Let&#8217;s first create an AWS EC2 instance (AWS&#8217;s term for a virtual machine):</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -471,69 +475,91 @@ to access AWS for deployments. Follow these steps:</p>
 <p>Create an <a href="https://aws.amazon.com/">AWS account</a>, if you don&#8217;t have one.</p>
 </li>
 <li>
-<p>Create an IAM user for deployments:</p>
+<p>Create an SSH key pair so that our instance can be accessed via SSH. This
+will be used by our GitHub Actions workflow:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>Navigate to the <a href="https://console.aws.amazon.com/iamv2/">AWS IAM</a> console.</p>
+<p>Navigate to the
+<a href="https://console.aws.amazon.com/ec2/home#KeyPairs">key pairs page in the AWS EC2 console</a>.</p>
 </li>
 <li>
-<p>Select the "Users" entry in the left menu.</p>
+<p>Hit the "Create new key pair" button.</p>
 </li>
 <li>
-<p>Click the Create user button.</p>
+<p>Enter a name for the key (for example, "deployments-key"), then hit "Create key pair".</p>
 </li>
 <li>
-<p>Select a username you like and hit "Next".</p>
-</li>
-<li>
-<p>In the Permissions screen, select "Attach policies directly. Locate and
-tick the following policies: <code>AmazonEC2FullAccess</code>,
-<code>AWSCloudFormationFullAccess</code> and <code>AmazonSSMReadOnlyAccess</code>. Hit "Next".</p>
-</li>
-<li>
-<p>Review that the three policies have been selected and hit "Create user".</p>
+<p>AWS will create the key pair and let you download the private key. Save this
+file to your computer and keep it safe - we will need it later.</p>
 </li>
 </ul>
 </div>
 </li>
 <li>
-<p>Create an access key for the user you just created, so GitHub can
-impersonate it:</p>
+<p>Create an EC2 instance:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>In the IAM console, select the "Users" entry in the left menu, then click
-on the user you just created.</p>
+<p>Navigate to the
+<a href="https://console.aws.amazon.com/ec2/home#Instances">instances page in the AWS EC2 console</a>.</p>
 </li>
 <li>
-<p>Navigate to the "Security credentials" tab. Locate the "Access keys" section
-and click on the "Create access key" button.</p>
+<p>Hit the "Launch instances" button.</p>
 </li>
 <li>
-<p>Select the "Application running outside AWS" option and click on "Next".</p>
+<p>Under the "Key pair" panel, select the key pair we created in the previous
+step (if you followed this guide, this should be "deployments-key"). This enables
+SSH access into our server.</p>
 </li>
 <li>
-<p>Click on "Create access key".</p>
+<p>Under "Network settings", check the "Allow HTTP traffic from the internet" checkbox.
+This will allow our server to receive incoming HTTP requests.</p>
+</li>
+<li>
+<p>All other settings can be left as default. Hit the "Launch instance" button.</p>
+</li>
+<li>
+<p>Your server is ready! You should see a success message. Click on the instance
+ID in the success message to see your server details, like its public IP address.
+Don&#8217;t close this tab, you will need these details in the following step.</p>
 </li>
 </ul>
 </div>
 </li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="authorize-gha">Authorizing GitHub to access your server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The final step is to enter the SSH credentials we just generated into GitHub actions
+so the deployment script can use it. Follow these steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
-<p>Create GitHub secrets in your repo with the access key details:</p>
+<p>Create GitHub secrets in your repo with the SSH credentials:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>In another tab, navigate to your GitHub repository Settings. On the left menu,
+<p>Navigate to your GitHub repository Settings. On the left menu,
 select "Secrets and variables", then "Actions".</p>
 </li>
 <li>
-<p>Create a new repository secret named <code>AWS_ACCESS_KEY_ID</code>. Copy the value
-named "Access key" from the IAM console and paste it as the secret&#8217;s value, then hit save.</p>
+<p>Create a new repository secret named <code>SSH_PRIVATE_KEY</code>. Copy the contents
+of the SSH private key you just downloaded from AWS as the secret&#8217;s value, then hit "Add secret".</p>
 </li>
 <li>
-<p>Repeat the same process with a secret named <code>AWS_SECRET_ACCESS_KEY</code>,
-pasting the "Secret access key" from the IAM console.</p>
+<p>Add another secret named <code>SSH_HOSTNAME</code>, with the server&#8217;s public IP address
+(or hostname) as value. If you&#8217;ve been following the AWS tutorial, this piece
+of information is displayed in the <a href="https://console.aws.amazon.com/ec2/home#Instances">instances page</a>.</p>
+</li>
+<li>
+<p>Add a last secret named <code>SSH_USERNAME</code> with the SSH username that GitHub Actions
+should use. If you&#8217;ve been following the AWS tutorial, this is <code>ec2-user</code>.</p>
 </li>
 </ul>
 </div>
@@ -557,95 +583,33 @@ pasting the "Secret access key" from the IAM console.</p>
 status by checking the "Actions" tab of your GitHub repository.</p>
 </li>
 <li>
-<p>Your site is live! You can find the address where your server is listening
-in your GitHub actions logs.
-This address is static and will remain the same on successive deployments.</p>
+<p>Your site is live! You can type the public IP address of your machine into
+your browser&#8217;s URL bar to visit it.</p>
 </li>
 </ol>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="bring-your-own-server">Bring your own server</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>If you&#8217;re interested in the details behind automatic deployments, check out
-<a href="01-architecture.html#build-deploy">this section</a>.</p>
+<p>Do you already have a Linux server with SSH enabled? Then you can use it by
+skipping the EC2 instance creation, just following the
+<a href="#authorize-gha">GitHub Actions authorization</a> section.</p>
+</div>
+<div class="paragraph">
+<p>The <a href="https://github.com/anarthal/servertech-chat/blob/master/tools/deploy.sh">deployment script</a>
+relies on Docker. It will try to install it using <code>yum</code>, since this is what
+the default Amazon Linux images support. You may need to modify the Docker
+installation lines to match your server flavor. The rest of the script is
+distribution-agnostic.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_additional_configuration">Additional configuration</h2>
+<h2 id="_stuck_with_deployments">Stuck with deployments?</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p>There are some extra settings that you may find useful:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>You can change the AWS region you deploy to by changing the value of
-<code>AWS_REGION</code> in your workflow file, <code>.github/wokflows/build.yml</code>.</p>
-</li>
-<li>
-<p>You can also change the EC2 instance type that is launched from this
-file.</p>
-</li>
-<li>
-<p>If you want to SSH into your machines, follow
-<a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-key-pairs.html">these steps</a>
-to create an EC2 key pair. Then, create a GitHub Actions secret named
-<code>SSH_KEY_NAME</code> containing the name of the key pair you just created, and trigger
-a deployment.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_troubleshooting">Troubleshooting</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>If you&#8217;re having trouble with deployments, here are some ideas you can try:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Check your GitHub Actions log. Verify that jobs are being triggered correctly,
-and check which step is failing.</p>
-</li>
-<li>
-<p>Make sure that the user you created has the right permissions, as described
-in this document.</p>
-</li>
-<li>
-<p>As part of the CI build, a Docker container is built and stored in the GitHub
-container registry. AWS virtual machines should be able to access it, so you
-should enable public read access for this container. This is the default if
-you forked the repo.
-If you&#8217;re working with a private repo, please read how to
-<a href="https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility">make your container public</a>
-(the code can still be private). You may want to consider using the
-<a href="https://aws.amazon.com/ecr/">AWS container registry</a> instead, too.</p>
-</li>
-<li>
-<p>The CI uses CloudFormation to deploy the required infrastructure.
-<a href="https://console.aws.amazon.com/cloudformation/">Access the CloudFormation console</a>
-and check that there is a stack called "ServertechChatStack" with green status.
-You may need to select the region you&#8217;re using (<code>eu-north-1</code> by default).</p>
-</li>
-<li>
-<p>If the stack is in a failed state, select it and review the "Events" section,
-which often provides insights about the problem. You may delete the stack
-before re-running the job.</p>
-</li>
-<li>
-<p>If the stack has been successfully deployed, but still can&#8217;t access the server,
-enable SSH as described above. Look up the EC2 instance in the
-<a href="https://console.aws.amazon.com/ec2/">EC2 console</a> (you may need to change region)
-and SSH into it (username: <code>ec2-user</code>). It&#8217;s a regular Linux server with a bunch
-of Docker containers running in it.</p>
-</li>
-<li>
-<p>Check the <code>/var/log/cloud-init-output.log</code> and <code>/var/log/cloud-init.log</code>
-files.</p>
-</li>
-</ul>
-</div>
 <div class="paragraph">
 <p>We&#8217;re also happy to provide help if you&#8217;re stuck. Please
 <a href="https://github.com/anarthal/servertech-chat/issues/new">open an issue in the repository</a>
@@ -656,7 +620,7 @@ or <a href="https://cpplang.slack.com/archives/C05MLSQGA01">contact us in Slack<
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-26 15:22:12 UTC
+Last updated 2023-10-28 17:02:19 UTC
 </div>
 </div>
 </body>

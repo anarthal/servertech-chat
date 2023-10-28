@@ -706,34 +706,16 @@ container is stored in the
 <a href="https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry">GitHub container registry</a>.</p>
 </div>
 <div class="paragraph">
-<p>Redis and MySQL are deployed as separate containers. We standard Redis and MySQL
+<p>Redis and MySQL are deployed as separate containers. We use standard Redis and MySQL
 images, so there is no need to build custom images for DBs.</p>
 </div>
 <div class="paragraph">
-<p>The server is then deployed to <a href="https://aws.amazon.com/">AWS</a>. We&#8217;ve taken an
-infrastructure-as-code approach, using an <a href="https://aws.amazon.com/cloudformation/">AWS CloudFormation</a>
-stack to create the required infrastructure to run the server.</p>
+<p>The server is then deployed to your Linux server of choice via SSH. The script
+will log into the server, install Docker if not available, and create the
+relevant Docker objects (in a similar way to what Compose does).</p>
 </div>
 <div class="paragraph">
-<p>To facilitate the <a href="03-fork-modify-deploy.html">fork-modify-deploy workflow</a>, we&#8217;ve tried to
-keep the CloudFormation stack as simple as possible, prioritizing simplicity
-over scalability. It will create the following:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>A single virtual machine (EC2 instance) that runs the Docker containers.</p>
-</li>
-<li>
-<p>A static IP allocation (Elastic IP), to guarantee IP stability.</p>
-</li>
-<li>
-<p>A virtual disk (EBS volume), to store persistent data.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>More scalable deployments can make use of <a href="https://kubernetes.io/">Kubernetes</a>
+<p>More scalable deployments could make use of <a href="https://kubernetes.io/">Kubernetes</a>
 or <a href="https://aws.amazon.com/ecs/">AWS ECS</a> clusters.
 If that&#8217;s something of interest to you, please feel free to open an issue.</p>
 </div>
@@ -746,8 +728,7 @@ If that&#8217;s something of interest to you, please feel free to open an issue.
 <td class="content">
 In the current setup, Docker containers in the GitHub container registry
 have public visibility. If you want to make them private, you will need to
-authorize AWS to pull them. We suggest you to move to the
-<a href="https://aws.amazon.com/ecr/">AWS container registry</a>, if that&#8217;s the case.
+set up credentials in your server to authorize your deployment script.
 </td>
 </tr>
 </table>
@@ -757,7 +738,7 @@ authorize AWS to pull them. We suggest you to move to the
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-26 15:22:12 UTC
+Last updated 2023-10-28 17:02:19 UTC
 </div>
 </div>
 </body>
