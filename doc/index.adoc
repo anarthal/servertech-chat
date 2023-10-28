@@ -36,7 +36,7 @@ Here are some of the current and planned features:
 
 - Users send and receive messages in group chats called "chat rooms".
   Point-to-point messaging is not currently planned.
-- Users can pick their username. Authentication is currently under development.
+- Users can create accounts and log in using an email and a password.
 - Chat rooms are currently statically defined in the server, but will be
   dynamic in the future.
 
@@ -53,7 +53,7 @@ image::servertech_arch.jpg[]
 - The front-end is web-based, written in https://react.dev/[React].
 - Front-end and back-end communicate using a REST API and websockets.
 - The front-end is served by the pass:[C++] server as regular, static files.
-- The pass:[C++] server and the two database servers are deployed to AWS as
+- The pass:[C++] server and the two database servers are deployed as
   Docker containers. Deployments are performed automatically by
   a GitHub Actions pipeline.
 - The project includes a test suite, including server and client unit tests,

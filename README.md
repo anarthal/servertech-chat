@@ -39,9 +39,9 @@ Or you can learn about how to set up a traditional development environment
 
 ## Going live in minutes
 
-This project features a CI/CD pipeline that can deploy your code to AWS in
-minutes. All you need is an AWS account. You can find out more
-[here](https://anarthal.github.io/servertech-chat/03-fork-modify-deploy.html).
+This project features a CI/CD pipeline that can deploy your code to your server in
+minutes. All you need is a Linux server with SSH enabled, or an AWS account to create one.
+You can find out more [here](https://anarthal.github.io/servertech-chat/03-fork-modify-deploy.html).
 
 ## Want to contribute?
 
