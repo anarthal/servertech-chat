@@ -62,7 +62,7 @@ static constexpr std::chrono::hours healthcheck_interval{1};
 enum class connection_status
 {
     pending_connect,
-    usable,
+    iddle,
     in_use,
     pending_reset,
     pending_ping,
@@ -172,7 +172,14 @@ static error_with_message do_ping(
     return {};
 }
 
-static bool usable_wait(
+enum class iddle_wait_result
+{
+    timer_done,
+    channel_done,
+    cancelled
+};
+
+static iddle_wait_result iddle_wait(
     boost::asio::steady_timer& timer,
     concurrent_channel<void(error_code)>& collect_chan,
     boost::asio::yield_context yield
@@ -185,8 +192,11 @@ static bool usable_wait(
     );
     auto [order, channel_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
     if (order[0] == 0u && !channel_ec)
-        return false;
-    return true;
+        return iddle_wait_result::channel_done;
+    else if (order[1] == 0u && !timer_ec)
+        return iddle_wait_result::timer_done;
+    else
+        return iddle_wait_result::cancelled;
 }
 
 static void do_close(boost::mysql::tcp_connection& conn)
@@ -237,6 +247,20 @@ class connection_node : public owning_hook, public view_hook
     void mark_as_iddle() noexcept;
     void remove_from_iddle(connection_status new_status) noexcept;
 
+    void collect(collection_state col_st)
+    {
+        BOOST_ASSERT(col_st != collection_state::none);
+        if (col_st == collection_state::needs_collect_with_reset)
+        {
+            status = connection_status::pending_reset;
+        }
+        else
+        {
+            BOOST_ASSERT(col_st == collection_state::needs_collect);
+            mark_as_iddle();
+        }
+    }
+
     void run_connection_task(boost::asio::yield_context yield)
     {
         assert(!task_running_);
@@ -263,31 +287,45 @@ class connection_node : public owning_hook, public view_hook
                     mark_as_iddle();
                 }
             }
-            else if (status == connection_status::usable)
+            else if (status == connection_status::iddle)
             {
-                bool was_cancelled = usable_wait(timer, collection_channel_, yield);
-                BOOST_ASSERT(status == connection_status::usable);  // status is not modified externally
-                auto col_st = collection_state_.exchange(collection_state::none);
-                if (col_st == collection_state::none)
+                auto wait_result = iddle_wait(timer, collection_channel_, yield);
+                if (wait_result == iddle_wait_result::cancelled)
+                    return;
+                else if (wait_result == iddle_wait_result::channel_done)
                 {
-                    if (was_cancelled)
-                    {
-                        // If we were cancelled but this is not a collection request, we're exiting
-                        return;
-                    }
-                    else
-                    {
-                        // We weren't cancelled and this is not a collection request,
-                        // so it's time to ping
-                        remove_from_iddle(connection_status::pending_ping);
-                    }
+                    // This is a collection request. While we were waiting for
+                    // the timer, the user took a connection, used it and returned it.
+                    // The connection is taken from the iddle list and its status
+                    // is updated externally, not by the connection task.
+                    auto col_st = collection_state_.exchange(collection_state::none);
+                    BOOST_ASSERT(status == connection_status::in_use);
+                    collect(col_st);
                 }
                 else
                 {
-                    // This was a collection request. Update status accordingly
-                    if (col_st == collection_state::needs_collect_with_reset)
+                    BOOST_ASSERT(wait_result == iddle_wait_result::timer_done);
+                    if (status == connection_status::iddle)
                     {
-                        remove_from_iddle(connection_status::pending_reset);
+                        // Time to ping
+                        remove_from_iddle(connection_status::pending_ping);
+                    }
+                    else
+                    {
+                        // This could happen if the collection notification failed,
+                        // or if there was a race condition between the connection
+                        // task and the function returning connections to the user
+                        BOOST_ASSERT(status == connection_status::in_use);
+                        auto col_st = collection_state_.exchange(collection_state::none);
+                        if (col_st != collection_state::none)
+                        {
+                            // Collection request notification failed, collect the connection
+                            collect(col_st);
+                        }
+                        else
+                        {
+                            // Race condition. Nothing required here - just return to wait
+                        }
                     }
                 }
             }
@@ -348,13 +386,16 @@ public:
           timer(ex),
           status(connection_status::pending_connect),
           iddle_list_(&iddle_list),
-          collection_channel_(ex)
+          collection_channel_(ex, 1)
     {
         launch_connection_task(std::move(ex));
     }
 
     void stop_task() { timer.cancel(); }
     const boost::mysql::tcp_connection& get() const noexcept { return conn; }
+
+    void mark_as_in_use() noexcept { remove_from_iddle(connection_status::iddle); }
+
     void mark_as_collectable(bool should_reset) noexcept
     {
         collection_state_.store(
@@ -363,7 +404,6 @@ public:
 
         // If, for any reason, this notification fails, the connection will
         // be collected when the next ping is due.
-        // TODO: this should actually be a smaller time than ping.
         try
         {
             collection_channel_.try_send(error_code());
@@ -409,7 +449,7 @@ public:
         if (list_.empty())
             return nullptr;
         auto* node = &list_.back();
-        list_.pop_back();
+        node->mark_as_in_use();  // This removes the connection from the list
         return node;
     }
 
@@ -442,12 +482,13 @@ public:
 
 void connection_node::mark_as_iddle() noexcept
 {
-    status = connection_status::usable;
+    status = connection_status::iddle;
     iddle_list_->add_one(*this);
 }
 
 void connection_node::remove_from_iddle(connection_status new_status) noexcept
 {
+    BOOST_ASSERT(status == connection_status::iddle);
     status = new_status;
     iddle_list_->remove(*this);
 }
@@ -539,6 +580,7 @@ public:
     {
         auto* node = static_cast<connection_node*>(conn);
         node->mark_as_collectable(should_reset);
+        --num_conns_in_use_;
     }
 };
 
