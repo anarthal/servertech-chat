@@ -261,7 +261,7 @@ class connection_node : public owning_hook, public view_hook
         }
     }
 
-    void run_connection_task(boost::asio::yield_context yield)
+    void run_connection_task_impl(boost::asio::yield_context yield)
     {
         assert(!task_running_);
         assert(status != connection_status::in_use);
@@ -365,6 +365,8 @@ class connection_node : public owning_hook, public view_hook
         }
     }
 
+    void run_connection_task(boost::asio::yield_context yield);
+
     void launch_connection_task(boost::asio::any_io_executor ex)
     {
         boost::asio::spawn(
@@ -441,9 +443,25 @@ class iddle_connection_list
 {
     intrusive::list<connection_node, intrusive::base_hook<view_hook>> list_;
     channel<void(error_code)> chan_;
+    channel<void(error_code)> finished_chan_;
+    std::size_t running_tasks_{};
 
 public:
-    iddle_connection_list(boost::asio::any_io_executor ex) : chan_(std::move(ex)) {}
+    iddle_connection_list(boost::asio::any_io_executor ex) : chan_(ex), finished_chan_(std::move(ex), 1) {}
+
+    void on_task_start() noexcept { ++running_tasks_; }
+    void on_task_finish() noexcept
+    {
+        if (--running_tasks_ == 0u)
+            finished_chan_.try_send(error_code());
+    }
+
+    void join_tasks(boost::asio::yield_context yield)
+    {
+        if (running_tasks_)
+            finished_chan_.async_receive(yield);
+    }
+
     connection_node* try_get_one() noexcept
     {
         if (list_.empty())
@@ -491,6 +509,18 @@ void connection_node::remove_from_iddle(connection_status new_status) noexcept
     BOOST_ASSERT(status == connection_status::iddle);
     status = new_status;
     iddle_list_->remove(*this);
+}
+
+void connection_node::run_connection_task(boost::asio::yield_context yield)
+{
+    struct deleter
+    {
+        void operator()(iddle_connection_list* list) const noexcept { list->on_task_finish(); }
+    };
+
+    iddle_list_->on_task_start();
+    std::unique_ptr<iddle_connection_list, deleter> guard(iddle_list_);
+    run_connection_task_impl(yield);
 }
 
 class mysql_connection_pool_impl final : public mysql_connection_pool
@@ -548,7 +578,11 @@ public:
         for (std::size_t i = 0; i < params_.initial_size; ++i)
             create_connection();
 
-        // TODO: do we need a way to block this until all connection tasks exit?
+        // Wait for all connection tasks to exit - this should happen
+        // after cancel() is called
+        iddle_conns_.join_tasks(yield);
+
+        // Done
         return error_code();
     }
 
