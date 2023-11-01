@@ -12,6 +12,7 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/experimental/cancellation_condition.hpp>
+#include <boost/asio/experimental/channel.hpp>
 #include <boost/asio/experimental/concurrent_channel.hpp>
 #include <boost/asio/experimental/parallel_group.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -26,6 +27,7 @@
 #include <boost/mysql/tcp.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <cstddef>
@@ -42,9 +44,11 @@
 
 using namespace chat;
 
+using boost::asio::experimental::channel;
 using boost::asio::experimental::concurrent_channel;
 using boost::asio::experimental::make_parallel_group;
 using boost::asio::experimental::wait_for_one;
+namespace intrusive = boost::intrusive;
 
 namespace {
 
@@ -58,7 +62,7 @@ static constexpr std::chrono::hours healthcheck_interval{1};
 enum class connection_status
 {
     pending_connect,
-    iddle,
+    usable,
     in_use,
     pending_reset,
     pending_ping,
@@ -168,31 +172,21 @@ static error_with_message do_ping(
     return {};
 }
 
-enum class iddle_wait_result
-{
-    should_send_ping,
-    should_send_connection,
-    should_exit
-};
-
-static iddle_wait_result iddle_wait(
+static bool usable_wait(
     boost::asio::steady_timer& timer,
-    concurrent_channel<void(error_code)>& reqs,
+    concurrent_channel<void(error_code)>& collect_chan,
     boost::asio::yield_context yield
 )
 {
     timer.expires_after(healthcheck_interval);
     auto gp = make_parallel_group(
-        reqs.async_receive(boost::asio::deferred),
+        collect_chan.async_receive(boost::asio::deferred),
         timer.async_wait(boost::asio::deferred)
     );
     auto [order, channel_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
     if (order[0] == 0u && !channel_ec)
-        return iddle_wait_result::should_send_connection;
-    else if (order[1] == 0u && !timer_ec)
-        return iddle_wait_result::should_send_ping;
-    else
-        return iddle_wait_result::should_exit;
+        return false;
+    return true;
 }
 
 static void do_close(boost::mysql::tcp_connection& conn)
@@ -210,24 +204,38 @@ struct flag_deleter
 };
 using flag_guard = std::unique_ptr<bool, flag_deleter>;
 
-class connection_node
-    : public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
+enum class collection_state
 {
+    none,
+    needs_collect,
+    needs_collect_with_reset
+};
+
+struct owning_tag;
+struct view_tag;
+
+using owning_hook = intrusive::list_base_hook<intrusive::tag<owning_tag>>;
+using view_hook = intrusive::list_base_hook<intrusive::tag<view_tag>>;
+
+class iddle_connection_list;
+
+class connection_node : public owning_hook, public view_hook
+{
+    // Managed by the connection task (this includes list hooks)
     const mysql_pool_params* params_;
-    concurrent_channel<void(error_code)>* requests_;
-    concurrent_channel<void(error_code, std::unique_ptr<connection_node>)>* responses_;
-    std::size_t* num_connections_;
     boost::asio::ip::tcp::resolver resolv;
     boost::mysql::tcp_connection conn;
     connection_status status;
     boost::asio::steady_timer timer;
     bool task_running_{};
+    iddle_connection_list* iddle_list_;
 
-    std::unique_ptr<connection_node> unlink_self() noexcept
-    {
-        unlink();
-        return std::unique_ptr<connection_node>(this);
-    }
+    // Managed by external entities
+    concurrent_channel<void(error_code)> collection_channel_;
+    std::atomic<collection_state> collection_state_{collection_state::none};
+
+    void mark_as_iddle() noexcept;
+    void remove_from_iddle(connection_status new_status) noexcept;
 
     void run_connection_task(boost::asio::yield_context yield)
     {
@@ -252,24 +260,35 @@ class connection_node
                 }
                 else
                 {
-                    status = connection_status::iddle;
+                    mark_as_iddle();
                 }
             }
-            else if (status == connection_status::iddle)
+            else if (status == connection_status::usable)
             {
-                auto result = iddle_wait(timer, *requests_, yield);
-                if (result == iddle_wait_result::should_send_ping)
+                bool was_cancelled = usable_wait(timer, collection_channel_, yield);
+                BOOST_ASSERT(status == connection_status::usable);  // status is not modified externally
+                auto col_st = collection_state_.exchange(collection_state::none);
+                if (col_st == collection_state::none)
                 {
-                    status = connection_status::pending_ping;
-                }
-                else if (result == iddle_wait_result::should_send_connection)
-                {
-                    responses_->async_send(error_code(), unlink_self(), yield);
-                    return;
+                    if (was_cancelled)
+                    {
+                        // If we were cancelled but this is not a collection request, we're exiting
+                        return;
+                    }
+                    else
+                    {
+                        // We weren't cancelled and this is not a collection request,
+                        // so it's time to ping
+                        remove_from_iddle(connection_status::pending_ping);
+                    }
                 }
                 else
                 {
-                    return;
+                    // This was a collection request. Update status accordingly
+                    if (col_st == collection_state::needs_collect_with_reset)
+                    {
+                        remove_from_iddle(connection_status::pending_reset);
+                    }
                 }
             }
             else if (status == connection_status::pending_reset)
@@ -283,7 +302,7 @@ class connection_node
                 }
                 else
                 {
-                    status = connection_status::iddle;
+                    mark_as_iddle();
                 }
             }
             else if (status == connection_status::pending_ping)
@@ -297,7 +316,7 @@ class connection_node
                 }
                 else
                 {
-                    status = connection_status::iddle;
+                    mark_as_iddle();
                 }
             }
             else if (status == connection_status::pending_close)
@@ -308,31 +327,6 @@ class connection_node
         }
     }
 
-public:
-    connection_node(
-        const mysql_pool_params& params,
-        concurrent_channel<void(error_code)>& req_chan,
-        concurrent_channel<void(error_code, std::unique_ptr<connection_node>)>& res_chan,
-        std::size_t& num_connections,
-        boost::asio::any_io_executor ex
-    )
-        : params_(&params),
-          requests_(&req_chan),
-          responses_(&res_chan),
-          num_connections_(&num_connections),
-          resolv(ex),
-          conn(ex),
-          timer(ex),
-          status(connection_status::pending_connect)
-    {
-    }
-
-    connection_node(const connection_node&) = delete;
-    connection_node(connection_node&&) = delete;
-    connection_node& operator=(const connection_node&) = delete;
-    connection_node& operator=(connection_node&&) = delete;
-    ~connection_node() { --*num_connections_; }
-
     void launch_connection_task(boost::asio::any_io_executor ex)
     {
         boost::asio::spawn(
@@ -342,113 +336,209 @@ public:
         );
     }
 
-    bool is_iddle() const noexcept { return status == connection_status::iddle; }
+public:
+    connection_node(
+        const mysql_pool_params& params,
+        boost::asio::any_io_executor ex,
+        iddle_connection_list& iddle_list
+    )
+        : params_(&params),
+          resolv(ex),
+          conn(ex),
+          timer(ex),
+          status(connection_status::pending_connect),
+          iddle_list_(&iddle_list),
+          collection_channel_(ex)
+    {
+        launch_connection_task(std::move(ex));
+    }
+
     void stop_task() { timer.cancel(); }
-    void set_status(connection_status new_status) noexcept { status = new_status; }
     const boost::mysql::tcp_connection& get() const noexcept { return conn; }
+    void mark_as_collectable(bool should_reset) noexcept
+    {
+        collection_state_.store(
+            should_reset ? collection_state::needs_collect_with_reset : collection_state::needs_collect
+        );
+
+        // If, for any reason, this notification fails, the connection will
+        // be collected when the next ping is due.
+        // TODO: this should actually be a smaller time than ping.
+        try
+        {
+            collection_channel_.try_send(error_code());
+        }
+        catch (...)
+        {
+        }
+    }
 };
 
-class connection_list
+class owning_connection_list
 {
-    boost::intrusive::list<connection_node, boost::intrusive::constant_time_size<false>> impl_;
+    intrusive::list<connection_node, intrusive::base_hook<owning_hook>> impl_;
 
 public:
-    connection_list() = default;
+    owning_connection_list() = default;
     const auto& get() const noexcept { return impl_; }
     auto& get() noexcept { return impl_; }
     void push_back(std::unique_ptr<connection_node> v) noexcept { impl_.push_back(*v.release()); }
-    ~connection_list()
+    std::size_t size() const noexcept { return impl_.size(); }
+    std::unique_ptr<connection_node> pop_back() noexcept
+    {
+        std::unique_ptr<connection_node> res(&impl_.back());
+        impl_.pop_back();
+        return res;
+    }
+    ~owning_connection_list()
     {
         for (auto& conn : impl_)
             delete &conn;
     }
 };
 
+class iddle_connection_list
+{
+    intrusive::list<connection_node, intrusive::base_hook<view_hook>> list_;
+    channel<void(error_code)> chan_;
+
+public:
+    iddle_connection_list(boost::asio::any_io_executor ex) : chan_(std::move(ex)) {}
+    connection_node* try_get_one() noexcept
+    {
+        if (list_.empty())
+            return nullptr;
+        auto* node = &list_.back();
+        list_.pop_back();
+        return node;
+    }
+
+    result<connection_node*> get_one(boost::asio::yield_context yield)
+    {
+        error_code ec;
+        while (true)
+        {
+            auto* node = try_get_one();
+            if (node)
+                return node;
+            chan_.async_receive(yield[ec]);
+            if (ec)
+                return ec;
+        }
+    }
+
+    void add_one(connection_node& node)
+    {
+        list_.push_back(node);
+        chan_.try_send(error_code());
+    }
+
+    void close() { chan_.close(); }
+
+    void remove(connection_node& node) { list_.erase(list_.iterator_to(node)); }
+
+    std::size_t size() const noexcept { return list_.size(); }
+};
+
+void connection_node::mark_as_iddle() noexcept
+{
+    status = connection_status::usable;
+    iddle_list_->add_one(*this);
+}
+
+void connection_node::remove_from_iddle(connection_status new_status) noexcept
+{
+    status = new_status;
+    iddle_list_->remove(*this);
+}
+
 class mysql_connection_pool_impl final : public mysql_connection_pool
 {
-    std::size_t num_connections_{0};
     bool running_{};
     mysql_pool_params params_;
-    connection_list conns_;
-    concurrent_channel<void(error_code)> requests_;
-    concurrent_channel<void(error_code, std::unique_ptr<connection_node>)> responses_;
-    concurrent_channel<void(error_code, std::unique_ptr<connection_node>)> collection_requests_;
+    owning_connection_list all_conns_;
+    iddle_connection_list iddle_conns_;
+    std::size_t num_conns_in_use_{};
+    boost::asio::any_io_executor ex_;
 
     void create_connection()
     {
-        std::unique_ptr<connection_node> blk{
-            new connection_node(params_, requests_, responses_, num_connections_, requests_.get_executor())};
-        blk->launch_connection_task(requests_.get_executor());
-        conns_.push_back(std::move(blk));
+        std::unique_ptr<connection_node> blk{new connection_node(params_, ex_, iddle_conns_)};
+        all_conns_.push_back(std::move(blk));
+    }
+
+    std::size_t num_managed_connections() const noexcept
+    {
+        return all_conns_.size() - iddle_conns_.size() - num_conns_in_use_;
+    }
+
+    result<connection_node*> get_connection_impl(boost::asio::yield_context yield)
+    {
+        // Try to get a connection without blocking
+        auto* conn = iddle_conns_.try_get_one();
+        if (conn)
+            return conn;
+
+        // No luck. If there is room for more connections, create one.
+        // Don't create new connections if we have other connections in progress
+        // of being connected or cleaned - otherwise pool size increases for
+        // no reason when there is no connectivity.
+        if (all_conns_.size() < params_.max_size && num_managed_connections() == 0u)
+            create_connection();
+
+        return iddle_conns_.get_one(yield);
     }
 
 public:
     mysql_connection_pool_impl(mysql_pool_params&& params, boost::asio::any_io_executor ex)
-        : params_(std::move(params)), requests_(ex, 5), responses_(ex), collection_requests_(ex, 5)
+        : params_(std::move(params)), iddle_conns_(ex), ex_(std::move(ex))
     {
     }
 
     error_code run(boost::asio::yield_context yield) final override
     {
+        // TODO: run twice
         // Check that we're not already running
         assert(!running_);
         running_ = true;
         flag_guard guard{&running_};
 
         // Create the initial connections
-        conns_.get().clear();
         for (std::size_t i = 0; i < params_.initial_size; ++i)
             create_connection();
 
-        // Listen for collection requests
-        error_code ec;
-        while (true)
-        {
-            auto conn = collection_requests_.async_receive(yield[ec]);
-            if (ec)
-                return ec;
-            conn->launch_connection_task(requests_.get_executor());
-            conns_.push_back(std::move(conn));
-        }
+        // TODO: do we need a way to block this until all connection tasks exit?
+        return error_code();
     }
 
     void cancel() final override
     {
-        requests_.close();
-        responses_.close();
-        collection_requests_.close();
-        for (auto& conn : conns_.get())
+        for (auto& conn : all_conns_.get())
             conn.stop_task();
+        iddle_conns_.close();
     }
 
     result_with_message<mysql_pooled_connection> get_connection(boost::asio::yield_context yield
     ) final override
     {
-        // If there are no available connections but there's room for more, create one.
-        // TODO: could we make the internal tasks manage this?
-        if (conns_.get().empty() && num_connections_ < params_.max_size)
-            create_connection();
+        // TODO: in thread-safe mode, dispatch to strand
 
-        // Send a connection request
-        error_code ec;
-        requests_.async_send(error_code(), yield[ec]);
-        if (ec)
-            return error_with_message{ec};
+        // Get a connection
+        auto node_result = get_connection_impl(yield);
+        if (node_result.has_error())
+            return error_with_message{node_result.error()};
 
-        // Get the response
-        auto conn = responses_.async_receive(yield[ec]);
-        if (ec)
-            return error_with_message{ec};
-        return mysql_pooled_connection(this, conn.release());
+        // Track that we're using it
+        ++num_conns_in_use_;
+
+        // Done
+        return mysql_pooled_connection(this, node_result.value());
     }
 
     void return_connection_impl(void* conn, bool should_reset) noexcept final override
     {
-        // TODO: this is gonna be a problem when we try to add thread-safety
-        assert(conn != nullptr);
-        std::unique_ptr<connection_node> node{static_cast<connection_node*>(conn)};
-        node->set_status(should_reset ? connection_status::pending_reset : connection_status::iddle);
-        collection_requests_.try_send(error_code(), std::move(node));
+        auto* node = static_cast<connection_node*>(conn);
+        node->mark_as_collectable(should_reset);
     }
 };
 
