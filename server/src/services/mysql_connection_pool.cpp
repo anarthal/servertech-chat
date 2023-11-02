@@ -33,6 +33,7 @@
 #include <cstddef>
 #include <list>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "error.hpp"
@@ -40,7 +41,6 @@
 
 // TODO: thread-safety
 // TODO: sync functions
-// TODO: timeout for get_connection() returning a descriptive error?
 // TODO: do we want any logging? or any other hook?
 
 using namespace chat;
@@ -143,30 +143,49 @@ class iddle_connection_list
 {
     intrusive::list<connection_node, intrusive::base_hook<view_hook>> list_;
     channel<void(error_code)> chan_;
+    error_with_message last_error_;
+
+    error_with_message get_last_error() const
+    {
+        // If we have a specific error, return this. Otherwise, return a generic error
+        if (last_error_.ec)
+            return last_error_;
+        else
+            CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::timed_out, "")
+    }
 
 public:
     iddle_connection_list(boost::asio::any_io_executor ex) : chan_(ex, 1) {}
 
-    connection_node* try_get_one() noexcept
-    {
-        if (list_.empty())
-            return nullptr;
-        auto* node = &list_.back();
-        list_.pop_back();
-        return node;
-    }
+    connection_node* try_get_one() noexcept { return list_.empty() ? nullptr : &list_.back(); }
 
-    result<connection_node*> get_one(boost::asio::yield_context yield)
+    result_with_message<connection_node*> get_one(
+        std::chrono::steady_clock::duration timeout,
+        boost::asio::yield_context yield
+    )
     {
-        error_code ec;
         while (true)
         {
+            // Try to get a node
             auto* node = try_get_one();
             if (node)
                 return node;
-            chan_.async_receive(yield[ec]);
-            if (ec)
-                return ec;
+
+            // Wait to be notified, or until a timeout happens
+            boost::asio::steady_timer timer(yield.get_executor());
+            timer.expires_after(timeout);
+            auto gp = make_parallel_group(
+                chan_.async_receive(boost::asio::deferred),
+                timer.async_wait(boost::asio::deferred)
+            );
+            auto [order, channel_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
+
+            // Verify
+            if (order[1] == 0u)  // timer finished first
+                return get_last_error();
+            else if (order[0] == 0u && channel_ec)  // channel was cancelled
+                CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
+            // channel finished first, so try to get the connection
         }
     }
 
@@ -181,6 +200,14 @@ public:
     void remove(connection_node& node) { list_.erase(list_.iterator_to(node)); }
 
     std::size_t size() const noexcept { return list_.size(); }
+
+    void set_last_error(error_with_message value) { last_error_ = std::move(value); }
+};
+
+struct error_and_diagnostics
+{
+    error_code ec;
+    boost::mysql::diagnostics diag;
 };
 
 // State shared between connection tasks
@@ -189,6 +216,7 @@ struct conn_shared_state
     wait_group wait_gp;
     iddle_connection_list iddle_list;
     std::size_t num_pending_connections{0};
+    error_and_diagnostics last_error;
 
     conn_shared_state(boost::asio::any_io_executor ex) : wait_gp(ex), iddle_list(std::move(ex)) {}
 };
@@ -370,6 +398,7 @@ class connection_node : public owning_hook, public view_hook
                 {
                     if (was_cancelled(err.ec))
                         return;
+                    shared_st_->iddle_list.set_last_error(err);
                     err.ec = sleep(between_retries, yield);
                     if (was_cancelled(err.ec))
                         return;
@@ -377,6 +406,7 @@ class connection_node : public owning_hook, public view_hook
                 }
                 else
                 {
+                    shared_st_->iddle_list.set_last_error(error_with_message{});
                     set_status(connection_status::iddle);
                 }
             }
@@ -475,6 +505,8 @@ public:
         launch_connection_task(std::move(ex));
     }
 
+    ~connection_node() { printf("Dtor\n"); }
+
     void stop_task()
     {
         timer.cancel();
@@ -539,7 +571,10 @@ class mysql_connection_pool_impl final : public mysql_connection_pool
         all_conns_.push_back(std::move(node));
     }
 
-    result<connection_node*> get_connection_impl(boost::asio::yield_context yield)
+    result_with_message<connection_node*> get_connection_impl(
+        std::chrono::steady_clock::duration timeout,
+        boost::asio::yield_context yield
+    )
     {
         // Try to get a connection without blocking
         auto* conn = shared_st_.iddle_list.try_get_one();
@@ -554,7 +589,7 @@ class mysql_connection_pool_impl final : public mysql_connection_pool
             create_connection();
 
         // Wait for a connection to become iddle and return it
-        return shared_st_.iddle_list.get_one(yield);
+        return shared_st_.iddle_list.get_one(timeout, yield);
     }
 
 public:
@@ -590,15 +625,17 @@ public:
         shared_st_.iddle_list.close_channel();
     }
 
-    result_with_message<mysql_pooled_connection> get_connection(boost::asio::yield_context yield
+    result_with_message<mysql_pooled_connection> get_connection(
+        std::chrono::steady_clock::duration timeout,
+        boost::asio::yield_context yield
     ) final override
     {
         // TODO: in thread-safe mode, dispatch to strand
 
         // Get a connection
-        auto node_result = get_connection_impl(yield);
+        auto node_result = get_connection_impl(timeout, yield);
         if (node_result.has_error())
-            return error_with_message{node_result.error()};
+            return std::move(node_result).error();
         auto* node = node_result.value();
 
         // Mark the node as in use

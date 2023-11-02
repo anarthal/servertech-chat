@@ -12,6 +12,7 @@
 #include <boost/asio/spawn.hpp>
 #include <boost/mysql/tcp.hpp>
 
+#include <chrono>
 #include <memory>
 #include <string>
 
@@ -89,7 +90,14 @@ public:
     virtual ~mysql_connection_pool() {}
     virtual error_code run(boost::asio::yield_context yield) = 0;
     virtual void cancel() = 0;
-    virtual result_with_message<mysql_pooled_connection> get_connection(boost::asio::yield_context yield) = 0;
+    virtual result_with_message<mysql_pooled_connection> get_connection(
+        std::chrono::steady_clock::duration timeout,
+        boost::asio::yield_context yield
+    ) = 0;
+    result_with_message<mysql_pooled_connection> get_connection(boost::asio::yield_context yield)
+    {
+        return get_connection(std::chrono::seconds(30), yield);
+    }
     void return_connection(mysql_pooled_connection&& conn, bool should_reset = true) noexcept
     {
         if (conn.has_value())
