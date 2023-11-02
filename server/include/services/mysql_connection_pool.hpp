@@ -32,7 +32,6 @@ struct mysql_pool_params
     bool multi_queries{false};
     // TODO: ssl mode, collation, etc
     // TODO: ssl in general
-    // TODO: do we want the user to be able to customize the executor of the new connections?
 };
 
 class mysql_connection_pool;
@@ -107,7 +106,8 @@ public:
 
 std::unique_ptr<mysql_connection_pool> create_mysql_connection_pool(
     mysql_pool_params&& params,
-    boost::asio::any_io_executor ex
+    boost::asio::any_io_executor ex,
+    bool enable_thread_safety = true
 );
 
 }  // namespace chat

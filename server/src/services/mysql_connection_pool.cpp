@@ -8,6 +8,7 @@
 #include "services/mysql_connection_pool.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/bind_executor.hpp>
 #include <boost/asio/deferred.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
@@ -16,8 +17,10 @@
 #include <boost/asio/experimental/concurrent_channel.hpp>
 #include <boost/asio/experimental/parallel_group.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/intrusive/link_mode.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/list_hook.hpp>
@@ -153,6 +156,8 @@ class iddle_connection_list
 public:
     iddle_connection_list(boost::asio::any_io_executor ex) : chan_(ex, 1) {}
 
+    boost::asio::any_io_executor get_executor() { return chan_.get_executor(); }
+
     connection_node* try_get_one() noexcept { return list_.empty() ? nullptr : &list_.back(); }
 
     result_with_message<connection_node*> get_one(
@@ -168,7 +173,7 @@ public:
                 return node;
 
             // Wait to be notified, or until a timeout happens
-            boost::asio::steady_timer timer(yield.get_executor());
+            boost::asio::steady_timer timer(get_executor());
             timer.expires_after(timeout);
             auto gp = make_parallel_group(
                 chan_.async_receive(boost::asio::deferred),
@@ -236,6 +241,8 @@ class connection_node : public hook_type
     concurrent_channel<void(error_code)> collection_channel_;
     std::atomic<collection_state> collection_state_{collection_state::none};
 
+    boost::asio::any_io_executor get_strand_executor() { return timer.get_executor(); }
+
     void set_status(connection_status new_status)
     {
         BOOST_ASSERT(new_status != status_);
@@ -287,7 +294,10 @@ class connection_node : public hook_type
             resolv.async_resolve(params_->hostname, std::to_string(params_->port), boost::asio::deferred),
             timer.async_wait(boost::asio::deferred)
         );
-        auto [order, resolv_ec, resolv_entries, timer_ec] = gp.async_wait(wait_for_one(), yield);
+        auto [order, resolv_ec, resolv_entries, timer_ec] = gp.async_wait(
+            wait_for_one(),
+            boost::asio::bind_executor(get_strand_executor(), yield)
+        );
         if (order[0] != 0u)
             CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
         else if (resolv_ec)
@@ -300,7 +310,10 @@ class connection_node : public hook_type
             conn.async_connect(*resolv_entries.begin(), hparams(*params_), diag, boost::asio::deferred),
             timer.async_wait(boost::asio::deferred)
         );
-        auto [order2, connect_ec, timer2_ec] = gp2.async_wait(wait_for_one(), yield);
+        auto [order2, connect_ec, timer2_ec] = gp2.async_wait(
+            wait_for_one(),
+            boost::asio::bind_executor(get_strand_executor(), yield)
+        );
         if (order2[0] != 0u)
             CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
         else if (connect_ec)
@@ -326,7 +339,10 @@ class connection_node : public hook_type
             conn.async_reset_connection(diag, boost::asio::deferred),
             timer.async_wait(boost::asio::deferred)
         );
-        auto [order, reset_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
+        auto [order, reset_ec, timer_ec] = gp.async_wait(
+            wait_for_one(),
+            boost::asio::bind_executor(get_strand_executor(), yield)
+        );
         if (order[0] != 0u)
             CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
         else if (reset_ec)
@@ -342,7 +358,10 @@ class connection_node : public hook_type
             conn.async_ping(diag, boost::asio::deferred),
             timer.async_wait(boost::asio::deferred)
         );
-        auto [order, ping_ec, timer_ec] = gp.async_wait(wait_for_one(), yield);
+        auto [order, ping_ec, timer_ec] = gp.async_wait(
+            wait_for_one(),
+            boost::asio::bind_executor(get_strand_executor(), yield)
+        );
         if (order[0] != 0u)
             CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
         else if (ping_ec)
@@ -488,15 +507,16 @@ public:
     connection_node(
         const mysql_pool_params& params,
         boost::asio::any_io_executor ex,
+        boost::asio::any_io_executor strand_ex,
         conn_shared_state& shared_st
     )
         : params_(&params),
-          resolv(ex),
+          resolv(strand_ex),
           conn(ex),
-          timer(ex),
+          timer(strand_ex),
           status_(connection_status::pending_connect),
           shared_st_(&shared_st),
-          collection_channel_(ex, 1)
+          collection_channel_(strand_ex, 1)
     {
         launch_connection_task(std::move(ex));
     }
@@ -531,12 +551,19 @@ public:
 class mysql_connection_pool_impl final : public mysql_connection_pool
 {
     bool running_{};
+    bool cancelled_{};
     mysql_pool_params params_;
+    boost::asio::any_io_executor ex_;
+    boost::asio::any_io_executor strand_ex_;
     std::list<connection_node> all_conns_;
     conn_shared_state shared_st_;
-    boost::asio::any_io_executor ex_;
+    concurrent_channel<void(error_code)> cancel_chan_;
 
-    void create_connection() { all_conns_.emplace_back(params_, ex_, shared_st_); }
+    boost::asio::any_io_executor get_io_executor() const { return strand_ex_ ? strand_ex_ : ex_; }
+
+    void create_connection() { all_conns_.emplace_back(params_, ex_, get_io_executor(), shared_st_); }
+
+    bool is_thread_safe() const noexcept { return static_cast<bool>(strand_ex_); }
 
     result_with_message<connection_node*> get_connection_impl(
         std::chrono::steady_clock::duration timeout,
@@ -559,14 +586,31 @@ class mysql_connection_pool_impl final : public mysql_connection_pool
         return shared_st_.iddle_list.get_one(timeout, yield);
     }
 
+    void ensure_running_in_strand(boost::asio::yield_context yield)
+    {
+        if (is_thread_safe())
+            boost::asio::post(strand_ex_, yield);
+    }
+
 public:
-    mysql_connection_pool_impl(mysql_pool_params&& params, boost::asio::any_io_executor ex)
-        : params_(std::move(params)), shared_st_(ex), ex_(std::move(ex))
+    mysql_connection_pool_impl(
+        mysql_pool_params&& params,
+        boost::asio::any_io_executor ex,
+        bool enable_thread_safety
+    )
+        : params_(std::move(params)),
+          ex_(std::move(ex)),
+          strand_ex_(enable_thread_safety ? boost::asio::make_strand(ex_) : boost::asio::any_io_executor()),
+          shared_st_(get_io_executor()),
+          cancel_chan_(get_io_executor(), 1)
     {
     }
 
     error_code run(boost::asio::yield_context yield) final override
     {
+        // Ensure we run within the strand (if thread-safety enabled)
+        ensure_running_in_strand(yield);
+
         // TODO: run twice
         // Check that we're not already running
         assert(!running_);
@@ -577,27 +621,35 @@ public:
         for (std::size_t i = 0; i < params_.initial_size; ++i)
             create_connection();
 
-        // Wait for all connection tasks to exit - this should happen
-        // after cancel() is called
+        // Wait for the cancel notification to arrive
+        cancel_chan_.async_receive(yield);
+
+        // Deliver the cancel notification to all other tasks
+        cancelled_ = true;
+        shared_st_.iddle_list.close_channel();
+        for (auto& conn : all_conns_)
+            conn.stop_task();
+
+        // Wait for all connection tasks to exit
         shared_st_.wait_gp.join_tasks(yield);
 
         // Done
         return error_code();
     }
 
-    void cancel() final override
-    {
-        for (auto& conn : all_conns_)
-            conn.stop_task();
-        shared_st_.iddle_list.close_channel();
-    }
+    void cancel() final override { cancel_chan_.try_send(error_code()); }
 
     result_with_message<mysql_pooled_connection> get_connection(
         std::chrono::steady_clock::duration timeout,
         boost::asio::yield_context yield
     ) final override
     {
-        // TODO: in thread-safe mode, dispatch to strand
+        // Ensure we run within the strand (if thread-safety enabled)
+        ensure_running_in_strand(yield);
+
+        // Double check that we weren't cancelled
+        if (cancelled_)
+            CHAT_RETURN_ERROR_WITH_MESSAGE(boost::asio::error::operation_aborted, "")
 
         // Get a connection
         auto node_result = get_connection_impl(timeout, yield);
@@ -614,6 +666,7 @@ public:
 
     void return_connection_impl(void* conn, bool should_reset) noexcept final override
     {
+        // These functions are always thread-safe. No need to run within the strand
         auto* node = static_cast<connection_node*>(conn);
         node->mark_as_collectable(should_reset);
     }
@@ -635,8 +688,13 @@ const boost::mysql::tcp_connection* mysql_pooled_connection::const_ptr() const n
 
 std::unique_ptr<mysql_connection_pool> chat::create_mysql_connection_pool(
     mysql_pool_params&& params,
-    boost::asio::any_io_executor ex
+    boost::asio::any_io_executor ex,
+    bool enable_thread_safety
 )
 {
-    return std::make_unique<mysql_connection_pool_impl>(std::move(params), std::move(ex));
+    return std::make_unique<mysql_connection_pool_impl>(
+        std::move(params),
+        std::move(ex),
+        enable_thread_safety
+    );
 }
