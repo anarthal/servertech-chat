@@ -99,12 +99,6 @@ enum class collection_state
     needs_collect_with_reset
 };
 
-struct owning_tag;
-struct view_tag;
-
-using owning_hook = intrusive::list_base_hook<intrusive::tag<owning_tag>>;
-using view_hook = intrusive::list_base_hook<intrusive::tag<view_tag>>;
-
 class connection_node;
 
 class wait_group
@@ -139,9 +133,11 @@ public:
     }
 };
 
+using hook_type = intrusive::list_base_hook<>;
+
 class iddle_connection_list
 {
-    intrusive::list<connection_node, intrusive::base_hook<view_hook>> list_;
+    intrusive::list<connection_node, intrusive::base_hook<hook_type>> list_;
     channel<void(error_code)> chan_;
     error_with_message last_error_;
 
@@ -226,7 +222,7 @@ static bool is_pending(connection_status status) noexcept
     return status != connection_status::iddle && status != connection_status::in_use;
 }
 
-class connection_node : public owning_hook, public view_hook
+class connection_node : public hook_type
 {
     // Managed by the connection task (this includes list hooks)
     const mysql_pool_params* params_;
@@ -505,8 +501,6 @@ public:
         launch_connection_task(std::move(ex));
     }
 
-    ~connection_node() { printf("Dtor\n"); }
-
     void stop_task()
     {
         timer.cancel();
@@ -534,42 +528,15 @@ public:
     }
 };
 
-class owning_connection_list
-{
-    intrusive::list<connection_node, intrusive::base_hook<owning_hook>> impl_;
-
-public:
-    owning_connection_list() = default;
-    const auto& get() const noexcept { return impl_; }
-    auto& get() noexcept { return impl_; }
-    void push_back(std::unique_ptr<connection_node> v) noexcept { impl_.push_back(*v.release()); }
-    std::size_t size() const noexcept { return impl_.size(); }
-    std::unique_ptr<connection_node> pop_back() noexcept
-    {
-        std::unique_ptr<connection_node> res(&impl_.back());
-        impl_.pop_back();
-        return res;
-    }
-    ~owning_connection_list()
-    {
-        for (auto& conn : impl_)
-            delete &conn;
-    }
-};
-
 class mysql_connection_pool_impl final : public mysql_connection_pool
 {
     bool running_{};
     mysql_pool_params params_;
-    owning_connection_list all_conns_;
+    std::list<connection_node> all_conns_;
     conn_shared_state shared_st_;
     boost::asio::any_io_executor ex_;
 
-    void create_connection()
-    {
-        std::unique_ptr<connection_node> node{new connection_node(params_, ex_, shared_st_)};
-        all_conns_.push_back(std::move(node));
-    }
+    void create_connection() { all_conns_.emplace_back(params_, ex_, shared_st_); }
 
     result_with_message<connection_node*> get_connection_impl(
         std::chrono::steady_clock::duration timeout,
@@ -620,7 +587,7 @@ public:
 
     void cancel() final override
     {
-        for (auto& conn : all_conns_.get())
+        for (auto& conn : all_conns_)
             conn.stop_task();
         shared_st_.iddle_list.close_channel();
     }
