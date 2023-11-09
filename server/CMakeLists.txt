@@ -39,7 +39,6 @@ add_library(
     # Services
     src/services/redis_serialization.cpp
     src/services/redis_client.cpp
-    src/services/mysql_connection_pool.cpp
     src/services/mysql_client.cpp
     src/services/session_store.cpp
     src/services/cookie_auth_service.cpp
@@ -60,7 +59,7 @@ add_library(
     src/error.cpp
 )
 
-target_include_directories(servertech_chat PUBLIC include)
+target_include_directories(servertech_chat PUBLIC include /home/ruben/workspace/mysql/include)
 
 target_link_libraries(
     servertech_chat

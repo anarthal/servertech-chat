@@ -13,10 +13,14 @@
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/describe/class.hpp>
+#include <boost/mysql/any_address.hpp>
+#include <boost/mysql/any_connection.hpp>
 #include <boost/mysql/common_server_errc.hpp>
 #include <boost/mysql/connection.hpp>
+#include <boost/mysql/connection_pool.hpp>
 #include <boost/mysql/diagnostics.hpp>
 #include <boost/mysql/handshake_params.hpp>
+#include <boost/mysql/pooled_connection.hpp>
 #include <boost/mysql/results.hpp>
 #include <boost/mysql/static_results.hpp>
 #include <boost/mysql/tcp.hpp>
@@ -29,10 +33,10 @@
 #include <string>
 #include <string_view>
 
+#include "boost/mysql/connect_params.hpp"
 #include "business_types.hpp"
 #include "business_types_metadata.hpp"  // Required by static_results
 #include "error.hpp"
-#include "services/mysql_connection_pool.hpp"
 
 using namespace chat;
 
@@ -66,66 +70,52 @@ static std::string get_mysql_hostname()
 // Returns the default pool params to use.
 // This should be improved when implementing
 // https://github.com/anarthal/servertech-chat/issues/45
-static mysql_pool_params get_pool_params()
+static boost::mysql::pool_params get_pool_params()
 {
-    return {
-        get_mysql_hostname(),
-        boost::mysql::default_port,
+    boost::mysql::pool_params res{
+        boost::mysql::any_address::make_tcp(get_mysql_hostname()),
         "root",
         "",
         "servertech_chat",
     };
+    res.ssl = boost::mysql::ssl_mode::disable;
+    res.enable_thread_safety = false;
+    return res;
 }
 
 namespace {
 
 class mysql_client_impl final : public mysql_client
 {
-    boost::asio::any_io_executor ex_;
-    std::unique_ptr<mysql_connection_pool> pool_;
+    boost::mysql::connection_pool pool_;
 
     // Functions to retrieve a MySQL connection with retries.
     // This is only used for the connection required by setup_db.
-    result_with_message<boost::mysql::tcp_connection> get_connection_impl(boost::asio::yield_context yield)
-    {
-        boost::asio::ip::tcp::resolver resolv(yield.get_executor());
-        boost::mysql::tcp_connection conn(yield.get_executor());
-        boost::mysql::diagnostics diag;
-        boost::mysql::handshake_params hparams{"root", ""};
-        hparams.set_multi_queries(true);
-
-        error_code ec;
-
-        // Resolve hostname
-        auto entries = resolv
-                           .async_resolve(get_mysql_hostname(), boost::mysql::default_port_string, yield[ec]);
-        if (ec)
-            return error_with_message{ec};
-        assert(!entries.empty());
-
-        // Connect
-        conn.async_connect(*entries.begin(), hparams, diag, yield[ec]);
-        if (ec)
-            return error_with_message{ec, diag.server_message()};
-
-        return conn;
-    }
-
-    result_with_message<boost::mysql::tcp_connection> get_connection_with_retries(
+    result_with_message<boost::mysql::any_connection> get_connection_with_retries(
         boost::asio::yield_context yield
     )
     {
+        boost::mysql::any_connection conn(yield.get_executor());
         boost::asio::steady_timer timer(yield.get_executor());
+        boost::mysql::diagnostics diag;
+        boost::mysql::connect_params params{
+            boost::mysql::any_address::make_tcp(get_mysql_hostname()),
+            "root",
+            "",
+            "",
+        };
+        params.ssl = boost::mysql::ssl_mode::disable;
+        params.multi_queries = true;
         error_code ec;
 
         while (true)
         {
-            // Get a connection
-            auto conn_result = get_connection_impl(yield);
-            if (conn_result.has_error())
+            // Try to connect
+            conn.async_connect(&params, diag, yield[ec]);
+            if (ec)
             {
                 // Log the error
-                log_error(std::move(conn_result).error(), "Failed to connect to mysql");
+                log_error({ec, diag.server_message()}, "Failed to connect to mysql");
 
                 // Wait some time
                 timer.expires_from_now(std::chrono::seconds(2));
@@ -138,23 +128,19 @@ class mysql_client_impl final : public mysql_client
             else
             {
                 // We managed to get a connection
-                return conn_result;
+                return conn;
             }
         }
     }
 
 public:
-    mysql_client_impl(boost::asio::any_io_executor ex)
-        : ex_(ex), pool_(create_mysql_connection_pool(get_pool_params(), std::move(ex)))
-    {
-    }
+    mysql_client_impl(boost::asio::any_io_executor ex) : pool_(std::move(ex), get_pool_params()) {}
 
     error_with_message setup_db(boost::asio::yield_context yield) final override
     {
         error_code ec;
         boost::mysql::diagnostics diag;
         boost::mysql::results result;
-        boost::asio::experimental::channel<void(error_code)> chan{ex_};
 
         // Get a connection. Perform retries until we get a connection or
         // we get cancelled via Ctrl-C. This provides safety against MySQL
@@ -178,8 +164,8 @@ public:
     void start_run() override final
     {
         boost::asio::spawn(
-            ex_,
-            [pool = pool_.get()](boost::asio::yield_context yield) { pool->run(yield); },
+            pool_.get_executor(),
+            [pool = &pool_](boost::asio::yield_context yield) { pool->async_run(yield); },
             [](std::exception_ptr exc) {
                 if (exc)
                     std::rethrow_exception(exc);
@@ -187,7 +173,7 @@ public:
         );
     }
 
-    void cancel() override final { pool_->cancel(); }
+    void cancel() override final { pool_.cancel(); }
 
     result_with_message<std::int64_t> create_user(
         std::string_view username,
@@ -201,10 +187,9 @@ public:
         boost::mysql::results result;
 
         // Get a connection
-        auto conn_result = pool_->get_connection(yield);
-        if (conn_result.has_error())
-            return std::move(conn_result).error();
-        auto& conn = conn_result.value();
+        auto conn = pool_.async_get_connection(diag, yield[ec]);
+        if (ec)
+            return error_with_message{ec, diag.server_message()};
 
         // Prepare a statement
         constexpr std::string_view
@@ -245,10 +230,9 @@ public:
         error_code ec;
 
         // Get a connection
-        auto conn_result = pool_->get_connection(yield);
-        if (conn_result.has_error())
-            return std::move(conn_result).error();
-        auto& conn = conn_result.value();
+        auto conn = pool_.async_get_connection(diag, yield[ec]);
+        if (ec)
+            return error_with_message{ec, diag.server_message()};
 
         // Prepare a statement. static_results requires that SQL field names
         // match with C++ struct field names, so we use SQL aliases
@@ -279,10 +263,9 @@ public:
         error_code ec;
 
         // Get a connection
-        auto conn_result = pool_->get_connection(yield);
-        if (conn_result.has_error())
-            return std::move(conn_result).error();
-        auto& conn = conn_result.value();
+        auto conn = pool_.async_get_connection(diag, yield[ec]);
+        if (ec)
+            return error_with_message{ec, diag.server_message()};
 
         // Prepare a statement
         constexpr std::string_view stmt_sql = R"SQL(SELECT id, username  FROM users WHERE id = ?)SQL";
@@ -316,10 +299,9 @@ public:
         error_code ec;
 
         // Get a connection
-        auto conn_result = pool_->get_connection(yield);
-        if (conn_result.has_error())
-            return std::move(conn_result).error();
-        auto& conn = conn_result.value();
+        auto conn = pool_.async_get_connection(diag, yield[ec]);
+        if (ec)
+            return error_with_message{ec, diag.server_message()};
 
         // Compose the SQL statement.
         // WARNING: this is safe only because user IDs are numeric, and not strings.
@@ -340,7 +322,7 @@ public:
 
         // We didn't do anything modifying the connection state, so we can
         // explicitly return it, indicating that no reset is required.
-        pool_->return_connection(std::move(conn), false);
+        conn.return_to_pool(false);
 
         // Result
         std::unordered_map<std::int64_t, std::string> res;
