@@ -73,13 +73,27 @@ static std::string get_mysql_hostname()
 static boost::mysql::pool_params get_pool_params()
 {
     boost::mysql::pool_params res{
+        // The server address. We get the hostname fron an environment
+        // variable, and use the default port.
         boost::mysql::any_address::make_tcp(get_mysql_hostname()),
+
+        // The username to log in as
         "root",
+
+        // The password
         "",
+
+        // The database to use
         "servertech_chat",
     };
+
+    // Since our server will be running in the same node as the web server,
+    // we don't need any encryption
     res.ssl = boost::mysql::ssl_mode::disable;
-    res.enable_thread_safety = false;
+
+    // Our server is single-threaded, so we can disable thread-safety in the
+    // connection pool. This provides a small performance gain.
+    res.enable_thread_safety = true;
     return res;
 }
 
@@ -95,9 +109,8 @@ class mysql_client_impl final : public mysql_client
         boost::asio::yield_context yield
     )
     {
-        boost::mysql::any_connection conn(yield.get_executor());
-        boost::asio::steady_timer timer(yield.get_executor());
-        boost::mysql::diagnostics diag;
+        // Connection params to use. Hostname, user and password are the same.
+        // The database may not be created when we run this, so we leave it blank.
         boost::mysql::connect_params params{
             boost::mysql::any_address::make_tcp(get_mysql_hostname()),
             "root",
@@ -106,6 +119,13 @@ class mysql_client_impl final : public mysql_client
         };
         params.ssl = boost::mysql::ssl_mode::disable;
         params.multi_queries = true;
+
+        // We use mysql::any_connection here because it's easier to use than regular mysql::connection.
+        // For instance, it manages hostname resolution automatically.
+        boost::mysql::any_connection conn(yield.get_executor());
+        boost::asio::steady_timer timer(yield.get_executor());
+        boost::mysql::diagnostics diag;
+
         error_code ec;
 
         while (true)
