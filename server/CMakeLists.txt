@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.16.0)
 project(servertech_chat)
 
 # Boost.Context is required to run stackful coroutines
-find_package(Boost REQUIRED COMPONENTS headers context json regex url)
+find_package(Boost REQUIRED COMPONENTS headers context json regex url charconv)
 
 # OpenSSL is required by Boost.Redis
 find_package(OpenSSL REQUIRED)
@@ -69,6 +69,7 @@ target_link_libraries(
     Boost::json
     Boost::regex
     Boost::url
+    Boost::charconv
     OpenSSL::Crypto
     OpenSSL::SSL
     ICU::data

@@ -20,7 +20,6 @@
 #include <boost/mysql/connection_pool.hpp>
 #include <boost/mysql/diagnostics.hpp>
 #include <boost/mysql/handshake_params.hpp>
-#include <boost/mysql/pooled_connection.hpp>
 #include <boost/mysql/results.hpp>
 #include <boost/mysql/static_results.hpp>
 #include <boost/mysql/tcp.hpp>
@@ -28,7 +27,6 @@
 #include <chrono>
 #include <exception>
 #include <memory>
-#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -75,7 +73,7 @@ static boost::mysql::pool_params get_pool_params()
     boost::mysql::pool_params res{
         // The server address. We get the hostname fron an environment
         // variable, and use the default port.
-        boost::mysql::any_address::make_tcp(get_mysql_hostname()),
+        boost::mysql::host_and_port{get_mysql_hostname()},
 
         // The username to log in as
         "root",
@@ -91,9 +89,6 @@ static boost::mysql::pool_params get_pool_params()
     // we don't need any encryption
     res.ssl = boost::mysql::ssl_mode::disable;
 
-    // Our server is single-threaded, so we can disable thread-safety in the
-    // connection pool. This provides a small performance gain.
-    res.enable_thread_safety = true;
     return res;
 }
 
@@ -112,7 +107,7 @@ class mysql_client_impl final : public mysql_client
         // Connection params to use. Hostname, user and password are the same.
         // The database may not be created when we run this, so we leave it blank.
         boost::mysql::connect_params params{
-            boost::mysql::any_address::make_tcp(get_mysql_hostname()),
+            boost::mysql::host_and_port{get_mysql_hostname()},
             "root",
             "",
             "",
@@ -342,7 +337,7 @@ public:
 
         // We didn't do anything modifying the connection state, so we can
         // explicitly return it, indicating that no reset is required.
-        conn.return_to_pool(false);
+        conn.return_without_reset();
 
         // Result
         std::unordered_map<std::int64_t, std::string> res;
