@@ -69,7 +69,7 @@ target_link_libraries(
     Boost::json
     Boost::regex
     Boost::url
-    Boost::charconv
+    Boost::charconv # Required by Boost.MySQL
     OpenSSL::Crypto
     OpenSSL::SSL
     ICU::data
