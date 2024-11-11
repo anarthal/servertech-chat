@@ -8,7 +8,7 @@
 #
 # Build the server
 #
-FROM alpine:3.18.2 AS server-builder-base
+FROM alpine:3.20.3 AS server-builder-base
 
 # Packages
 RUN apk update && \
@@ -20,11 +20,11 @@ RUN apk update && \
         icu-dev \
         git \
         linux-headers \
-        wget
+        wget \
+        tar \
+        python3
 
-# Boost. Boost.Redis hasn't been integrated into Boost (yet), so we need to
-# manually put it into $BOOST_ROOT/libs before building Boost. The script
-# removes intermediate build files to make CI caching lighter
+# Install Boost
 COPY tools/install-boost.sh .
 RUN sh -e install-boost.sh
 
@@ -55,10 +55,10 @@ RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/opt/boost -DCMAKE_BUILD_T
 #
 # Build the client - setup
 #
-FROM node:18-alpine AS client-builder-base
+FROM node:23-alpine AS client-builder-base
 
 # Don't send telemetry
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # OS dependencies
 RUN apk add --no-cache libc6-compat
@@ -86,7 +86,7 @@ RUN npm run test
 #
 # Runtime image
 #
-FROM alpine:3.18.2
+FROM alpine:3.20.3
 RUN apk add openssl icu libstdc++ curl
 COPY --from=server-builder \
     /opt/boost/lib/libboost_container.so* \
@@ -94,6 +94,7 @@ COPY --from=server-builder \
     /opt/boost/lib/libboost_json.so* \
     /opt/boost/lib/libboost_regex.so* \
     /opt/boost/lib/libboost_url.so* \
+    /opt/boost/lib/libboost_charconv.so* \
     /opt/boost/lib/
 COPY --from=server-builder /app/main /app/
 COPY --from=client-builder /app/out/ /app/static/

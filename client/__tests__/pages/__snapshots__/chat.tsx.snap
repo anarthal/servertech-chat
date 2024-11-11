@@ -18,7 +18,7 @@ exports[`chat page ChatScreen component 1`] = `
             class="pr-3 flex flex-col justify-center"
           >
             <div
-              class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-184hllq-MuiAvatar-root"
+              class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1chcy2i-MuiAvatar-root"
             >
               B
             </div>
@@ -50,7 +50,7 @@ exports[`chat page ChatScreen component 1`] = `
             class="pr-3 flex flex-col justify-center"
           >
             <div
-              class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-5bf77t-MuiAvatar-root"
+              class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1d308z4-MuiAvatar-root"
             >
               W
             </div>
@@ -107,7 +107,7 @@ exports[`chat page ChatScreen component 1`] = `
             class="pr-5 flex flex-col justify-end"
           >
             <div
-              class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-r4lbtz-MuiAvatar-root"
+              class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-vx4iuu-MuiAvatar-root"
             >
               U
             </div>

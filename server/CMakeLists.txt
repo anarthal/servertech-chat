@@ -9,7 +9,8 @@ cmake_minimum_required(VERSION 3.16.0)
 project(servertech_chat)
 
 # Boost.Context is required to run stackful coroutines
-find_package(Boost REQUIRED COMPONENTS headers context json regex url)
+# Boost.Charconv is required by Boost.MySQL
+find_package(Boost REQUIRED COMPONENTS headers context json regex url charconv)
 
 # OpenSSL is required by Boost.Redis
 find_package(OpenSSL REQUIRED)
@@ -59,8 +60,6 @@ add_library(
     src/error.cpp
 )
 
-target_include_directories(servertech_chat PUBLIC include)
-
 target_link_libraries(
     servertech_chat
     PUBLIC
@@ -69,11 +68,18 @@ target_link_libraries(
     Boost::json
     Boost::regex
     Boost::url
+    Boost::charconv
     OpenSSL::Crypto
     OpenSSL::SSL
     ICU::data
     ICU::i18n
     ICU::uc
+)
+
+target_include_directories(
+    servertech_chat
+    PUBLIC
+    include
 )
 
 # These are required because we're building Boost.Asio, Boost.Beast and Boost.MySQL

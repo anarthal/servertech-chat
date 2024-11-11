@@ -3,7 +3,7 @@
 exports[`NameAvatar Renders the initial and color for Doe 1`] = `
 <DocumentFragment>
   <div
-    class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-jindr0-MuiAvatar-root"
+    class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-x9hje8-MuiAvatar-root"
   >
     D
   </div>
@@ -13,7 +13,7 @@ exports[`NameAvatar Renders the initial and color for Doe 1`] = `
 exports[`NameAvatar Renders the initial and color for Fran 1`] = `
 <DocumentFragment>
   <div
-    class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-yjazcl-MuiAvatar-root"
+    class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1u3oezd-MuiAvatar-root"
   >
     F
   </div>
@@ -23,7 +23,7 @@ exports[`NameAvatar Renders the initial and color for Fran 1`] = `
 exports[`NameAvatar Renders the initial and color for John 1`] = `
 <DocumentFragment>
   <div
-    class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1u97j49-MuiAvatar-root"
+    class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1xg10ei-MuiAvatar-root"
   >
     J
   </div>

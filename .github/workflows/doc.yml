@@ -21,7 +21,7 @@ jobs:
     steps:
       # Get the code
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Build the .adoc files with asciidoctor
       - name: Build docs with asciidoctor

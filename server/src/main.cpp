@@ -14,6 +14,7 @@
 
 #include "error.hpp"
 #include "listener.hpp"
+#include "services/mysql_client.hpp"
 #include "services/redis_client.hpp"
 #include "shared_state.hpp"
 
@@ -52,6 +53,9 @@ int main(int argc, char* argv[])
     // Launch the Redis connection
     st->redis().start_run();
 
+    // Launch the MySQL connection pool
+    st->mysql().start_run();
+
     // Start listening for HTTP connections. This will run until the context is stopped
     auto ec = launch_http_listener(ioc.get_executor(), listening_endpoint, st);
     if (ec)
@@ -64,6 +68,9 @@ int main(int argc, char* argv[])
     signals.async_wait([st, &ioc](error_code, int) {
         // Stop the Redis reconnection loop
         st->redis().cancel();
+
+        // Stop the MySQL reconnection loop
+        st->mysql().cancel();
 
         // Stop the io_context. This will cause run() to return
         ioc.stop();

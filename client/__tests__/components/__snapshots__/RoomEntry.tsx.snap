@@ -12,7 +12,7 @@ exports[`RoomEntry RoomEntry not selected 1`] = `
         class="pr-3 flex flex-col justify-center"
       >
         <div
-          class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1ci6vil-MuiAvatar-root"
+          class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1lyf849-MuiAvatar-root"
         >
           M
         </div>
@@ -49,7 +49,7 @@ exports[`RoomEntry RoomEntry selected 1`] = `
         class="pr-3 flex flex-col justify-center"
       >
         <div
-          class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1ci6vil-MuiAvatar-root"
+          class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1lyf849-MuiAvatar-root"
         >
           M
         </div>
