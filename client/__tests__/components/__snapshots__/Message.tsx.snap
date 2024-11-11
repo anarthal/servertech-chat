@@ -35,7 +35,7 @@ exports[`Message OtherUserMessage 1`] = `
       class="pr-5 flex flex-col justify-end"
     >
       <div
-        class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-19ilp67-MuiAvatar-root"
+        class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1ih4l76-MuiAvatar-root"
       >
         F
       </div>
