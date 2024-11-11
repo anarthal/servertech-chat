@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(parse_client_event_error_missing_key)
 
     // Validate
     auto ec = boost::variant2::get<error_code>(evt_variant);
-    BOOST_TEST(ec == error_code(boost::json::error::unknown_name));
+    BOOST_TEST(ec == error_code(boost::json::error::size_mismatch));
 }
 
 BOOST_AUTO_TEST_CASE(parse_client_event_error_unknown_type)
