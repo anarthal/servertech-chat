@@ -1,15 +1,10 @@
 # Downloads sources to ~/boost-src, installs to /opt/boost
-BOOST_MAJOR=1
-BOOST_MINOR=85
-BOOST_PATCH=0
-
 # Get the source code
 mkdir ~/boost-src
 cd ~/boost-src
-BOOST_VERSION_UNDERSCORE="${BOOST_MAJOR}_${BOOST_MINOR}_${BOOST_PATCH}"
-wget -q https://boostorg.jfrog.io/artifactory/main/release/${BOOST_MAJOR}.${BOOST_MINOR}.${BOOST_PATCH}/source/boost_${BOOST_VERSION_UNDERSCORE}_rc1.tar.gz
-tar -xf boost_${BOOST_VERSION_UNDERSCORE}_rc1.tar.gz
-cd boost_$BOOST_VERSION_UNDERSCORE
+wget -q https://archives.boost.io/beta/1.87.0.beta1/source/boost_1_87_0_b1_rc2.tar.gz
+tar -xf boost_1_87_0_b1_rc2.tar.gz
+cd boost_1_87_0
 
 # Build and install. Make sure you've got write access to /opt/boost,
 # otherwise change the --prefix argument

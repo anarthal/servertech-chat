@@ -24,12 +24,9 @@ RUN apk update && \
         tar \
         python3
 
-# TODO: this is just for the beta
-RUN wget -q https://archives.boost.io/beta/1.87.0.beta1/source/boost_1_87_0_b1_rc2.tar.gz
-RUN tar -xf boost_1_87_0_b1_rc2.tar.gz
-WORKDIR /boost_1_87_0
-RUN ./bootstrap.sh
-RUN ./b2 --without-python cxxstd=23 variant=release  --prefix=/opt/boost install
+# Install Boost
+COPY tools/install-boost.sh .
+RUN sh -e install-boost.sh
 
 # Copy the server files
 WORKDIR /app
