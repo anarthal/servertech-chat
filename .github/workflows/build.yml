@@ -104,7 +104,7 @@ jobs:
       # Deploy to the server. This will copy the tools/deploy.sh script and run it.
       - name: Deploy
         if: github.ref == 'refs/heads/master'
-        uses: easingthemes/ssh-deploy@v5
+        uses: easingthemes/ssh-deploy@v4
         with:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SSH_HOSTNAME }}
