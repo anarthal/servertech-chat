@@ -209,6 +209,7 @@ public:
         conn->async_execute(
             mysql::with_params(
                 "INSERT INTO users (username, email, password) VALUES ({}, {}, {})",
+                username,
                 email,
                 hashed_password
             ),
