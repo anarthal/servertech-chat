@@ -35,7 +35,12 @@ public:
     // Should be called once during application startup.
     virtual error_with_message setup_db(boost::asio::yield_context yield) = 0;
 
+    // Starts the MySQL connection pool task, in detached mode. This must be called once
+    // to allow other operations to make progress and keep the reconnection loop
+    // running
     virtual void start_run() = 0;
+
+    // Cancels the MySQL connection pool task. To be called at shutdown
     virtual void cancel() = 0;
 
     // Creates a new user object with the given attributes.
