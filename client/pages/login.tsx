@@ -46,7 +46,7 @@ const LoginScreen = () => {
               });
               break;
           }
-        } catch (err) {
+        } catch {
           setError("root", {
             type: "value",
             message: "There was an unexpected error. Please try again later.",
