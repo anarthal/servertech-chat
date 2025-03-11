@@ -43,20 +43,13 @@ for a complete reference on API types.
 === Async code
 
 All I/O is handled asynchronously, using https://boost.org/libs/asio[Boost.Asio].
-The server uses **stackful coroutines** to make async flow easier.
+The server uses **pass:[C++20] coroutines** to make async flow easier.
 
-A stackful coroutine is created by calling
-https://www.boost.org/doc/libs/master/doc/html/boost_asio/reference/spawn.html[`boost::asio::spawn`].
-Coroutines pass around a `boost::asio::yield_context` object, which contains
-information about the current coroutine. Any async function can be converted
-into a stackful coroutine by passing a `yield_context` as its last argument
-(we say a `yield_context` is a valid
-https://www.boost.org/doc/libs/1_83_0/doc/html/boost_asio/overview/model/completion_tokens.html[completion token]).
-
-Stackful coroutines enable a similar code structure as pass:[C++]20 coroutines, but
-don't require pass:[C++]20. You can spawn pass:[C++]20 coroutines by calling
-https://www.boost.org/doc/libs/master/doc/html/boost_asio/reference/co_spawn.html[`boost::asio::co_spawn`]
-and using `boost::asio::use_awaitable` as completion token.
+A coroutine is created by calling
+https://www.boost.org/doc/libs/master/doc/html/boost_asio/reference/co_spawn.html[`boost::asio::co_spawn`].
+Coroutines are functions with return type `boost::asio::awaitable<T>`.
+Logic that uses coroutines has a similar structure to synchronous code,
+which makes reasoning easy.
 
 The server is single-threaded, which makes development much easier.
 Measurements are still to be performed to determine whether a multi-threaded

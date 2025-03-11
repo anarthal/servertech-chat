@@ -15,8 +15,8 @@ a collection of projects that showcase how C++ and Boost can be used for server-
 
 ## Architecture
 
-The server is based on Boost.Beast, asynchronous (it uses stackful coroutines)
-and single-threaded. It requires C++17 to build. It uses Redis and MySQL for
+The server is based on Boost.Beast, asynchronous (C++20 coroutines)
+and single-threaded. It requires C++20 to build. It uses Redis and MySQL for
 persistence.
 
 The client is web-based and uses Next.js. It communicates with the server
