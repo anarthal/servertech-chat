@@ -10,7 +10,6 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/redirect_error.hpp>
-#include <boost/asio/spawn.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/http/message_generator.hpp>
@@ -55,7 +54,7 @@ static asio::awaitable<http::message_generator> handle_http_request_impl(
     if (!segs.empty() && segs.front() == "api")
     {
         // API endpoint. All endpoint handlers have the signature
-        // http::message_generator (request_context&, shared_state&, boost::asio::yield_context)
+        // asio::awaitable<http::message_generator>(request_context&, shared_state&)
         auto it = std::next(segs.begin());
         auto seg = *it;
         ++it;

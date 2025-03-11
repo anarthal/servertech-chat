@@ -8,7 +8,6 @@
 #include "api/chat_websocket.hpp"
 
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/spawn.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
 #include <boost/variant2/variant.hpp>
 
