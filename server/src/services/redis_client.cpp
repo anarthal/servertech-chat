@@ -52,7 +52,7 @@ public:
     void cancel() final override { conn_.cancel(); }
 
     asio::awaitable<result_with_message<std::vector<message_batch>>> get_room_history(
-        boost::span<const room_histoy_request> input
+        std::span<const room_histoy_request> input
     ) final override
     {
         assert(!input.empty());
@@ -94,7 +94,7 @@ public:
 
     asio::awaitable<result_with_message<std::vector<std::string>>> store_messages(
         std::string_view room_id,
-        boost::span<const message> messages
+        std::span<const message> messages
     ) final override
     {
         // Compose the request. This appends a message to the given room and

@@ -301,7 +301,7 @@ public:
         co_return std::move(result.rows()[0]);
     }
 
-    asio::awaitable<result_with_message<username_map>> get_usernames(boost::span<const std::int64_t> user_ids
+    asio::awaitable<result_with_message<username_map>> get_usernames(std::span<const std::int64_t> user_ids
     ) final override
     {
         // Check that we have one user ID, at least.

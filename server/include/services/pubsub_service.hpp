@@ -11,9 +11,9 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/error.hpp>
-#include <boost/core/span.hpp>
 
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -27,8 +27,8 @@ class message_subscriber
 public:
     virtual ~message_subscriber() {}
 
-    // Called when a message is received. The function is run in its own coroutine,
-    // and gets passed a yield_context, allowing for async code within it.
+    // Called when a message is received. This function is a coroutine to
+    // allow async code within it.
     virtual boost::asio::awaitable<void> on_message(std::string_view message) = 0;
 };
 
@@ -51,7 +51,7 @@ public:
     // message_subscriber::on_message will be called.
     virtual void subscribe(
         std::shared_ptr<message_subscriber> subscriber,
-        boost::span<const std::string_view> topic_ids
+        std::span<const std::string_view> topic_ids
     ) = 0;
 
     // Removes all subscriptions for the given subscriber.
@@ -67,7 +67,7 @@ public:
     using subscriber_guard = std::unique_ptr<message_subscriber, subscriber_deleter>;
     subscriber_guard subscribe_guarded(
         std::shared_ptr<message_subscriber> subscriber,
-        boost::span<const std::string_view> topic_ids
+        std::span<const std::string_view> topic_ids
     )
     {
         auto* ptr = subscriber.get();

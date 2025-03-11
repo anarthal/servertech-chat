@@ -10,11 +10,11 @@
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/core/span.hpp>
 
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -56,14 +56,14 @@ public:
 
     // Retrieves a batch of room history for several rooms
     virtual boost::asio::awaitable<result_with_message<std::vector<message_batch>>> get_room_history(
-        boost::span<const room_histoy_request> reqs
+        std::span<const room_histoy_request> reqs
     ) = 0;
 
     // Inserts a batch of messages into a certain room's history.
     // Returns the IDs of the inserted messages
     virtual boost::asio::awaitable<result_with_message<std::vector<std::string>>> store_messages(
         std::string_view room_id,
-        boost::span<const message> messages
+        std::span<const message> messages
     ) = 0;
 
     // Sets a certain key to a value, with the given time to live.

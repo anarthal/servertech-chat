@@ -18,7 +18,6 @@
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/string_body.hpp>
 #include <boost/config.hpp>
-#include <boost/core/span.hpp>
 #include <boost/system/error_category.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/system/result.hpp>
@@ -29,6 +28,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>

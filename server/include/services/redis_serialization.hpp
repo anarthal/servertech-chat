@@ -8,9 +8,9 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_REDIS_SERIALIZATION_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_REDIS_SERIALIZATION_HPP
 
-#include <boost/core/span.hpp>
 #include <boost/redis/resp3/node.hpp>
 
+#include <span>
 #include <vector>
 
 #include "business_types.hpp"
@@ -22,7 +22,7 @@
 
 namespace chat {
 
-using node_span = boost::span<const boost::redis::resp3::node>;
+using node_span = std::span<const boost::redis::resp3::node>;
 
 // Parses the result of getting the history for several rooms, in a batch
 // (i.e. several batched XREVRANGEs)

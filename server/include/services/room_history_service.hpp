@@ -9,8 +9,8 @@
 #define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_ROOM_HISTORY_SERVICE_HPP
 
 #include <boost/asio/awaitable.hpp>
-#include <boost/core/span.hpp>
 
+#include <span>
 #include <string_view>
 #include <utility>
 
@@ -42,7 +42,7 @@ public:
     // If a user_id is referenced in a message but doesn't exist, the entry
     // is not included in the map
     boost::asio::awaitable<result_with_message<std::pair<std::vector<message_batch>, username_map>>> get_room_history(
-        boost::span<const std::string_view> room_ids
+        std::span<const std::string_view> room_ids
     );
 
     // Same as the above, but for an individual room.

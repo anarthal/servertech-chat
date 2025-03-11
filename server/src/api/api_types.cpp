@@ -188,10 +188,7 @@ static boost::json::value serialize_message(const message& input, std::string_vi
     });
 }
 
-static boost::json::array serialize_messages(
-    boost::span<const message> messages,
-    const username_map& usernames
-)
+static boost::json::array serialize_messages(std::span<const message> messages, const username_map& usernames)
 {
     boost::json::array res;
     res.reserve(messages.size());
@@ -206,7 +203,7 @@ static boost::json::array serialize_messages(
     return res;
 }
 
-static boost::json::array serialize_messages(boost::span<const message> messages, const user& sending_user)
+static boost::json::array serialize_messages(std::span<const message> messages, const user& sending_user)
 {
     boost::json::array res;
     res.reserve(messages.size());

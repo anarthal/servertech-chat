@@ -42,7 +42,8 @@ static constexpr char alphabet[] = {
     "ABCDEFGHIJKLMNOP"
     "QRSTUVWXYZabcdef"
     "ghijklmnopqrstuv"
-    "wxyz0123456789+/"};
+    "wxyz0123456789+/"
+};
 
 // Inverse table
 static constexpr signed char inverse_tab[] = {
@@ -66,7 +67,7 @@ static constexpr signed char inverse_tab[] = {
 
 // Encodes src and stores it in dest. dest must point to encoded_size(src.size()) bytes.
 // Returns the number of written characters
-static std::size_t encode(char* dest, boost::span<const unsigned char> src, bool with_padding) noexcept
+static std::size_t encode(char* dest, std::span<const unsigned char> src, bool with_padding) noexcept
 {
     char* out = dest;
     const unsigned char* in = src.data();
@@ -173,7 +174,7 @@ static result<std::pair<std::size_t, const char*>> decode(
     return std::pair<std::size_t, const char*>{out_len, src};
 }
 
-std::string chat::base64_encode(boost::span<const unsigned char> input, bool with_padding)
+std::string chat::base64_encode(std::span<const unsigned char> input, bool with_padding)
 {
     // Allocate space
     std::size_t max_size = encoded_size(input.size());

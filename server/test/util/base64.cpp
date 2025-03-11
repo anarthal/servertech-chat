@@ -7,9 +7,9 @@
 
 #include "util/base64.hpp"
 
-#include <boost/core/span.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include <span>
 #include <string_view>
 
 using namespace chat;

@@ -10,7 +10,6 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <boost/core/span.hpp>
 #include <boost/multi_index/indexed_by.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/member.hpp>
@@ -18,6 +17,7 @@
 #include <boost/multi_index_container.hpp>
 
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -66,7 +66,7 @@ public:
 
     void subscribe(
         std::shared_ptr<message_subscriber> subscriber,
-        boost::span<const std::string_view> topic_ids
+        std::span<const std::string_view> topic_ids
     ) override final
     {
         // Create a subscription for each requested topic

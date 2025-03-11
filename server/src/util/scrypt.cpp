@@ -140,8 +140,8 @@ result<scrypt_data> chat::scrypt_phc_parse(std::string_view from)
 
 std::string chat::scrypt_phc_serialize(
     scrypt_params params,
-    boost::span<const unsigned char, salt_size> salt,
-    boost::span<const unsigned char, hash_size> hash
+    std::span<const unsigned char, salt_size> salt,
+    std::span<const unsigned char, hash_size> hash
 )
 {
     std::ostringstream oss;
@@ -154,7 +154,7 @@ std::string chat::scrypt_phc_serialize(
 std::array<unsigned char, hash_size> chat::scrypt_generate_hash(
     std::string_view passwd,
     scrypt_params params,
-    boost::span<const unsigned char> salt
+    std::span<const unsigned char> salt
 )
 {
     constexpr std::size_t max_memory = 32 << 20;  // 32MiB
@@ -184,7 +184,7 @@ std::array<unsigned char, hash_size> chat::scrypt_generate_hash(
 }
 
 // Compares two blobs, in a way that prevents timing attacks
-bool chat::time_safe_equals(boost::span<const unsigned char> s1, boost::span<const unsigned char> s2) noexcept
+bool chat::time_safe_equals(std::span<const unsigned char> s1, std::span<const unsigned char> s2) noexcept
 {
     return CRYPTO_memcmp(s1.data(), s2.data(), std::min(s1.size(), s2.size())) == 0 && s1.size() == s2.size();
 }

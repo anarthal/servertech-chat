@@ -10,11 +10,11 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
-#include <boost/core/span.hpp>
 #include <boost/variant2/variant.hpp>
 
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>

@@ -28,7 +28,7 @@ static std::vector<std::int64_t> unique_user_ids(const std::vector<message_batch
 }
 
 asio::awaitable<result_with_message<std::pair<std::vector<message_batch>, username_map>>> room_history_service::
-    get_room_history(boost::span<const std::string_view> room_ids)
+    get_room_history(std::span<const std::string_view> room_ids)
 {
     // Compose an array of requests for Redis
     std::vector<redis_client::room_histoy_request> redis_req;

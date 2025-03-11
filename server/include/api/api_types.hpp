@@ -8,9 +8,9 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_API_API_TYPES_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_API_API_TYPES_HPP
 
-#include <boost/core/span.hpp>
 #include <boost/variant2/variant.hpp>
 
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -137,7 +137,7 @@ struct hello_event
     const user& me;
 
     // The list of chat rooms, with some message history
-    boost::span<const room> rooms;
+    std::span<const room> rooms;
 
     // A user_id -> username map, to resolve user IDs into usernames
     const username_map& usernames;
@@ -156,7 +156,7 @@ struct server_messages_event
     const user& sending_user;
 
     // The actual messages. All messages must have this->user_id == sending_user.id
-    boost::span<const message> messages;
+    std::span<const message> messages;
 
     // Serializes the object as a JSON string.
     std::string to_json() const;

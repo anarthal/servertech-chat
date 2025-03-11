@@ -10,11 +10,10 @@
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/core/span.hpp>
 #include <boost/variant2/variant.hpp>
 
 #include <memory>
-#include <string>
+#include <span>
 #include <string_view>
 
 #include "business_types.hpp"
@@ -66,7 +65,7 @@ public:
     // The lookup is performed in batch, for efficiency reasons.
     // If a user ID doesn't exist, it's excluded from the returned map.
     virtual boost::asio::awaitable<result_with_message<username_map>> get_usernames(
-        boost::span<const std::int64_t> user_ids
+        std::span<const std::int64_t> user_ids
     ) = 0;
 };
 
