@@ -8,7 +8,7 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_API_AUTH_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_API_AUTH_HPP
 
-#include <boost/asio/spawn.hpp>
+#include <boost/asio/awaitable.hpp>
 
 #include "request_context.hpp"
 
@@ -19,18 +19,13 @@ namespace chat {
 class shared_state;
 
 // POST /create-account
-response_builder::response_type handle_create_account(
+boost::asio::awaitable<response_builder::response_type> handle_create_account(
     request_context& ctx,
-    shared_state& st,
-    boost::asio::yield_context yield
+    shared_state& st
 );
 
 // POST /login
-response_builder::response_type handle_login(
-    request_context& ctx,
-    shared_state& st,
-    boost::asio::yield_context yield
-);
+boost::asio::awaitable<response_builder::response_type> handle_login(request_context& ctx, shared_state& st);
 
 }  // namespace chat
 

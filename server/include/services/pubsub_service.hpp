@@ -9,15 +9,13 @@
 #define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_PUBSUB_SERVICE_HPP
 
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/error.hpp>
-#include <boost/asio/spawn.hpp>
 #include <boost/core/span.hpp>
 
 #include <memory>
 #include <string>
 #include <string_view>
-
-#include "error.hpp"
 
 // An in-memory publish-subscribe mechanism. Used to broadcast messages between clients.
 
@@ -31,7 +29,7 @@ public:
 
     // Called when a message is received. The function is run in its own coroutine,
     // and gets passed a yield_context, allowing for async code within it.
-    virtual void on_message(std::string_view message, boost::asio::yield_context yield) = 0;
+    virtual boost::asio::awaitable<void> on_message(std::string_view message) = 0;
 };
 
 // This is an interface to reduce compile times.

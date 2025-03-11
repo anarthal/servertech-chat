@@ -106,4 +106,11 @@ struct is_error_code_enum<chat::errc>
         return ::chat::error_with_message{::chat::error_code(::chat::error_code(e), &loc), msg}; \
     }
 
+// Same, but for co_return
+#define CHAT_CO_RETURN_ERROR_WITH_MESSAGE(e, msg)                                                   \
+    {                                                                                               \
+        static constexpr auto loc = BOOST_CURRENT_LOCATION;                                         \
+        co_return ::chat::error_with_message{::chat::error_code(::chat::error_code(e), &loc), msg}; \
+    }
+
 #endif

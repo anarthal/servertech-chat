@@ -9,7 +9,7 @@
 #define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_REDIS_CLIENT_HPP
 
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/spawn.hpp>
+#include <boost/asio/awaitable.hpp>
 #include <boost/core/span.hpp>
 
 #include <chrono>
@@ -55,34 +55,28 @@ public:
     };
 
     // Retrieves a batch of room history for several rooms
-    virtual result_with_message<std::vector<message_batch>> get_room_history(
-        boost::span<const room_histoy_request> reqs,
-        boost::asio::yield_context yield
+    virtual boost::asio::awaitable<result_with_message<std::vector<message_batch>>> get_room_history(
+        boost::span<const room_histoy_request> reqs
     ) = 0;
 
     // Inserts a batch of messages into a certain room's history.
     // Returns the IDs of the inserted messages
-    virtual result_with_message<std::vector<std::string>> store_messages(
+    virtual boost::asio::awaitable<result_with_message<std::vector<std::string>>> store_messages(
         std::string_view room_id,
-        boost::span<const message> messages,
-        boost::asio::yield_context yield
+        boost::span<const message> messages
     ) = 0;
 
     // Sets a certain key to a value, with the given time to live.
     // If the key already exists, the operation fails with already_exists
-    virtual error_with_message set_nonexisting_key(
+    virtual boost::asio::awaitable<error_with_message> set_nonexisting_key(
         std::string_view key,
         std::string_view value,
-        std::chrono::seconds ttl,
-        boost::asio::yield_context yield
+        std::chrono::seconds ttl
     ) = 0;
 
     // Gets the specified key, as an int64_t.
     // Returns not_found if the key does not exist
-    virtual result_with_message<std::int64_t> get_int_key(
-        std::string_view key,
-        boost::asio::yield_context yield
-    ) = 0;
+    virtual boost::asio::awaitable<result_with_message<std::int64_t>> get_int_key(std::string_view key) = 0;
 };
 
 // Creates a concrete implementation of redis_client

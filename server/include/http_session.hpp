@@ -8,9 +8,8 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_HTTP_SESSION_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_HTTP_SESSION_HPP
 
-#include <boost/asio/spawn.hpp>
+#include <boost/asio/awaitable.hpp>
 
-#include <cstddef>
 #include <memory>
 
 namespace chat {
@@ -21,10 +20,9 @@ class shared_state;
 // Runs a HTTP session until the connection is closed or an error is encountered.
 // This will serve static files over HTTP or run a websocket session, depending
 // on what the client requested.
-void run_http_session(
+boost::asio::awaitable<void> run_http_session(
     boost::asio::ip::tcp::socket&& socket,
-    std::shared_ptr<shared_state> state,
-    boost::asio::yield_context yield
+    std::shared_ptr<shared_state> state
 );
 
 }  // namespace chat

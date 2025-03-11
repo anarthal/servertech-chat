@@ -7,6 +7,7 @@
 
 #include "api/chat_websocket.hpp"
 
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
 #include <boost/core/span.hpp>
@@ -29,6 +30,7 @@
 #include "util/websocket.hpp"
 
 using namespace chat;
+namespace asio = boost::asio;
 
 namespace {
 
@@ -55,13 +57,13 @@ struct hello_data
 };
 
 // Retrieves the data required to send the hello event
-static result_with_message<hello_data> get_hello_data(shared_state& st, boost::asio::yield_context yield)
+static asio::awaitable<result_with_message<hello_data>> get_hello_data(shared_state& st)
 {
     // Retrieve room history
     room_history_service history_service(st.redis(), st.mysql());
-    auto history_result = history_service.get_room_history(room_ids, yield);
+    auto history_result = co_await history_service.get_room_history(room_ids);
     if (history_result.has_error())
-        return std::move(history_result).error();
+        co_return std::move(history_result).error();
     assert(history_result->first.size() == room_ids.size());
 
     // Compose hello data
@@ -74,7 +76,7 @@ static result_with_message<hello_data> get_hello_data(shared_state& st, boost::a
         );
     }
 
-    return res;
+    co_return res;
 }
 
 struct event_handler_visitor
@@ -82,13 +84,15 @@ struct event_handler_visitor
     const user& current_user;
     websocket& ws;
     shared_state& st;
-    boost::asio::yield_context yield;
 
     // Parsing error
-    error_with_message operator()(error_code ec) const noexcept { return error_with_message{ec}; }
+    asio::awaitable<error_with_message> operator()(error_code ec) const noexcept
+    {
+        co_return error_with_message{ec};
+    }
 
     // Messages event
-    error_with_message operator()(client_messages_event& evt) const
+    asio::awaitable<error_with_message> operator()(client_messages_event& evt) const
     {
         // Set the timestamp
         auto timestamp = timestamp_t::clock::now();
@@ -107,9 +111,9 @@ struct event_handler_visitor
         }
 
         // Store it in Redis
-        auto ids_result = st.redis().store_messages(evt.roomId, msgs, yield);
+        auto ids_result = co_await st.redis().store_messages(evt.roomId, msgs);
         if (ids_result.has_error())
-            return std::move(ids_result).error();
+            co_return std::move(ids_result).error();
         auto& ids = ids_result.value();
 
         // Set the message IDs appropriately
@@ -122,26 +126,24 @@ struct event_handler_visitor
 
         // Broadcast the event to all clients
         st.pubsub().publish(evt.roomId, server_evt.to_json());
-        return {};
+        co_return error_with_message{};
     }
 
     // Request room history event
-    error_with_message operator()(chat::request_room_history_event& evt) const
+    asio::awaitable<error_with_message> operator()(chat::request_room_history_event& evt) const
     {
         // Get room history
         room_history_service svc(st.redis(), st.mysql());
-        auto history = svc.get_room_history(evt.roomId, yield);
+        auto history = co_await svc.get_room_history(evt.roomId);
         if (history.has_error())
-            return std::move(history).error();
+            co_return std::move(history).error();
 
         // Compose a room_history event
         chat::room_history_event response_evt{evt.roomId, history->first, history->second};
         auto payload = response_evt.to_json();
 
         // Send it
-        chat::error_code ec;
-        ws.write(payload, yield[ec]);
-        return {ec};
+        co_return co_await ws.write(payload);
     }
 };
 
@@ -162,18 +164,18 @@ public:
     }
 
     // Subscriber callback
-    void on_message(std::string_view serialized_message, boost::asio::yield_context yield) override final
+    asio::awaitable<void> on_message(std::string_view serialized_message) override final
     {
-        ws_.write(serialized_message, yield);
+        co_await ws_.write(serialized_message);  // Ignore error code (TODO: log it?)
     }
 
     // Runs the session until completion
-    error_with_message run(boost::asio::yield_context yield)
+    asio::awaitable<error_with_message> run()
     {
         error_code ec;
 
         // Check that the user is authenticated
-        auto user_result = st_->cookie_auth().user_from_cookie(ws_.upgrade_request(), yield);
+        auto user_result = co_await st_->cookie_auth().user_from_cookie(ws_.upgrade_request());
         if (user_result.has_error())
         {
             // If it's not, close the websocket. This is the preferred approach
@@ -181,28 +183,28 @@ public:
             // the websocket upgrade, since the client doesn't have access to
             // upgrade failure information.
             log_error(user_result.error(), "Websocket authentication failed");
-            ws_.close(boost::beast::websocket::policy_error, yield);  // Ignore the result
-            return {};
+            co_await ws_.close(boost::beast::websocket::policy_error);  // Ignore the result
+            co_return error_with_message{};
         }
         const auto& current_user = user_result.value();
 
         // Lock writes in the websocket. This ensures that no message is written before the hello.
-        auto write_guard = ws_.lock_writes(yield);
+        auto write_guard = co_await ws_.lock_writes();
 
         // Subscribe to messages for the available rooms
         auto pubsub_guard = st_->pubsub().subscribe_guarded(shared_from_this(), room_ids);
 
         // Retrieve the data required for the hello message
-        auto hello_data = get_hello_data(*st_, yield);
+        auto hello_data = co_await get_hello_data(*st_);
         if (hello_data.has_error())
-            return hello_data.error();
+            co_return hello_data.error();
 
         // Compose the hello event and write it
         hello_event hello_evt{current_user, hello_data->rooms, hello_data->usernames};
         auto serialized_hello = hello_evt.to_json();
-        ec = ws_.write_locked(serialized_hello, write_guard, yield);
+        ec = co_await ws_.write_locked(serialized_hello, write_guard);
         if (ec)
-            return {ec};
+            co_return error_with_message{ec};
 
         // Once the hello is sent, we can start sending messages through the websocket
         write_guard.reset();
@@ -211,29 +213,28 @@ public:
         while (true)
         {
             // Read a message
-            auto raw_msg = ws_.read(yield);
+            auto raw_msg = co_await ws_.read();
             if (raw_msg.has_error())
-                return {raw_msg.error()};
+                co_return error_with_message{raw_msg.error()};
 
             // Deserialize it
             auto msg = chat::parse_client_event(raw_msg.value());
 
             // Dispatch
-            auto err = boost::variant2::visit(event_handler_visitor{current_user, ws_, *st_, yield}, msg);
+            auto err = co_await boost::variant2::visit(event_handler_visitor{current_user, ws_, *st_}, msg);
             if (err.ec)
-                return err;
+                co_return err;
         }
     }
 };
 
 }  // namespace
 
-error_with_message chat::handle_chat_websocket(
+asio::awaitable<error_with_message> chat::handle_chat_websocket(
     websocket socket,
-    std::shared_ptr<shared_state> state,
-    boost::asio::yield_context yield
+    std::shared_ptr<shared_state> state
 )
 {
     auto sess = std::make_shared<chat_websocket_session>(std::move(socket), std::move(state));
-    return sess->run(yield);
+    co_return co_await sess->run();
 }

@@ -8,37 +8,32 @@
 #include "util/async_mutex.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/experimental/channel.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/spawn.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/asio/this_coro.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <chrono>
 #include <exception>
-#include <functional>
 
 #include "error.hpp"
 
 using namespace chat;
+namespace asio = boost::asio;
 
-// Spawns a coroutine, detached. Rethrows any exceptions
-static void spawn_coroutine(
-    boost::asio::any_io_executor ex,
-    std::function<void(boost::asio::yield_context)> fn
-)
-{
-    boost::asio::spawn(std::move(ex), std::move(fn), [](std::exception_ptr ptr) {
-        if (ptr)
-            std::rethrow_exception(ptr);
-    });
-}
+static constexpr auto rethrow_on_error = [](std::exception_ptr ptr) {
+    if (ptr)
+        std::rethrow_exception(ptr);
+};
 
 // Spawns a coroutine and runs it until completion
-static void run_coroutine(void (*fn)(boost::asio::yield_context))
+static void run_coroutine(asio::awaitable<void> (*fn)())
 {
-    boost::asio::io_context ctx;
-    spawn_coroutine(ctx.get_executor(), fn);
+    asio::io_context ctx;
+    asio::co_spawn(ctx, fn, rethrow_on_error);
     ctx.run();
 }
 
@@ -46,12 +41,12 @@ BOOST_AUTO_TEST_SUITE(async_mutex_)
 
 BOOST_AUTO_TEST_CASE(lock)
 {
-    run_coroutine([](boost::asio::yield_context yield) {
+    run_coroutine([]() -> asio::awaitable<void> {
         // I/O objects
-        async_mutex mtx(yield.get_executor());
+        async_mutex mtx(co_await asio::this_coro::executor);
 
         // Lock
-        mtx.lock(yield);
+        co_await mtx.lock();
         BOOST_TEST(mtx.locked());
 
         // Unlock
@@ -62,12 +57,12 @@ BOOST_AUTO_TEST_CASE(lock)
 
 BOOST_AUTO_TEST_CASE(lock_with_guard)
 {
-    run_coroutine([](boost::asio::yield_context yield) {
+    run_coroutine([]() -> asio::awaitable<void> {
         // I/O objects
-        async_mutex mtx(yield.get_executor());
+        async_mutex mtx(co_await asio::this_coro::executor);
 
         // Lock
-        auto guard = mtx.lock_with_guard(yield);
+        auto guard = co_await mtx.lock_with_guard();
         BOOST_TEST(mtx.locked());
 
         // Unlock
@@ -78,9 +73,9 @@ BOOST_AUTO_TEST_CASE(lock_with_guard)
 
 BOOST_AUTO_TEST_CASE(try_lock)
 {
-    run_coroutine([](boost::asio::yield_context yield) {
+    run_coroutine([]() -> asio::awaitable<void> {
         // I/O objects
-        async_mutex mtx(yield.get_executor());
+        async_mutex mtx(co_await asio::this_coro::executor);
 
         // Lock
         bool ok = mtx.try_lock();
@@ -100,39 +95,43 @@ BOOST_AUTO_TEST_CASE(try_lock)
 
 BOOST_AUTO_TEST_CASE(lock_contention)
 {
-    run_coroutine([](boost::asio::yield_context yield) {
+    run_coroutine([]() -> asio::awaitable<void> {
         // I/O objects
-        async_mutex mtx(yield.get_executor());
-        boost::asio::steady_timer timer(yield.get_executor());
-        boost::asio::experimental::channel<void(error_code)> chan(yield.get_executor(), 1);
+        async_mutex mtx(co_await asio::this_coro::executor);
+        asio::steady_timer timer(co_await asio::this_coro::executor);
+        asio::experimental::channel<void(error_code)> chan(co_await asio::this_coro::executor, 1);
 
         // Lock the mutex
-        auto guard = mtx.lock_with_guard(yield);
+        auto guard = co_await mtx.lock_with_guard();
         BOOST_TEST(mtx.locked());
 
         // Launch another coroutine that tries to acquire it
-        spawn_coroutine(yield.get_executor(), [&](boost::asio::yield_context yield) {
-            // Mutex should be held by the main coroutine
-            BOOST_TEST_REQUIRE(mtx.locked());
+        asio::co_spawn(
+            co_await asio::this_coro::executor,
+            [&]() -> asio::awaitable<void> {
+                // Mutex should be held by the main coroutine
+                BOOST_TEST_REQUIRE(mtx.locked());
 
-            // Lock and unlock
-            mtx.lock(yield);
-            mtx.unlock();
+                // Lock and unlock
+                co_await mtx.lock();
+                mtx.unlock();
 
-            // Notify the main coroutine that we're done
-            bool ok = chan.try_send(error_code());
-            BOOST_TEST_REQUIRE(ok);
-        });
+                // Notify the main coroutine that we're done
+                bool ok = chan.try_send(error_code());
+                BOOST_TEST_REQUIRE(ok);
+            },
+            rethrow_on_error
+        );
 
         // Yield so that the other coroutine tries to acquire the mutex while being held by us
         timer.expires_after(std::chrono::milliseconds(10));
-        timer.async_wait(yield);
+        co_await timer.async_wait();
 
         // Unlock the mutex
         guard.reset();
 
         // Wait for the other coroutine to finish
-        chan.async_receive(yield);
+        co_await chan.async_receive();
 
         BOOST_TEST(!mtx.locked());
     });

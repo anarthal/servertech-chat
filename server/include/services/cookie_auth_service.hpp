@@ -8,7 +8,7 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_COOKIE_AUTH_SERVICE_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_COOKIE_AUTH_SERVICE_HPP
 
-#include <boost/asio/spawn.hpp>
+#include <boost/asio/awaitable.hpp>
 #include <boost/beast/http/fields.hpp>
 
 #include <cstdint>
@@ -38,25 +38,20 @@ public:
 
     // Allocates a new session ID for the passed user ID (by storing it in Redis),
     // and returns an appropriate Set-Cookie header.
-    result_with_message<std::string> generate_session_cookie(
-        std::int64_t user_id,
-        boost::asio::yield_context yield
-    );
+    boost::asio::awaitable<result_with_message<std::string>> generate_session_cookie(std::int64_t user_id);
 
     // Verifies that the user is authenticated via a cookie, returning the user_id of the
     // authenticated user.
     // Returns errc::auth_required if the cookie is not present, invalid,
     // or doesn't match any valid session ID.
-    result_with_message<std::int64_t> user_id_from_cookie(
-        const boost::beast::http::fields& req_headers,
-        boost::asio::yield_context yield
+    boost::asio::awaitable<result_with_message<std::int64_t>> user_id_from_cookie(
+        const boost::beast::http::fields& req_headers
     );
 
     // Verifies that the user is authenticated via a cookie, returning the associated user.
     // Works like user_id_from_cookie, but also looks up the user in MySQL.
-    result_with_message<user> user_from_cookie(
-        const boost::beast::http::fields& req_headers,
-        boost::asio::yield_context yield
+    boost::asio::awaitable<result_with_message<user>> user_from_cookie(
+        const boost::beast::http::fields& req_headers
     );
 };
 
