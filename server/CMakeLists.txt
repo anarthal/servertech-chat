@@ -80,6 +80,13 @@ target_include_directories(
     include
 )
 
+# Coroutines require C++20
+target_compile_features(
+    servertech_chat
+    PUBLIC
+    cxx_std_20
+)
+
 # These are required because we're building Boost.Asio, Boost.Beast and Boost.MySQL
 # in separate-compilation mode (see boost_asio.cpp, boost_beast.cpp, boost_mysql.cpp).
 # Boost.Redis doesn't need such definition, even when building it like we're doing.
