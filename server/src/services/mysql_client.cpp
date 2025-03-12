@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023-2024 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+// Copyright (c) 2023-2025 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -8,10 +8,14 @@
 #include "services/mysql_client.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/experimental/channel.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/spawn.hpp>
+#include <boost/asio/redirect_error.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/asio/this_coro.hpp>
+#include <boost/asio/use_awaitable.hpp>
+#include <boost/core/ignore_unused.hpp>
 #include <boost/describe/class.hpp>
 #include <boost/mysql/any_address.hpp>
 #include <boost/mysql/any_connection.hpp>
@@ -22,7 +26,6 @@
 #include <boost/mysql/handshake_params.hpp>
 #include <boost/mysql/results.hpp>
 #include <boost/mysql/static_results.hpp>
-#include <boost/mysql/tcp.hpp>
 #include <boost/mysql/with_params.hpp>
 
 #include <chrono>
@@ -38,6 +41,7 @@
 
 using namespace chat;
 namespace mysql = boost::mysql;
+namespace asio = boost::asio;
 
 // DB setup code. This is executed once at startup.
 // This should be improved when implementing
@@ -101,7 +105,7 @@ class mysql_client_impl final : public mysql_client
 
     // Functions to retrieve a MySQL connection with retries.
     // This is only used for the connection required by setup_db.
-    result_with_message<mysql::any_connection> get_connection_with_retries(boost::asio::yield_context yield)
+    asio::awaitable<result_with_message<mysql::any_connection>> get_connection_with_retries()
     {
         // Connection params to use. Hostname, user and password are the same.
         // The database may not be created when we run this, so we leave it blank.
@@ -116,16 +120,15 @@ class mysql_client_impl final : public mysql_client
 
         // We use mysql::any_connection here because it's easier to use than regular mysql::connection.
         // For instance, it manages hostname resolution automatically.
-        mysql::any_connection conn(yield.get_executor());
-        boost::asio::steady_timer timer(yield.get_executor());
-        mysql::diagnostics diag;
-
+        mysql::any_connection conn(co_await asio::this_coro::executor);
+        asio::steady_timer timer(co_await asio::this_coro::executor);
         error_code ec;
+        mysql::diagnostics diag;
 
         while (true)
         {
             // Try to connect
-            conn.async_connect(params, diag, yield[ec]);
+            co_await conn.async_connect(params, diag, asio::redirect_error(ec));
             if (ec)
             {
                 // Log the error
@@ -133,24 +136,24 @@ class mysql_client_impl final : public mysql_client
 
                 // Wait some time
                 timer.expires_after(std::chrono::seconds(2));
-                timer.async_wait(yield[ec]);
+                co_await timer.async_wait(asio::redirect_error(ec));
 
                 // If the timer wait errored, it was cancelled, so exit the loop
                 if (ec)
-                    return error_with_message{ec};
+                    co_return error_with_message{ec};
             }
             else
             {
                 // We managed to get a connection
-                return conn;
+                co_return conn;
             }
         }
     }
 
 public:
-    mysql_client_impl(boost::asio::any_io_executor ex) : pool_(std::move(ex), get_pool_params()) {}
+    mysql_client_impl(asio::any_io_executor ex) : pool_(std::move(ex), get_pool_params()) {}
 
-    error_with_message setup_db(boost::asio::yield_context yield) final override
+    asio::awaitable<error_with_message> setup_db() final override
     {
         error_code ec;
         mysql::diagnostics diag;
@@ -159,27 +162,27 @@ public:
         // Get a connection. Perform retries until we get a connection or
         // we get cancelled via Ctrl-C. This provides safety against MySQL
         // failures, which can happen if the server starts before MySQL is ready.
-        auto conn_result = get_connection_with_retries(yield);
+        auto conn_result = co_await get_connection_with_retries();
         if (conn_result.has_error())
-            return std::move(conn_result).error();
+            co_return std::move(conn_result).error();
         auto& conn = conn_result.value();
 
         // Run setup code
-        conn.async_execute(setup_code, result, diag, yield[ec]);
+        co_await conn.async_execute(setup_code, result, diag, asio::redirect_error(ec));
         if (ec)
-            return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, diag.server_message()};
 
         // Close the connection gracefully. Ignore any errors
-        conn.async_close(yield[ec]);
+        co_await conn.async_close(asio::redirect_error(ec));
 
-        return {};
+        co_return error_with_message{};
     }
 
     void start_run() override final
     {
-        boost::asio::spawn(
+        asio::co_spawn(
             pool_.get_executor(),
-            [pool = &pool_](boost::asio::yield_context yield) { pool->async_run(yield); },
+            [pool = &pool_]() { return pool->async_run(asio::use_awaitable); },
             [](std::exception_ptr exc) {
                 if (exc)
                     std::rethrow_exception(exc);
@@ -189,24 +192,23 @@ public:
 
     void cancel() override final { pool_.cancel(); }
 
-    result_with_message<std::int64_t> create_user(
+    asio::awaitable<result_with_message<std::int64_t>> create_user(
         std::string_view username,
         std::string_view email,
-        std::string_view hashed_password,
-        boost::asio::yield_context yield
+        std::string_view hashed_password
     ) final override
     {
-        mysql::diagnostics diag;
         error_code ec;
+        mysql::diagnostics diag;
         mysql::results result;
 
         // Get a connection
-        auto conn = pool_.async_get_connection(diag, yield[ec]);
+        mysql::pooled_connection conn = co_await pool_.async_get_connection(diag, asio::redirect_error(ec));
         if (ec)
-            return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, diag.server_message()};
 
         // Execute the insertion
-        conn->async_execute(
+        co_await conn->async_execute(
             mysql::with_params(
                 "INSERT INTO users (username, email, password) VALUES ({}, {}, {})",
                 username,
@@ -215,7 +217,7 @@ public:
             ),
             result,
             diag,
-            yield[ec]
+            asio::redirect_error(ec)
         );
 
         // Detect duplicates
@@ -224,114 +226,110 @@ public:
             // As per MySQL documentation, error messages for er_dup_entry
             // are formatted as: Duplicate entry '%s' for key %d
             if (diag.server_message().ends_with("'users.username'"))
-                return error_with_message{errc::username_exists, ""};
+                co_return error_with_message{errc::username_exists, ""};
             else if (diag.server_message().ends_with("'users.email'"))
-                return error_with_message{errc::email_exists, ""};
+                co_return error_with_message{errc::email_exists, ""};
         }
 
         // Unknown errors
         if (ec)
-            return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, diag.server_message()};
 
         // Done. MySQL reports last_insert_id as an uint64_t to be able to handle
         // any column type, but our id field is defined as BIGINT (int64).
         // The connection is returned to the pool automatically. The statement
         // is deallocated automatically by the connection pool.
-        return static_cast<std::int64_t>(result.last_insert_id());
+        co_return static_cast<std::int64_t>(result.last_insert_id());
     }
 
-    result_with_message<auth_user> get_user_by_email(std::string_view email, boost::asio::yield_context yield)
-        final override
+    asio::awaitable<result_with_message<auth_user>> get_user_by_email(std::string_view email) final override
     {
         mysql::diagnostics diag;
         error_code ec;
 
         // Get a connection
-        auto conn = pool_.async_get_connection(diag, yield[ec]);
+        auto conn = co_await pool_.async_get_connection(diag, asio::redirect_error(ec));
         if (ec)
-            return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, diag.server_message()};
 
         // static_results requires that SQL field names
         // match with C++ struct field names, so we use SQL aliases
         mysql::static_results<auth_user> result;
-        conn->async_execute(
+        co_await conn->async_execute(
             mysql::with_params("SELECT id, password AS hashed_password FROM users WHERE email = {}", email),
             result,
             diag,
-            yield[ec]
+            asio::redirect_error(ec)
         );
         if (ec)
-            return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, diag.server_message()};
 
         // Result.
         // The connection is returned to the pool automatically. The statement
         // is deallocated automatically by the connection pool.
         if (result.rows().empty())
-            return error_with_message{errc::not_found, ""};
-        return std::move(result.rows()[0]);
+            co_return error_with_message{errc::not_found, ""};
+        co_return std::move(result.rows()[0]);
     }
 
-    result_with_message<user> get_user_by_id(std::int64_t user_id, boost::asio::yield_context yield)
-        final override
+    asio::awaitable<result_with_message<user>> get_user_by_id(std::int64_t user_id) final override
     {
         mysql::diagnostics diag;
         error_code ec;
 
         // Get a connection
-        auto conn = pool_.async_get_connection(diag, yield[ec]);
+        auto conn = co_await pool_.async_get_connection(diag, asio::redirect_error(ec));
         if (ec)
-            return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, diag.server_message()};
 
         // Run the query
         mysql::static_results<user> result;
-        conn->async_execute(
+        co_await conn->async_execute(
             mysql::with_params("SELECT id, username  FROM users WHERE id = {}", user_id),
             result,
             diag,
-            yield[ec]
+            asio::redirect_error(ec)
         );
         if (ec)
-            return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, diag.server_message()};
 
         // Result.
         // The connection is returned to the pool automatically. The statement
         // is deallocated automatically by the connection pool.
         if (result.rows().empty())
-            return error_with_message{errc::not_found, ""};
-        return std::move(result.rows()[0]);
+            co_return error_with_message{errc::not_found, ""};
+        co_return std::move(result.rows()[0]);
     }
 
-    result_with_message<username_map> get_usernames(
-        boost::span<const std::int64_t> user_ids,
-        boost::asio::yield_context yield
+    asio::awaitable<result_with_message<username_map>> get_usernames(std::span<const std::int64_t> user_ids
     ) final override
     {
         // Check that we have one user ID, at least.
         // Otherwise, the generated query may not be valid.
         if (user_ids.empty())
-            return {};
+            co_return result_with_message<username_map>{};
 
         mysql::diagnostics diag;
         error_code ec;
 
         // Get a connection
-        auto conn = pool_.async_get_connection(diag, yield[ec]);
+        auto conn = co_await pool_.async_get_connection(diag, asio::redirect_error(ec));
         if (ec)
-            return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, diag.server_message()};
 
         // Execute the query.
         // We can safely do this because we checked that user_ids is not empty.
         // Otherwise, the client-side generated query wouldn't be valid.
         using row_t = std::tuple<std::int64_t, std::string>;
         mysql::static_results<row_t> result;
-        conn->async_execute(
+        co_await conn->async_execute(
             mysql::with_params("SELECT id, username FROM users WHERE id IN ({})", user_ids),
             result,
             diag,
-            yield[ec]
+            asio::redirect_error(ec)
         );
         if (ec)
-            return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, diag.server_message()};
 
         // We didn't do anything modifying the connection state, so we can
         // explicitly return it, indicating that no reset is required.
@@ -343,13 +341,13 @@ public:
             res.insert({std::get<0>(elm), std::move(std::get<1>(elm))});
 
         // Done
-        return res;
+        co_return res;
     }
 };
 
 }  // namespace
 
-std::unique_ptr<mysql_client> chat::create_mysql_client(boost::asio::any_io_executor ex)
+std::unique_ptr<mysql_client> chat::create_mysql_client(asio::any_io_executor ex)
 {
     return std::unique_ptr<mysql_client>{new mysql_client_impl(std::move(ex))};
 }

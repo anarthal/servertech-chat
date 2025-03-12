@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023-2024 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+// Copyright (c) 2023-2025 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -9,12 +9,11 @@
 #define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_MYSQL_CLIENT_HPP
 
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/spawn.hpp>
-#include <boost/core/span.hpp>
+#include <boost/asio/awaitable.hpp>
 #include <boost/variant2/variant.hpp>
 
 #include <memory>
-#include <string>
+#include <span>
 #include <string_view>
 
 #include "business_types.hpp"
@@ -33,7 +32,7 @@ public:
 
     // Executes DB setup code (DDL statements).
     // Should be called once during application startup.
-    virtual error_with_message setup_db(boost::asio::yield_context yield) = 0;
+    virtual boost::asio::awaitable<error_with_message> setup_db() = 0;
 
     // Starts the MySQL connection pool task, in detached mode. This must be called once
     // to allow other operations to make progress and keep the reconnection loop
@@ -47,33 +46,26 @@ public:
     // Returns the ID of the newly created object on success.
     // Retuns errc::username_exists or errc::email_exists if the passed username
     // or email already exist.
-    virtual result_with_message<std::int64_t> create_user(
+    virtual boost::asio::awaitable<result_with_message<std::int64_t>> create_user(
         std::string_view username,
         std::string_view email,
-        std::string_view hashed_password,
-        boost::asio::yield_context yield
+        std::string_view hashed_password
     ) = 0;
 
     // Retrieves a user's authentication details, given the user's email.
     // Returns errc::not_found if the user doesn't exist.
-    virtual result_with_message<auth_user> get_user_by_email(
-        std::string_view email,
-        boost::asio::yield_context yield
+    virtual boost::asio::awaitable<result_with_message<auth_user>> get_user_by_email(std::string_view email
     ) = 0;
 
     // Retrieves a user by ID.
     // Returns errc::not_found if it doesn't exist.
-    virtual result_with_message<user> get_user_by_id(
-        std::int64_t user_id,
-        boost::asio::yield_context yield
-    ) = 0;
+    virtual boost::asio::awaitable<result_with_message<user>> get_user_by_id(std::int64_t user_id) = 0;
 
     // Retrieves the usernames associated to the passed user_ids.
     // The lookup is performed in batch, for efficiency reasons.
     // If a user ID doesn't exist, it's excluded from the returned map.
-    virtual result_with_message<username_map> get_usernames(
-        boost::span<const std::int64_t> user_ids,
-        boost::asio::yield_context yield
+    virtual boost::asio::awaitable<result_with_message<username_map>> get_usernames(
+        std::span<const std::int64_t> user_ids
     ) = 0;
 };
 

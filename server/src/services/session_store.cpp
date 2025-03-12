@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023-2024 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+// Copyright (c) 2023-2025 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -18,6 +18,7 @@
 #include "util/base64.hpp"
 
 using namespace chat;
+namespace asio = boost::asio;
 
 static constexpr std::size_t session_id_size = 16;  // bytes
 
@@ -48,10 +49,9 @@ static std::string get_redis_key(std::string_view session_id)
 
 using namespace chat;
 
-result_with_message<std::string> session_store::generate_session_id(
+asio::awaitable<result_with_message<std::string>> session_store::generate_session_id(
     std::int64_t user_id,
-    std::chrono::seconds session_duration,
-    boost::asio::yield_context yield
+    std::chrono::seconds session_duration
 )
 {
     // Convert the user ID to string
@@ -64,22 +64,21 @@ result_with_message<std::string> session_store::generate_session_id(
         auto redis_key = get_redis_key(id);
 
         // Try to insert it
-        auto err = redis_->set_nonexisting_key(redis_key, user_id_str, session_duration, yield);
+        auto err = co_await redis_->set_nonexisting_key(redis_key, user_id_str, session_duration);
 
         // If we were successful, done. If we got a conflict (unlikely), generate a new ID.
         // Exit on unknown errors
         if (!err.ec)
-            return id;
+            co_return id;
         else if (err.ec != errc::already_exists)
-            return err;
+            co_return err;
     }
 }
 
-result_with_message<std::int64_t> session_store::get_user_by_session(
-    std::string_view session_id,
-    boost::asio::yield_context yield
+asio::awaitable<result_with_message<std::int64_t>> session_store::get_user_by_session(
+    std::string_view session_id
 )
 {
     auto redis_key = get_redis_key(session_id);
-    return redis_->get_int_key(redis_key, yield);
+    co_return co_await redis_->get_int_key(redis_key);
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023-2024 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+// Copyright (c) 2023-2025 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -10,7 +10,6 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <string>
 
 #include "error.hpp"
 #include "listener.hpp"
@@ -18,6 +17,7 @@
 #include "services/redis_client.hpp"
 #include "shared_state.hpp"
 
+namespace asio = boost::asio;
 using namespace chat;
 
 int main(int argc, char* argv[])
@@ -38,17 +38,17 @@ int main(int argc, char* argv[])
 
     // An event loop, where the application will run. The server is single-
     // threaded, so we set the concurrency hint to 1
-    boost::asio::io_context ioc{1};
+    asio::io_context ioc{1};
 
     // Singleton objects shared by all connections
     auto st = std::make_shared<shared_state>(doc_root, ioc.get_executor());
 
     // The physical endpoint where our server will listen
-    boost::asio::ip::tcp::endpoint listening_endpoint{boost::asio::ip::make_address(ip), port};
+    asio::ip::tcp::endpoint listening_endpoint{asio::ip::make_address(ip), port};
 
     // A signal_set allows us to intercept SIGINT and SIGTERM and
     // exit gracefully
-    boost::asio::signal_set signals{ioc.get_executor(), SIGINT, SIGTERM};
+    asio::signal_set signals{ioc.get_executor(), SIGINT, SIGTERM};
 
     // Launch the Redis connection
     st->redis().start_run();

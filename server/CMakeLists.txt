@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023-2024 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+# Copyright (c) 2023-2025 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
 #
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -8,9 +8,8 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(servertech_chat)
 
-# Boost.Context is required to run stackful coroutines
 # Boost.Charconv is required by Boost.MySQL
-find_package(Boost REQUIRED COMPONENTS headers context json regex url charconv)
+find_package(Boost REQUIRED COMPONENTS headers json regex url charconv)
 
 # OpenSSL is required by Boost.Redis
 find_package(OpenSSL REQUIRED)
@@ -64,7 +63,6 @@ target_link_libraries(
     servertech_chat
     PUBLIC
     Boost::headers
-    Boost::context
     Boost::json
     Boost::regex
     Boost::url
@@ -80,6 +78,13 @@ target_include_directories(
     servertech_chat
     PUBLIC
     include
+)
+
+# Coroutines require C++20
+target_compile_features(
+    servertech_chat
+    PUBLIC
+    cxx_std_20
 )
 
 # These are required because we're building Boost.Asio, Boost.Beast and Boost.MySQL

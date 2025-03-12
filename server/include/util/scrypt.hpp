@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023-2024 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+// Copyright (c) 2023-2025 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -8,11 +8,10 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_UTIL_SCRYPT_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_UTIL_SCRYPT_HPP
 
-#include <boost/core/span.hpp>
-
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -56,19 +55,19 @@ result<scrypt_data> scrypt_phc_parse(std::string_view from);
 // Serializes the given params, salt and hash to a PHC string
 std::string scrypt_phc_serialize(
     scrypt_params params,
-    boost::span<const unsigned char, salt_size> salt,
-    boost::span<const unsigned char, hash_size> hash
+    std::span<const unsigned char, salt_size> salt,
+    std::span<const unsigned char, hash_size> hash
 );
 
 // Hashes the given password with the given salt and params
 std::array<unsigned char, hash_size> scrypt_generate_hash(
     std::string_view passwd,
     scrypt_params params,
-    boost::span<const unsigned char> salt
+    std::span<const unsigned char> salt
 );
 
 // Compares two blobs, in a way that prevents timing attacks
-bool time_safe_equals(boost::span<const unsigned char> s1, boost::span<const unsigned char> s2) noexcept;
+bool time_safe_equals(std::span<const unsigned char> s1, std::span<const unsigned char> s2) noexcept;
 
 }  // namespace chat
 

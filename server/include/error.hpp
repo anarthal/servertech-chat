@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023-2024 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+// Copyright (c) 2023-2025 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -104,6 +104,13 @@ struct is_error_code_enum<chat::errc>
     {                                                                                            \
         static constexpr auto loc = BOOST_CURRENT_LOCATION;                                      \
         return ::chat::error_with_message{::chat::error_code(::chat::error_code(e), &loc), msg}; \
+    }
+
+// Same, but for co_return
+#define CHAT_CO_RETURN_ERROR_WITH_MESSAGE(e, msg)                                                   \
+    {                                                                                               \
+        static constexpr auto loc = BOOST_CURRENT_LOCATION;                                         \
+        co_return ::chat::error_with_message{::chat::error_code(::chat::error_code(e), &loc), msg}; \
     }
 
 #endif

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023-2024 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+// Copyright (c) 2023-2025 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -8,6 +8,7 @@
 #include "services/pubsub_service.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/test/unit_test.hpp>
 
@@ -16,6 +17,7 @@
 #include <string_view>
 
 using namespace chat;
+namespace asio = boost::asio;
 
 BOOST_AUTO_TEST_SUITE(pubsub_service_)
 
@@ -24,9 +26,10 @@ struct stub_subscriber final : public message_subscriber
 {
     std::vector<std::string> messages;
 
-    void on_message(std::string_view message, boost::asio::yield_context yield) override final
+    asio::awaitable<void> on_message(std::string_view message) override final
     {
         messages.emplace_back(message);
+        co_return;
     }
 };
 
@@ -36,7 +39,7 @@ using string_vector = std::vector<std::string>;
 
 struct fixture
 {
-    boost::asio::io_context ctx;
+    asio::io_context ctx;
     std::unique_ptr<pubsub_service> pubsub{create_pubsub_service(ctx.get_executor())};
     std::shared_ptr<stub_subscriber> sub1{create_subscriber()};
     std::shared_ptr<stub_subscriber> sub2{create_subscriber()};

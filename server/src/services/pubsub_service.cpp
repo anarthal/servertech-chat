@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023-2024 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+// Copyright (c) 2023-2025 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -8,8 +8,8 @@
 #include "services/pubsub_service.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <boost/core/span.hpp>
 #include <boost/multi_index/indexed_by.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/member.hpp>
@@ -17,10 +17,12 @@
 #include <boost/multi_index_container.hpp>
 
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 
 using namespace chat;
+namespace asio = boost::asio;
 
 namespace {
 
@@ -57,14 +59,14 @@ class pubsub_service_impl final : public pubsub_service
     // clang-format on
 
     container_type ct_;
-    boost::asio::any_io_executor ex_;
+    asio::any_io_executor ex_;
 
 public:
-    pubsub_service_impl(boost::asio::any_io_executor ex) : ex_(std::move(ex)) {}
+    pubsub_service_impl(asio::any_io_executor ex) : ex_(std::move(ex)) {}
 
     void subscribe(
         std::shared_ptr<message_subscriber> subscriber,
-        boost::span<const std::string_view> topic_ids
+        std::span<const std::string_view> topic_ids
     ) override final
     {
         // Create a subscription for each requested topic
@@ -92,12 +94,10 @@ public:
         // Launch the subscriber callbacks in parallel
         for (auto it = first; it != last; ++it)
         {
-            boost::asio::spawn(
+            asio::co_spawn(
                 ex_,
-                [subs = it->subscriber, msg_ptr](boost::asio::yield_context yield) {
-                    subs->on_message(*msg_ptr, yield);
-                },
-                boost::asio::detached
+                [subs = it->subscriber, msg_ptr] { return subs->on_message(*msg_ptr); },
+                asio::detached
             );
         }
     }
@@ -105,7 +105,7 @@ public:
 
 }  // namespace
 
-std::unique_ptr<pubsub_service> chat::create_pubsub_service(boost::asio::any_io_executor ex)
+std::unique_ptr<pubsub_service> chat::create_pubsub_service(asio::any_io_executor ex)
 {
     return std::unique_ptr<pubsub_service>{new pubsub_service_impl(std::move(ex))};
 }
