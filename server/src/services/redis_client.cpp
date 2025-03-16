@@ -13,6 +13,7 @@
 #include <boost/asio/redirect_error.hpp>
 #include <boost/redis/adapter/result.hpp>
 #include <boost/redis/connection.hpp>
+#include <boost/redis/logger.hpp>
 #include <boost/redis/request.hpp>
 #include <boost/redis/response.hpp>
 
@@ -46,7 +47,7 @@ public:
         redis::config cfg;
         cfg.addr.host = std::move(host);
         cfg.health_check_interval = std::chrono::seconds::zero();  // Disable health checks for now
-        conn_.async_run(cfg, {}, asio::detached);
+        conn_.async_run(cfg, redis::logger::level::crit, asio::detached);
     }
 
     void cancel() final override { conn_.cancel(); }
@@ -108,12 +109,18 @@ public:
         error_code ec;
         co_await conn_.async_exec(req, res, asio::redirect_error(ec));
         if (ec)
+        {
+            std::cout << "Redis error I: " << ec << ": " << ec.message() << std::endl;
             co_return error_with_message{ec};
+        }
 
         // Verify success. If any of the nodes contains a Redis error (e.g.
         // because we sent an invalid command), this will contain an error.
         if (res.has_error())
+        {
+            std::cout << "Redis error II: " << res.error().diagnostic << std::endl;
             CHAT_CO_RETURN_ERROR_WITH_MESSAGE(errc::redis_command_failed, std::move(res).error().diagnostic)
+        }
 
         // Parse the response
         auto result = parse_batch_xadd_response(*res);
