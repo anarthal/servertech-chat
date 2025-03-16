@@ -84,7 +84,7 @@ A MySQL server is also required. Again, we recommend using Docker:
 
 [code,bash]
 ----
-docker run -d --name mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:8
+docker run -d --name mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -p 3306:3306 mysql:8
 ----
 
 Now you can build your server using CMake (possibly from your IDE) by running
