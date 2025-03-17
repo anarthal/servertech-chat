@@ -30,10 +30,6 @@ class mysql_client
 public:
     virtual ~mysql_client() {}
 
-    // Executes DB setup code (DDL statements).
-    // Should be called once during application startup.
-    virtual boost::asio::awaitable<error_with_message> setup_db() = 0;
-
     // Starts the MySQL connection pool task, in detached mode. This must be called once
     // to allow other operations to make progress and keep the reconnection loop
     // running
