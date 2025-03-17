@@ -8,7 +8,7 @@
 #
 # Build the server
 #
-FROM alpine:3.20.3 AS server-builder-base
+FROM alpine:3.21.3 AS server-builder-base
 
 # Packages
 RUN apk update && \
@@ -86,7 +86,7 @@ RUN npm run test
 #
 # Runtime image
 #
-FROM alpine:3.20.3
+FROM alpine:3.21.3
 RUN apk add openssl icu libstdc++ curl
 COPY --from=server-builder \
     /opt/boost/lib/libboost_container.so* \
