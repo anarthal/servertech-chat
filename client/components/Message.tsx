@@ -26,7 +26,7 @@ export const OtherUserMessage = ({
         <p className="m-0 pt-1 text-sm">{username}</p>
       </div>
       <div className="flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2">
-        <p className="m-0">{content}</p>
+        <p className="m-0 break-all">{content}</p>
         <p
           className="m-0 pb-2 pr-2 text-xs text-right"
           style={{ color: "var(--boost-grey)" }}
@@ -51,7 +51,7 @@ export const MyMessage = ({
     <div className="flex flex-row pt-3 pb-3">
       <div className="flex-[4]"></div>
       <div className="flex-[6] bg-green-100 rounded-lg pt-4 pl-5 pr-2">
-        <p className="m-0">{content}</p>
+        <p className="m-0 break-all">{content}</p>
         <p
           className="m-0 pb-2 pr-2 text-xs text-right"
           style={{ color: "var(--boost-grey)" }}
