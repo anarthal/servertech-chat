@@ -32,7 +32,6 @@ exports[`EmailInput Invalid email 1`] = `
         name="email"
         required=""
         type="email"
-        value=""
       />
     </div>
     <p
@@ -76,7 +75,6 @@ exports[`EmailInput Success 1`] = `
         name="email"
         required=""
         type="email"
-        value=""
       />
     </div>
   </div>

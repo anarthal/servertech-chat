@@ -2,8 +2,8 @@
 # Get the source code
 mkdir ~/boost-src
 cd ~/boost-src
-wget -q https://archives.boost.io/beta/1.87.0.beta1/source/boost_1_87_0_b1_rc2.tar.gz
-tar -xf boost_1_87_0_b1_rc2.tar.gz
+wget -q https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz
+tar -xf boost_1_87_0.tar.gz
 cd boost_1_87_0
 
 # Build and install. Make sure you've got write access to /opt/boost,
