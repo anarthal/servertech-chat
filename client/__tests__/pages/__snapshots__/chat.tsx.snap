@@ -89,7 +89,7 @@ exports[`chat page ChatScreen component 1`] = `
             class="flex-[6] bg-green-100 rounded-lg pt-4 pl-5 pr-2"
           >
             <p
-              class="m-0"
+              class="m-0 break-all"
             >
               Message 2 wasm
             </p>
@@ -121,7 +121,7 @@ exports[`chat page ChatScreen component 1`] = `
             class="flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2"
           >
             <p
-              class="m-0"
+              class="m-0 break-all"
             >
               Message 1 wasm
             </p>
