@@ -31,7 +31,6 @@ exports[`UsernameInput Success 1`] = `
         name="username"
         required=""
         type="text"
-        value=""
       />
     </div>
   </div>
@@ -70,7 +69,6 @@ exports[`UsernameInput Username too short 1`] = `
         name="username"
         required=""
         type="text"
-        value=""
       />
     </div>
     <p

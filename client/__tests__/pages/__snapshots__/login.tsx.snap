@@ -98,7 +98,6 @@ exports[`login page Snapshot test 1`] = `
                       name="email"
                       required=""
                       type="email"
-                      value=""
                     />
                   </div>
                 </div>
@@ -131,10 +130,9 @@ exports[`login page Snapshot test 1`] = `
                       name="password"
                       required=""
                       type="password"
-                      value=""
                     />
                     <button
-                      class="MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium css-aixiz9-MuiButtonBase-root-MuiIconButton-root"
+                      class="MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium css-53g0n7-MuiButtonBase-root-MuiIconButton-root"
                       role="button"
                       tabindex="0"
                       type="button"
@@ -157,7 +155,7 @@ exports[`login page Snapshot test 1`] = `
                   class="pt-8 flex justify-center"
                 >
                   <button
-                    class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-1abvrni-MuiButtonBase-root-MuiButton-root"
+                    class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-74d805-MuiButtonBase-root-MuiButton-root"
                     tabindex="0"
                     type="submit"
                   >
