@@ -40,7 +40,7 @@ export default function MessageInputBar({
       >
         <input
           type="text"
-          className="flex-1 text-xl pl-4 pr-4 pt-2 pb-2 border-0 rounded-xl"
+          className="flex-1 text-xl pl-4 pr-4 pt-2 pb-2 border-0 rounded-xl bg-white"
           placeholder="Type a message..."
           ref={inputRef}
         />
