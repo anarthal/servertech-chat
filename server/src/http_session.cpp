@@ -47,18 +47,26 @@ using namespace chat;
 
 namespace {
 
+// The function signature of endpoint handlers
 using handler_fn = asio::awaitable<http::message_generator> (*)(request_context&, shared_state&);
 
+// Identifies a single endpoint that the client can call
 struct api_endpoint
 {
+    // The request path.
     std::string_view path;
+
+    // The request method. If several methods are allowed for the same path,
+    // create several api_endpoint objects with the same path but different methods.
     http::verb method;
+
+    // The function to invoke when a client requests this endpoint.
     handler_fn handler;
 };
 
-// If any endpoint needs more than one method, add another line with the same
-// path and a different method and handler. Endpoints with the same path should
-// be contiguous in the endpoints array.
+// All the endpoints that our application supports.
+// Endpoint objects with the same path should be contiguous.
+// Actual paths are prefixed by /api, which is removed before looking up in this table.
 constexpr api_endpoint endpoints[] = {
     {"/create-account", http::verb::post, handle_create_account},
     {"/login",          http::verb::post, handle_login         },
