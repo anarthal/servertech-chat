@@ -22,6 +22,6 @@ services:
     image: "redis:7.4.2-alpine"
     command: ["redis-server", "--appendonly", "yes"]
   mysql:
-    image: "mysql:8.4.4"
+    image: "mysql:9.2.0"
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
