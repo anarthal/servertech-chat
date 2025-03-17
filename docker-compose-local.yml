@@ -8,23 +8,18 @@
 # This file is used during development and testing, not for production
 
 services:
-  cppserver:
-    build: .
-    ports:
-      - "8080:80"
-    environment:
-      - REDIS_HOST=redis
-      - MYSQL_HOST=mysql
-    depends_on:
-      - redis
-      - mysql
   redis:
     image: "redis:7.4.2-alpine"
     command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+
   mysql:
     image: "mysql:9.2.0"
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
       - MYSQL_PASSWORD=temp_password
+    ports:
+      - "3306:3306"
     volumes:
       - "./server/tools/db_setup.sql:/docker-entrypoint-initdb.d/db_setup.sql"
