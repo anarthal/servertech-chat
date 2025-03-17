@@ -20,9 +20,12 @@
 #include <boost/beast/http/verb.hpp>
 #include <boost/beast/websocket/error.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/url/url.hpp>
 #include <boost/variant2/variant.hpp>
 
+#include <algorithm>
 #include <exception>
+#include <iterator>
 #include <string_view>
 #include <utility>
 
@@ -38,10 +41,26 @@ namespace http = boost::beast::http;
 namespace asio = boost::asio;
 using namespace chat;
 
-static asio::awaitable<http::message_generator> handle_http_request_impl(
-    request_context& ctx,
-    shared_state& st
-)
+namespace {
+
+using handler_fn = asio::awaitable<http::message_generator> (*)(request_context&, shared_state&);
+
+struct api_endpoint
+{
+    std::string_view path;
+    http::verb method;
+    handler_fn handler;
+};
+
+// If any endpoint needs more than one method, add another line with the same
+// path and a different method and handler. Endpoints with the same path should
+// be contiguous in the endpoints array.
+constexpr api_endpoint endpoints[] = {
+    {"/create-account", http::verb::post, handle_create_account},
+    {"/login",          http::verb::post, handle_login         },
+};
+
+asio::awaitable<http::message_generator> handle_http_request_impl(request_context& ctx, shared_state& st)
 {
     // Attempt to parse the request target
     auto ec = ctx.parse_request_target();
@@ -49,33 +68,52 @@ static asio::awaitable<http::message_generator> handle_http_request_impl(
         co_return ctx.response().bad_request_text("Invalid request target");
     auto target = ctx.request_target();
 
-    auto segs = target.segments();
-    auto method = ctx.request_method();
+    // Normalize the URL
+    boost::urls::url normalized(target);
+    normalized.normalize();
+
+    // If the first segment is "api", the request is targeting an API endpoint.
+    // Since we normalized the URL in the previous step, we can operate
+    // on encoded entities and perform direct character comparisons
+    auto segs = target.encoded_segments();
     if (!segs.empty() && segs.front() == "api")
     {
-        // API endpoint. All endpoint handlers have the signature
-        // asio::awaitable<http::message_generator>(request_context&, shared_state&)
-        auto it = std::next(segs.begin());
-        auto seg = *it;
-        ++it;
-        if (seg == "create-account" && it == segs.end())
-        {
-            if (method == http::verb::post)
-                co_return co_await handle_create_account(ctx, st);
-            else
-                co_return ctx.response().method_not_allowed();
-        }
-        else if (seg == "login" && it == segs.end())
-        {
-            if (method == http::verb::post)
-                co_return co_await handle_login(ctx, st);
-            else
-                co_return ctx.response().method_not_allowed();
-        }
-        else
-        {
+        // Get the URL path following "/api"
+        constexpr std::string_view api_prefix = "/api";
+        assert(normalized.encoded_path().starts_with(api_prefix));
+        std::string_view endpoint_path = normalized.encoded_path().substr(api_prefix.size());
+
+        // Attempt to match one of the endpoints we have defined.
+        // Since there aren't too many, linear search works better here.
+        auto first = std::find_if(
+            std::begin(endpoints),
+            std::end(endpoints),
+            [endpoint_path](const api_endpoint& e) { return e.path == endpoint_path; }
+        );
+
+        // If the path didn't match, return a 404
+        if (first == std::end(endpoints))
             co_return ctx.response().not_found_text();
+
+        // first points to the beginning of a range of endpoints that share the same
+        // path but may have different methods. Find one with a suitable method
+        handler_fn handler = nullptr;
+        for (auto it = first; it != std::end(endpoints) && it->path == endpoint_path; ++it)
+        {
+            if (it->method == ctx.request_method())
+            {
+                handler = it->handler;
+                break;
+            }
         }
+
+        // If we didn't find any endpoint here, it means that the method that
+        // the client requested doesn't have a matching handler
+        if (handler == nullptr)
+            co_return ctx.response().method_not_allowed();
+
+        // Invoke the endpoint
+        co_return co_await handler(ctx, st);
     }
     else
     {
@@ -84,7 +122,7 @@ static asio::awaitable<http::message_generator> handle_http_request_impl(
     }
 }
 
-static asio::awaitable<http::message_generator> handle_http_request(
+asio::awaitable<http::message_generator> handle_http_request(
     http::request<http::string_body>&& req,
     shared_state& st
 )
@@ -103,6 +141,8 @@ static asio::awaitable<http::message_generator> handle_http_request(
         co_return ctx.response().internal_server_error(errc::uncaught_exception, err.what());
     }
 }
+
+}  // namespace
 
 asio::awaitable<void> chat::run_http_session(
     boost::asio::ip::tcp::socket&& socket,
