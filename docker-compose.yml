@@ -25,3 +25,7 @@ services:
     image: "mysql:9.2.0"
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_USER=servertech_user
+      - MYSQL_PASSWORD=temp_password
+    volumes:
+      - "./server/tools/db_setup.sql:/docker-entrypoint-initdb.d/db_setup.sql"
