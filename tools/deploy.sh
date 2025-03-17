@@ -23,7 +23,7 @@ sudo docker run -d \
 sudo docker run -d \
     --name mysql \
     -v /data/mysql-data:/var/lib/mysql \
-    -v /run/db_setup.sql:/docker-entrypoint-initdb.d/db_setup.sql \
+    -v $HOME/deploy/db_setup.sql:/docker-entrypoint-initdb.d/db_setup.sql \
     -e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD \
     -e MYSQL_USER=servertech_user \
     -e MYSQL_PASSWORD=$MYSQL_PASSWORD \

@@ -109,6 +109,6 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SSH_HOSTNAME }}
           REMOTE_USER: ${{ secrets.SSH_USERNAME }}
-          SOURCE: tools/deploy.sh
+          SOURCE: "tools/deploy.sh server/tools/db_setup.sql"
           TARGET: /home/${{ secrets.SSH_USERNAME }}/deploy/
           SCRIPT_AFTER: bash deploy/deploy.sh ${{ env.FULL_IMAGE }}:${{ github.sha }}
