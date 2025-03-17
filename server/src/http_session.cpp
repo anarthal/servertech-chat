@@ -8,8 +8,11 @@
 #include "http_session.hpp"
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/cancel_after.hpp>
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/redirect_error.hpp>
+#include <boost/asio/this_coro.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/http/message_generator.hpp>
@@ -26,6 +29,7 @@
 #include <algorithm>
 #include <exception>
 #include <iterator>
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -62,6 +66,8 @@ constexpr api_endpoint endpoints[] = {
 
 asio::awaitable<http::message_generator> handle_http_request_impl(request_context& ctx, shared_state& st)
 {
+    using namespace std::chrono_literals;
+
     // Attempt to parse the request target
     auto ec = ctx.parse_request_target();
     if (ec)
@@ -112,8 +118,28 @@ asio::awaitable<http::message_generator> handle_http_request_impl(request_contex
         if (handler == nullptr)
             co_return ctx.response().method_not_allowed();
 
-        // Invoke the endpoint
-        co_return co_await handler(ctx, st);
+        // Invoke the endpoint, applying a timeout to the overall database access operation.
+        // Using co_spawn allows us to use arbitrary completion tokens with our coroutines.
+        // asio::cancel_after will issue a cancellation signal after the specified
+        // deadline, making the operation fail if the deadline is exceeded.
+        // co_spawn doesn't support returning arguments that are not default-constructible,
+        // like http::message_generator, so we use an optional.
+        std::optional<http::message_generator> gen;
+        co_await asio::co_spawn(
+            // Use the same executor as the current coroutine
+            co_await asio::this_coro::executor,
+
+            // The actual coroutine to run
+            [handler, &gen, &ctx, &st]() -> asio::awaitable<void> { gen = co_await handler(ctx, st); },
+
+            // Set a timeout to the overall operation. Return an object that can be
+            // co_awaited. Equivalent to asio::cancel_after(30s, asio::deferred).
+            asio::cancel_after(30s)
+        );
+
+        // If we got here, the handler finished successfully, and the optional
+        // has been populated with the response.
+        co_return std::move(gen).value();
     }
     else
     {
