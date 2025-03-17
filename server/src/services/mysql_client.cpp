@@ -66,7 +66,7 @@ mysql::pool_params get_pool_params()
         .server_address = mysql::host_and_port{getenv_or("MYSQL_HOST", "localhost")},
 
         // The username to log in as
-        .username = getenv_or("MYSQL_USERNAME", "servertech_user"),
+        .username = getenv_or("MYSQL_USER", "servertech_user"),
 
         // The password. This one
         .password = getenv_or("MYSQL_PASSWORD", "temp_password"),
