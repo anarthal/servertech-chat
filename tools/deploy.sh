@@ -15,9 +15,27 @@ sudo docker container prune -f
 sudo docker network rm chat-net || echo "Network does not exist"
 
 # Run our application
-sudo docker run -d --name redis -v /data/redis-data:/data redis:alpine redis-server --appendonly yes
-sudo docker run -d --name mysql -v /data/mysql-data:/var/lib/mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:8.1.0
-sudo docker run -d -p 80:80 -e REDIS_HOST=redis -e MYSQL_HOST=mysql --name cppserver $1
+sudo docker run -d \
+    --name redis \
+    -v /data/redis-data:/data redis:alpine \
+    redis-server \
+    --appendonly yes
+sudo docker run -d \
+    --name mysql \
+    -v /data/mysql-data:/var/lib/mysql \
+    -v /run/db_setup.sql:/docker-entrypoint-initdb.d/db_setup.sql \
+    -e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD \
+    -e MYSQL_USER=servertech_user \
+    -e MYSQL_PASSWORD=$MYSQL_PASSWORD \
+    mysql:9.2.0
+sudo docker run -d \
+    --name cppserver \
+    -p 80:80 \
+    -e REDIS_HOST=redis \
+    -e MYSQL_HOST=mysql \
+    -e MYSQL_USER=servertech_user \
+    -e MYSQL_PASSWORD=$MYSQL_PASSWORD \
+    $1
 sudo docker network create chat-net
 sudo docker network connect chat-net redis
 sudo docker network connect chat-net mysql
