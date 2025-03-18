@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import boostLogo from "@/public/boost.jpg";
-import { ArrowBack } from "@mui/icons-material";
+import { ArrowBack, GitHub } from "@mui/icons-material";
 
 // The common Header with the Boost logo shown in all pages
 
@@ -10,26 +10,19 @@ const links = [
   { text: "Docs", href: "https://anarthal.github.io/servertech-chat/" },
 ];
 
-export default function Header({
-  showArrow,
-  onArrowClick = undefined,
-}: {
-  showArrow: boolean;
-  onArrowClick?: () => void;
-}) {
+const BoostLogo = ({ height }: { height: number }) => {
   return (
-    <div className="flex m-3">
-      {showArrow && (
-        <div onClick={onArrowClick} className="md:hidden">
-          <ArrowBack />
-        </div>
-      )}
-      <Image
-        src={boostLogo}
-        height={60}
-        alt="Boost logo"
-        className="max-md:hidden"
-      ></Image>
+    <a href="https://www.boost.org/">
+      <Image src={boostLogo} height={height} alt="Boost logo"></Image>
+    </a>
+  );
+};
+
+// Header for large screens
+const LargeHeader = () => {
+  return (
+    <div className="flex m-3 max-md:hidden">
+      <BoostLogo height={60} />
       <div className="flex-1 flex justify-end align-middle max-md:hidden">
         {links.map(({ text, href }) => (
           <div key={href} className="flex flex-col justify-center pr-12 pl-12">
@@ -40,5 +33,49 @@ export default function Header({
         ))}
       </div>
     </div>
+  );
+};
+
+// Header for small screens
+const SmallHeader = ({
+  showArrow,
+  onArrowClick = undefined,
+}: {
+  showArrow: boolean;
+  onArrowClick?: () => void;
+}) => {
+  return (
+    <div className="flex m-3 md:hidden">
+      {showArrow && (
+        <div
+          onClick={onArrowClick}
+          className="flex flex-col justify-center pr-2"
+        >
+          <ArrowBack />
+        </div>
+      )}
+      <div className="flex flex-1 justify-between">
+        <BoostLogo height={40} />
+        <a href="https://github.com/anarthal/servertech-chat" className="pl-2">
+          <GitHub style={{ width: "40px", height: "40px" }} />
+        </a>
+      </div>
+    </div>
+  );
+};
+
+// TODO: instead of showing both and using media queries to hide one, we could just render one
+export default function Header({
+  showArrow,
+  onArrowClick = undefined,
+}: {
+  showArrow: boolean;
+  onArrowClick?: () => void;
+}) {
+  return (
+    <>
+      <LargeHeader />
+      <SmallHeader showArrow={showArrow} onArrowClick={onArrowClick} />
+    </>
   );
 }
