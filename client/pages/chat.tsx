@@ -354,7 +354,10 @@ export default function ChatPage() {
     <>
       <Head />
       <div className="flex flex-col h-full">
-        <Header showArrow={true} onArrowClick={onBack} />
+        <Header
+          showArrow={true}
+          onArrowClick={currentRoom === null ? undefined : onBack}
+        />
         <ChatScreen
           rooms={rooms}
           currentRoom={currentRoom}

@@ -39,7 +39,7 @@ const LargeHeader = () => {
 // Header for small screens
 const SmallHeader = ({
   showArrow,
-  onArrowClick = undefined,
+  onArrowClick,
 }: {
   showArrow: boolean;
   onArrowClick?: () => void;
@@ -51,7 +51,9 @@ const SmallHeader = ({
           onClick={onArrowClick}
           className="flex flex-col justify-center pr-2"
         >
-          <ArrowBack />
+          <ArrowBack
+            color={onArrowClick === undefined ? "disabled" : undefined}
+          />
         </div>
       )}
       <div className="flex flex-1 justify-between">
