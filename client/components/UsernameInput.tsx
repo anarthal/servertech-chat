@@ -15,24 +15,26 @@ export default function UsernameInput<TFieldValues extends FieldValues>({
   className?: string;
 }) {
   return (
-    <TextField
-      variant="standard"
-      label="Username (public)"
-      required
-      inputProps={{ maxLength: 100, "aria-label": "username" }}
-      {...register(name, {
-        required: {
-          value: true,
-          message: "This field is required.",
-        },
-        minLength: {
-          value: minLength,
-          message: `Usernames should have at least ${minLength} characters.`,
-        },
-      })}
-      error={!!errorMessage}
-      helperText={errorMessage}
-      className={className}
-    />
+    <div className={className}>
+      <TextField
+        variant="standard"
+        label="Username (public)"
+        required
+        inputProps={{ maxLength: 100, "aria-label": "username" }}
+        {...register(name, {
+          required: {
+            value: true,
+            message: "This field is required.",
+          },
+          minLength: {
+            value: minLength,
+            message: `Usernames should have at least ${minLength} characters.`,
+          },
+        })}
+        error={!!errorMessage}
+        helperText={errorMessage}
+        style={{ width: "100%" }}
+      />
+    </div>
   );
 }
