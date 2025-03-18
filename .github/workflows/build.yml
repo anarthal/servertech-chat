@@ -112,7 +112,7 @@ jobs:
           SOURCE: "tools/deploy.sh server/tools/db_setup.sql"
           TARGET: /home/${{ secrets.SSH_USERNAME }}/deploy/
           SCRIPT_AFTER: |
-            export MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
-            export MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+            export MYSQL_ROOT_PASSWORD="${{ secrets.MYSQL_ROOT_PASSWORD }}"
+            export MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}"
             bash deploy/deploy.sh ${{ env.FULL_IMAGE }}:${{ github.sha }}
           SCRIPT_AFTER_REQUIRED: true
