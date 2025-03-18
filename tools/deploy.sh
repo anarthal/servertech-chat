@@ -25,6 +25,7 @@ sudo docker run -d \
     -v /data/mysql-data:/var/lib/mysql \
     -v $HOME/deploy/db_setup.sql:/docker-entrypoint-initdb.d/db_setup.sql \
     -e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD \
+    -e MYSQL_USER=servertech_user \
     -e MYSQL_PASSWORD=$MYSQL_PASSWORD \
     mysql:9.2.0
 sudo docker run -d \
