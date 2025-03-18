@@ -6,9 +6,11 @@ import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/router";
 import { CreateAccountResponse, ErrorId } from "@/lib/apiTypes";
 import "@testing-library/jest-dom";
+import useIsSmallScreen from "@/hooks/useIsSmallScreen";
 
 jest.mock("@/lib/hasAuth");
 jest.mock("@/lib/api");
+jest.mock("@/hooks/useIsSmallScreen");
 
 const mockedAuth = jest.mocked(auth);
 const mockedApi = jest.mocked(api);
@@ -22,7 +24,17 @@ describe("CreateAccountPage page", () => {
   const password = "Useruser10!";
   const username = "somenickname";
 
-  test("Snapshot test", () => {
+  test("Snapshot test with large screen", () => {
+    // @ts-ignore
+    useIsSmallScreen.mockReturnValue(false);
+    const { asFragment } = render(<CreateAccountPage />);
+
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("Snapshot test with small screen", () => {
+    // @ts-ignore
+    useIsSmallScreen.mockReturnValue(true);
     const { asFragment } = render(<CreateAccountPage />);
 
     expect(asFragment()).toMatchSnapshot();
