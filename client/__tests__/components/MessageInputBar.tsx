@@ -44,4 +44,27 @@ describe("MessageInputBar", () => {
     expect(onMessage).toHaveBeenCalledWith("another message!");
     expect(onMessage).toHaveBeenCalledTimes(1);
   });
+
+  test("send icon interactions", async () => {
+    const onMessage = jest.fn();
+    const user = userEvent.setup();
+
+    // Render
+    render(<MessageInputBar onMessage={onMessage} />);
+
+    // Type a message
+    await user.keyboard("this is a message");
+
+    // Clicking the send icon calls the callback
+    screen.getByTestId("SendIcon").parentElement.click();
+    expect(onMessage).toHaveBeenCalledWith("this is a message");
+    expect(onMessage).toHaveBeenCalledTimes(1);
+
+    // Sending the message cleared the input. We can now send another message
+    onMessage.mockReset();
+    await user.keyboard("another message!");
+    screen.getByTestId("SendIcon").parentElement.click();
+    expect(onMessage).toHaveBeenCalledWith("another message!");
+    expect(onMessage).toHaveBeenCalledTimes(1);
+  });
 });
