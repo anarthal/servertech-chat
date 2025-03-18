@@ -20,8 +20,8 @@ const BoostLogo = ({ height }: { height: number }) => {
   );
 };
 
-// Header for large screens
-const LargeHeader = () => {
+// Header for large screens. Exported for testing
+export const LargeHeader = () => {
   return (
     <div className="flex m-3">
       <BoostLogo height={60} />
@@ -38,8 +38,8 @@ const LargeHeader = () => {
   );
 };
 
-// Header for small screens
-const SmallHeader = ({
+// Header for small screens. Exported for testing
+export const SmallHeader = ({
   showArrow,
   onArrowClick,
 }: {

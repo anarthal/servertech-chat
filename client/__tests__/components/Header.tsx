@@ -1,11 +1,62 @@
 import { render, screen } from "@testing-library/react";
-import Header from "@/components/Header";
+import { SmallHeader, LargeHeader } from "@/components/Header";
 import "@testing-library/jest-dom";
 
 describe("Header", () => {
-  test("renders the page header", () => {
+  test("Small header: arrow shown", () => {
+    // Setup
+    const fn = jest.fn();
+
     // Render
-    const { asFragment } = render(<Header />);
+    const { asFragment } = render(
+      <SmallHeader showArrow={true} onArrowClick={fn} />,
+    );
+
+    // The arrow is there
+    const arrow = screen.getByTestId("ArrowBackIcon");
+    expect(arrow).toBeInTheDocument();
+
+    // Clicking the arrow triggers the function
+    arrow.parentElement.click();
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    // Snapshot test
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("Small header: arrow shown disabled when callback is undefined", () => {
+    // Render
+    const { asFragment } = render(
+      <SmallHeader showArrow={true} onArrowClick={undefined} />,
+    );
+
+    // The arrow is there
+    const arrow = screen.getByTestId("ArrowBackIcon");
+    expect(arrow).toBeInTheDocument();
+
+    // Clicking the arrow does not crash
+    arrow.parentElement.click();
+
+    // Snapshot test
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("Small header: arrow not shown", () => {
+    // Render
+    const { asFragment } = render(
+      <SmallHeader showArrow={false} onArrowClick={undefined} />,
+    );
+
+    // The arrow is not there
+    expect(screen.queryByTestId("ArrowBackIcon")).toBeNull();
+
+    // Snapshot test
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("Large header", () => {
+    // Render
+    const { asFragment } = render(<LargeHeader />);
 
     // Sanity check
     expect(screen.getByText("Source code")).toBeInTheDocument();
