@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import boostLogo from "@/public/boost.jpg";
 import { ArrowBack, GitHub } from "@mui/icons-material";
+import useIsSmallScreen from "@/hooks/useIsSmallScreen";
 
 // The common Header with the Boost logo shown in all pages
 
@@ -21,9 +22,9 @@ const BoostLogo = ({ height }: { height: number }) => {
 // Header for large screens
 const LargeHeader = () => {
   return (
-    <div className="flex m-3 max-md:hidden">
+    <div className="flex m-3">
       <BoostLogo height={60} />
-      <div className="flex-1 flex justify-end align-middle max-md:hidden">
+      <div className="flex-1 flex justify-end align-middle">
         {links.map(({ text, href }) => (
           <div key={href} className="flex flex-col justify-center pr-12 pl-12">
             <a className="no-underline text-2xl text-black" href={href}>
@@ -45,7 +46,7 @@ const SmallHeader = ({
   onArrowClick?: () => void;
 }) => {
   return (
-    <div className="flex m-3 md:hidden">
+    <div className="flex m-3">
       {showArrow && (
         <div
           onClick={onArrowClick}
@@ -66,7 +67,6 @@ const SmallHeader = ({
   );
 };
 
-// TODO: instead of showing both and using media queries to hide one, we could just render one
 export default function Header({
   showArrow,
   onArrowClick = undefined,
@@ -74,10 +74,14 @@ export default function Header({
   showArrow: boolean;
   onArrowClick?: () => void;
 }) {
+  const isSmallScreen = useIsSmallScreen();
   return (
     <>
-      <LargeHeader />
-      <SmallHeader showArrow={showArrow} onArrowClick={onArrowClick} />
+      {isSmallScreen ? (
+        <SmallHeader showArrow={showArrow} onArrowClick={onArrowClick} />
+      ) : (
+        <LargeHeader />
+      )}
     </>
   );
 }

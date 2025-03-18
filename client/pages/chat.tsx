@@ -12,6 +12,7 @@ import MessageInputBar from "@/components/MessageInputBar";
 import autoAnimate from "@formkit/auto-animate";
 import { useRouter } from "next/router";
 import { clearHasAuth } from "@/lib/hasAuth";
+import useIsSmallScreen from "@/hooks/useIsSmallScreen";
 
 // The chat screen. This component uses React state management using
 // useReducer.
@@ -178,12 +179,14 @@ export const ChatScreen = ({
   onClickRoom,
   currentUserId,
   onMessage,
+  isSmallScreen,
 }: {
   rooms: Room[];
   currentRoom: Room | null;
   currentUserId: number;
   onClickRoom: (roomId: string) => void;
   onMessage: (msg: string) => void;
+  isSmallScreen: boolean;
 }) => {
   // Animate transitions. We use this instead of useAutoAnimate because the
   // latter doesn't play well with Jest
@@ -196,60 +199,65 @@ export const ChatScreen = ({
 
   const currentRoomMessages = currentRoom?.messages || [];
 
+  // Always show the room list on big screens.
+  // Show it in small screens only if a room hasn't been selected.
+  const showRoomList = currentRoom === null || !isSmallScreen;
+
+  // Always show the messages panel on big screens.
+  // Show them in small screens only if a room has been selected.
+  const showMessages = currentRoom !== null || !isSmallScreen;
+
   return (
     <div
       className="flex-1 flex min-h-0"
       style={{ borderTop: "1px solid var(--boost-light-grey)" }}
     >
-      <div
-        className={`flex-1 flex flex-col overflow-y-scroll ${currentRoom !== null && "max-md:hidden"}`}
-        ref={roomsRef}
-      >
-        {rooms.map(({ id, name, messages }) => (
-          <RoomEntry
-            key={id}
-            id={id}
-            name={name}
-            selected={id === currentRoom?.id}
-            lastMessage={messages[0]?.content || "No messages yet"}
-            onClick={onClickRoom}
-          />
-        ))}
-      </div>
-      <div
-        className={`flex-[3] flex flex-col ${currentRoom === null && "max-md:hidden"}`}
-      >
-        <div
-          className="flex-1 flex flex-col-reverse p-5 overflow-y-scroll"
-          style={{ backgroundColor: "var(--boost-light-grey)" }}
-          ref={messagesRef}
-        >
-          {currentRoomMessages.length === 0 ? (
-            <p>No more messages to show</p>
-          ) : (
-            currentRoomMessages.map((msg) => (
-              <Message
-                key={msg.id}
-                userId={msg.user.id}
-                username={msg.user.username}
-                content={msg.content}
-                timestamp={msg.timestamp}
-                currentUserId={currentUserId}
-              />
-            ))
-          )}
+      {showRoomList && (
+        <div className="flex-1 flex flex-col overflow-y-scroll" ref={roomsRef}>
+          {rooms.map(({ id, name, messages }) => (
+            <RoomEntry
+              key={id}
+              id={id}
+              name={name}
+              selected={id === currentRoom?.id}
+              lastMessage={messages[0]?.content || "No messages yet"}
+              onClick={onClickRoom}
+            />
+          ))}
         </div>
-        <MessageInputBar onMessage={onMessage} />
-      </div>
+      )}
+
+      {showMessages && (
+        <div className="flex-[3] flex flex-col">
+          <div
+            className="flex-1 flex flex-col-reverse p-5 overflow-y-scroll"
+            style={{ backgroundColor: "var(--boost-light-grey)" }}
+            ref={messagesRef}
+          >
+            {currentRoomMessages.length === 0 ? (
+              <p>No more messages to show</p>
+            ) : (
+              currentRoomMessages.map((msg) => (
+                <Message
+                  key={msg.id}
+                  userId={msg.user.id}
+                  username={msg.user.username}
+                  content={msg.content}
+                  timestamp={msg.timestamp}
+                  currentUserId={currentUserId}
+                />
+              ))
+            )}
+          </div>
+          <MessageInputBar onMessage={onMessage} />
+        </div>
+      )}
     </div>
   );
 };
 
 // Websocket close code to signal that authentication is required
 const CODE_POLICY_VIOLATION = 1008;
-
-// Returns true if the screen is md or larger, according to tailwind
-const mediaIsMdOrGt = () => matchMedia("(width >= 48rem)").matches;
 
 // The actual component
 export default function ChatPage() {
@@ -282,31 +290,36 @@ export default function ChatPage() {
 
   const router = useRouter();
 
+  const isSmallScreen = useIsSmallScreen();
+
   // Handle server websocket messages
-  const onWebsocketMessage = useCallback((event: MessageEvent) => {
-    const { type, payload } = parseWebsocketMessage(event.data);
-    switch (type) {
-      case "hello":
-        dispatch({
-          type: "set_initial_state",
-          payload: {
-            currentUser: payload.me,
-            rooms: payload.rooms,
-            autoSelectRoom: mediaIsMdOrGt(),
-          },
-        });
-        break;
-      case "serverMessages":
-        dispatch({
-          type: "add_messages",
-          payload: {
-            roomId: payload.roomId,
-            messages: payload.messages,
-          },
-        });
-        break;
-    }
-  }, []);
+  const onWebsocketMessage = useCallback(
+    (event: MessageEvent) => {
+      const { type, payload } = parseWebsocketMessage(event.data);
+      switch (type) {
+        case "hello":
+          dispatch({
+            type: "set_initial_state",
+            payload: {
+              currentUser: payload.me,
+              rooms: payload.rooms,
+              autoSelectRoom: !isSmallScreen,
+            },
+          });
+          break;
+        case "serverMessages":
+          dispatch({
+            type: "add_messages",
+            payload: {
+              roomId: payload.roomId,
+              messages: payload.messages,
+            },
+          });
+          break;
+      }
+    },
+    [isSmallScreen],
+  );
 
   const onClose = useCallback(
     (event: CloseEvent) => {
@@ -364,6 +377,7 @@ export default function ChatPage() {
           currentUserId={state.currentUser.id}
           onClickRoom={onClickRoom}
           onMessage={onMessageTyped}
+          isSmallScreen={isSmallScreen}
         />
       </div>
     </>
