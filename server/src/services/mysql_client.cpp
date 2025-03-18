@@ -28,13 +28,12 @@
 #include <boost/mysql/static_results.hpp>
 #include <boost/mysql/with_params.hpp>
 
-#include <chrono>
+#include <cstdlib>
 #include <exception>
 #include <memory>
 #include <string>
 #include <string_view>
 
-#include "boost/mysql/connect_params.hpp"
 #include "business_types.hpp"
 #include "business_types_metadata.hpp"  // Required by static_results
 #include "error.hpp"
@@ -43,140 +42,46 @@ using namespace chat;
 namespace mysql = boost::mysql;
 namespace asio = boost::asio;
 
-// DB setup code. This is executed once at startup.
-// This should be improved when implementing
-// https://github.com/anarthal/servertech-chat/issues/11
-// password stores the PHC-formatted password, which upper character
-// limit is difficult to get right.
-static constexpr std::string_view setup_code = R"SQL(
+namespace {
 
-CREATE DATABASE IF NOT EXISTS servertech_chat;
-USE servertech_chat;
-CREATE TABLE IF NOT EXISTS users (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    password TEXT NOT NULL,
-    UNIQUE (username),
-    UNIQUE (email)
-)
-
-)SQL";
-
-// Returns the hostname to connect to. Defaults to localhost
-static std::string get_mysql_hostname()
+// Extracts the diagnostic string from a diagnostics object
+std::string get_message(const mysql::diagnostics& diag)
 {
-    const char* host_c_str = std::getenv("MYSQL_HOST");
-    return host_c_str ? host_c_str : "localhost";
+    return diag.client_message().empty() ? diag.server_message() : diag.client_message();
 }
 
-// Returns the default pool params to use.
-// This should be improved when implementing
-// https://github.com/anarthal/servertech-chat/issues/45
-static mysql::pool_params get_pool_params()
+// Returns the value of an environment variable, or default_value if it's not defined
+std::string getenv_or(const char* name, const char* default_value)
 {
-    mysql::pool_params res{
-        // The server address. We get the hostname fron an environment
+    const char* res = std::getenv(name);
+    return res == nullptr ? default_value : res;
+}
+
+// Returns the pool params to use
+mysql::pool_params get_pool_params()
+{
+    return {
+        // The server address. We get the hostname from an environment
         // variable, and use the default port.
-        mysql::host_and_port{get_mysql_hostname()},
+        .server_address = mysql::host_and_port{getenv_or("MYSQL_HOST", "localhost")},
 
         // The username to log in as
-        "root",
+        .username = "servertech_user",
 
-        // The password
-        "",
+        // The password. This one
+        .password = getenv_or("MYSQL_PASSWORD", "temp_password"),
 
         // The database to use
-        "servertech_chat",
+        .database = "servertech_chat",
     };
-
-    // Since our server will be running in the same node as the web server,
-    // we don't need any encryption
-    res.ssl = mysql::ssl_mode::disable;
-
-    return res;
 }
-
-namespace {
 
 class mysql_client_impl final : public mysql_client
 {
     mysql::connection_pool pool_;
 
-    // Functions to retrieve a MySQL connection with retries.
-    // This is only used for the connection required by setup_db.
-    asio::awaitable<result_with_message<mysql::any_connection>> get_connection_with_retries()
-    {
-        // Connection params to use. Hostname, user and password are the same.
-        // The database may not be created when we run this, so we leave it blank.
-        mysql::connect_params params{
-            mysql::host_and_port{get_mysql_hostname()},
-            "root",
-            "",
-            "",
-        };
-        params.ssl = mysql::ssl_mode::disable;
-        params.multi_queries = true;
-
-        // We use mysql::any_connection here because it's easier to use than regular mysql::connection.
-        // For instance, it manages hostname resolution automatically.
-        mysql::any_connection conn(co_await asio::this_coro::executor);
-        asio::steady_timer timer(co_await asio::this_coro::executor);
-        error_code ec;
-        mysql::diagnostics diag;
-
-        while (true)
-        {
-            // Try to connect
-            co_await conn.async_connect(params, diag, asio::redirect_error(ec));
-            if (ec)
-            {
-                // Log the error
-                log_error({ec, diag.server_message()}, "Failed to connect to mysql");
-
-                // Wait some time
-                timer.expires_after(std::chrono::seconds(2));
-                co_await timer.async_wait(asio::redirect_error(ec));
-
-                // If the timer wait errored, it was cancelled, so exit the loop
-                if (ec)
-                    co_return error_with_message{ec};
-            }
-            else
-            {
-                // We managed to get a connection
-                co_return conn;
-            }
-        }
-    }
-
 public:
     mysql_client_impl(asio::any_io_executor ex) : pool_(std::move(ex), get_pool_params()) {}
-
-    asio::awaitable<error_with_message> setup_db() final override
-    {
-        error_code ec;
-        mysql::diagnostics diag;
-        mysql::results result;
-
-        // Get a connection. Perform retries until we get a connection or
-        // we get cancelled via Ctrl-C. This provides safety against MySQL
-        // failures, which can happen if the server starts before MySQL is ready.
-        auto conn_result = co_await get_connection_with_retries();
-        if (conn_result.has_error())
-            co_return std::move(conn_result).error();
-        auto& conn = conn_result.value();
-
-        // Run setup code
-        co_await conn.async_execute(setup_code, result, diag, asio::redirect_error(ec));
-        if (ec)
-            co_return error_with_message{ec, diag.server_message()};
-
-        // Close the connection gracefully. Ignore any errors
-        co_await conn.async_close(asio::redirect_error(ec));
-
-        co_return error_with_message{};
-    }
 
     void start_run() override final
     {
@@ -205,7 +110,7 @@ public:
         // Get a connection
         mysql::pooled_connection conn = co_await pool_.async_get_connection(diag, asio::redirect_error(ec));
         if (ec)
-            co_return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, get_message(diag)};
 
         // Execute the insertion
         co_await conn->async_execute(
@@ -233,7 +138,7 @@ public:
 
         // Unknown errors
         if (ec)
-            co_return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, get_message(diag)};
 
         // Done. MySQL reports last_insert_id as an uint64_t to be able to handle
         // any column type, but our id field is defined as BIGINT (int64).
@@ -250,7 +155,7 @@ public:
         // Get a connection
         auto conn = co_await pool_.async_get_connection(diag, asio::redirect_error(ec));
         if (ec)
-            co_return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, get_message(diag)};
 
         // static_results requires that SQL field names
         // match with C++ struct field names, so we use SQL aliases
@@ -262,7 +167,7 @@ public:
             asio::redirect_error(ec)
         );
         if (ec)
-            co_return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, get_message(diag)};
 
         // Result.
         // The connection is returned to the pool automatically. The statement
@@ -280,7 +185,7 @@ public:
         // Get a connection
         auto conn = co_await pool_.async_get_connection(diag, asio::redirect_error(ec));
         if (ec)
-            co_return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, get_message(diag)};
 
         // Run the query
         mysql::static_results<user> result;
@@ -291,7 +196,7 @@ public:
             asio::redirect_error(ec)
         );
         if (ec)
-            co_return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, get_message(diag)};
 
         // Result.
         // The connection is returned to the pool automatically. The statement
@@ -315,7 +220,7 @@ public:
         // Get a connection
         auto conn = co_await pool_.async_get_connection(diag, asio::redirect_error(ec));
         if (ec)
-            co_return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, get_message(diag)};
 
         // Execute the query.
         // We can safely do this because we checked that user_ids is not empty.
@@ -329,7 +234,7 @@ public:
             asio::redirect_error(ec)
         );
         if (ec)
-            co_return error_with_message{ec, diag.server_message()};
+            co_return error_with_message{ec, get_message(diag)};
 
         // We didn't do anything modifying the connection state, so we can
         // explicitly return it, indicating that no reset is required.

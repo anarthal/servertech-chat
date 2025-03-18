@@ -72,20 +72,16 @@ yet, you need to do it manually:
 include::../tools/install-boost.sh[]
 ----
 
-You'll also need a running Redis server. The easiest way to achieve this is
-with Docker:
+You'll also need both a MySQL and a Redis server. The easiest way is to user
+Docker compose, using the `docker-compose-local.yml` file in this repo:
 
 [code,bash]
 ----
-docker run -d --name redis -p 6379:6379  redis:alpine
+docker compose -f docker-compose-local.yml up
 ----
 
-A MySQL server is also required. Again, we recommend using Docker:
-
-[code,bash]
-----
-docker run -d --name mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -p 3306:3306 mysql:8
-----
+This will run both servers using the default ports, and run the required database
+setup code.
 
 Now you can build your server using CMake (possibly from your IDE) by running
 this from the repository root:
@@ -188,3 +184,13 @@ Finally, run the tests:
 ----
 pytest
 ----
+
+=== Using your own MySQL and Redis server
+
+You can user your own MySQL server as long as you create a user named `servertech_chat`
+and run `server/tools/db_setup.sql`. The pass:[C++] server recognizes the following
+environment variables:
+
+- `MYSQL_PASSWORD`: password for the `servertech_chat` user.
+- `MYSQL_HOST`: hostname where the MySQL server is listening.
+- `REDIS_HOST`: hostname where the Redis server is listening.

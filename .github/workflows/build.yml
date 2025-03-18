@@ -87,7 +87,7 @@ jobs:
         run: |
           pip install -r test/integration/requirements.txt
           docker compose up -d --wait || (docker compose logs; exit 1)
-          pytest
+          pytest || (docker compose logs; exit 1)
           docker compose down
 
       # Push the built container to the GitHub project's container registry.
@@ -109,6 +109,10 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SSH_HOSTNAME }}
           REMOTE_USER: ${{ secrets.SSH_USERNAME }}
-          SOURCE: tools/deploy.sh
+          SOURCE: "tools/deploy.sh server/tools/db_setup.sql"
           TARGET: /home/${{ secrets.SSH_USERNAME }}/deploy/
-          SCRIPT_AFTER: bash deploy/deploy.sh ${{ env.FULL_IMAGE }}:${{ github.sha }}
+          SCRIPT_AFTER: |
+            export MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+            export MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+            bash deploy/deploy.sh ${{ env.FULL_IMAGE }}:${{ github.sha }}
+          SCRIPT_AFTER_REQUIRED: true
