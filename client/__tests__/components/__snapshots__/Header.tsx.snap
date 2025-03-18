@@ -1,21 +1,25 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Header renders the page header 1`] = `
+exports[`Header Large header 1`] = `
 <DocumentFragment>
   <div
     class="flex m-3"
   >
-    <img
-      alt="Boost logo"
-      data-nimg="1"
-      decoding="async"
-      height="60"
-      loading="lazy"
-      src="/_next/image?url=%2Fimg.jpg&w=128&q=75"
-      srcset="/_next/image?url=%2Fimg.jpg&w=64&q=75 1x, /_next/image?url=%2Fimg.jpg&w=128&q=75 2x"
-      style="color: transparent;"
-      width="60"
-    />
+    <a
+      href="https://www.boost.org/"
+    >
+      <img
+        alt="Boost logo"
+        data-nimg="1"
+        decoding="async"
+        height="60"
+        loading="lazy"
+        src="/_next/image?url=%2Fimg.jpg&w=128&q=75"
+        srcset="/_next/image?url=%2Fimg.jpg&w=64&q=75 1x, /_next/image?url=%2Fimg.jpg&w=128&q=75 2x"
+        style="color: transparent;"
+        width="60"
+      />
+    </a>
     <div
       class="flex-1 flex justify-end align-middle"
     >
@@ -39,6 +43,171 @@ exports[`Header renders the page header 1`] = `
           Docs
         </a>
       </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`Header Small header: arrow not shown 1`] = `
+<DocumentFragment>
+  <div
+    class="flex m-3"
+  >
+    <div
+      class="flex flex-1 justify-between"
+    >
+      <a
+        href="https://www.boost.org/"
+      >
+        <img
+          alt="Boost logo"
+          data-nimg="1"
+          decoding="async"
+          height="40"
+          loading="lazy"
+          src="/_next/image?url=%2Fimg.jpg&w=96&q=75"
+          srcset="/_next/image?url=%2Fimg.jpg&w=48&q=75 1x, /_next/image?url=%2Fimg.jpg&w=96&q=75 2x"
+          style="color: transparent;"
+          width="40"
+        />
+      </a>
+      <a
+        class="pl-2"
+        href="https://github.com/anarthal/servertech-chat"
+      >
+        <svg
+          aria-hidden="true"
+          class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+          data-testid="GitHubIcon"
+          focusable="false"
+          style="width: 40px; height: 40px;"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"
+          />
+        </svg>
+      </a>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`Header Small header: arrow shown 1`] = `
+<DocumentFragment>
+  <div
+    class="flex m-3"
+  >
+    <div
+      class="flex flex-col justify-center pr-2"
+    >
+      <svg
+        aria-hidden="true"
+        class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+        data-testid="ArrowBackIcon"
+        focusable="false"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"
+        />
+      </svg>
+    </div>
+    <div
+      class="flex flex-1 justify-between"
+    >
+      <a
+        href="https://www.boost.org/"
+      >
+        <img
+          alt="Boost logo"
+          data-nimg="1"
+          decoding="async"
+          height="40"
+          loading="lazy"
+          src="/_next/image?url=%2Fimg.jpg&w=96&q=75"
+          srcset="/_next/image?url=%2Fimg.jpg&w=48&q=75 1x, /_next/image?url=%2Fimg.jpg&w=96&q=75 2x"
+          style="color: transparent;"
+          width="40"
+        />
+      </a>
+      <a
+        class="pl-2"
+        href="https://github.com/anarthal/servertech-chat"
+      >
+        <svg
+          aria-hidden="true"
+          class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+          data-testid="GitHubIcon"
+          focusable="false"
+          style="width: 40px; height: 40px;"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"
+          />
+        </svg>
+      </a>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`Header Small header: arrow shown disabled when callback is undefined 1`] = `
+<DocumentFragment>
+  <div
+    class="flex m-3"
+  >
+    <div
+      class="flex flex-col justify-center pr-2"
+    >
+      <svg
+        aria-hidden="true"
+        class="MuiSvgIcon-root MuiSvgIcon-colorDisabled MuiSvgIcon-fontSizeMedium css-3nihpm-MuiSvgIcon-root"
+        data-testid="ArrowBackIcon"
+        focusable="false"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"
+        />
+      </svg>
+    </div>
+    <div
+      class="flex flex-1 justify-between"
+    >
+      <a
+        href="https://www.boost.org/"
+      >
+        <img
+          alt="Boost logo"
+          data-nimg="1"
+          decoding="async"
+          height="40"
+          loading="lazy"
+          src="/_next/image?url=%2Fimg.jpg&w=96&q=75"
+          srcset="/_next/image?url=%2Fimg.jpg&w=48&q=75 1x, /_next/image?url=%2Fimg.jpg&w=96&q=75 2x"
+          style="color: transparent;"
+          width="40"
+        />
+      </a>
+      <a
+        class="pl-2"
+        href="https://github.com/anarthal/servertech-chat"
+      >
+        <svg
+          aria-hidden="true"
+          class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+          data-testid="GitHubIcon"
+          focusable="false"
+          style="width: 40px; height: 40px;"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"
+          />
+        </svg>
+      </a>
     </div>
   </div>
 </DocumentFragment>

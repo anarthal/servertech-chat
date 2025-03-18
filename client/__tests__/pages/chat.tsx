@@ -13,6 +13,7 @@ import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/router";
 import { clearHasAuth } from "@/lib/hasAuth";
 
+jest.mock("@/hooks/useIsSmallScreen");
 jest.mock("@/lib/hasAuth");
 
 describe("chat page", () => {
@@ -64,6 +65,7 @@ describe("chat page", () => {
         currentUserId={2}
         onClickRoom={jest.fn()}
         onMessage={jest.fn()}
+        isSmallScreen={false}
       />,
     );
 
@@ -226,9 +228,9 @@ describe("chat page", () => {
       await server.connected;
       server.close({ code: 1008, reason: "", wasClean: true });
 
-      expect(useRouter().replace).toBeCalledTimes(1);
-      expect(useRouter().replace).toBeCalledWith("/login");
-      expect(clearHasAuth).toBeCalledTimes(1);
+      expect(useRouter().replace).toHaveBeenCalledTimes(1);
+      expect(useRouter().replace).toHaveBeenCalledWith("/login");
+      expect(clearHasAuth).toHaveBeenCalledTimes(1);
     });
   });
 });

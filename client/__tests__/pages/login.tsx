@@ -6,7 +6,9 @@ import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/router";
 import { ErrorId } from "@/lib/apiTypes";
 import "@testing-library/jest-dom";
+import useIsSmallScreen from "@/hooks/useIsSmallScreen";
 
+jest.mock("@/hooks/useIsSmallScreen");
 jest.mock("@/lib/hasAuth");
 jest.mock("@/lib/api");
 
@@ -21,7 +23,19 @@ describe("login page", () => {
   const email = "test@test.com";
   const password = "Useruser10!";
 
-  test("Snapshot test", () => {
+  test("Snapshot test with large screen", () => {
+    // @ts-ignore
+    useIsSmallScreen.mockReturnValue(false);
+    mockedAuth.hasAuth.mockReturnValue(false);
+
+    const { asFragment } = render(<LoginPage />);
+
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("Snapshot test with small screen", () => {
+    // @ts-ignore
+    useIsSmallScreen.mockReturnValue(true);
     mockedAuth.hasAuth.mockReturnValue(false);
 
     const { asFragment } = render(<LoginPage />);
@@ -34,9 +48,9 @@ describe("login page", () => {
 
     render(<LoginPage />);
 
-    expect(mockedAuth.hasAuth).toBeCalled();
-    expect(useRouter().replace).toBeCalledTimes(1);
-    expect(useRouter().replace).toBeCalledWith("/chat");
+    expect(mockedAuth.hasAuth).toHaveBeenCalled();
+    expect(useRouter().replace).toHaveBeenCalledTimes(1);
+    expect(useRouter().replace).toHaveBeenCalledWith("/chat");
   });
 
   test("Login success", async () => {
@@ -54,13 +68,13 @@ describe("login page", () => {
     await user.click(screen.getByText("Log me in!"));
 
     // We sent the data to the server
-    expect(mockedApi.login).toBeCalledTimes(1);
-    expect(mockedApi.login).toBeCalledWith({ email, password });
+    expect(mockedApi.login).toHaveBeenCalledTimes(1);
+    expect(mockedApi.login).toHaveBeenCalledWith({ email, password });
 
     // We stored the auth state and navigated
-    expect(mockedAuth.setHasAuth).toBeCalled();
-    expect(useRouter().push).toBeCalledTimes(1);
-    expect(useRouter().push).toBeCalledWith("/chat");
+    expect(mockedAuth.setHasAuth).toHaveBeenCalled();
+    expect(useRouter().push).toHaveBeenCalledTimes(1);
+    expect(useRouter().push).toHaveBeenCalledWith("/chat");
   });
 
   test("Login failure", async () => {
@@ -78,14 +92,14 @@ describe("login page", () => {
     await user.click(screen.getByText("Log me in!"));
 
     // We sent the data to the server
-    expect(mockedApi.login).toBeCalledTimes(1);
-    expect(mockedApi.login).toBeCalledWith({ email, password });
+    expect(mockedApi.login).toHaveBeenCalledTimes(1);
+    expect(mockedApi.login).toHaveBeenCalledWith({ email, password });
 
     // We showed an error message and did not navigate
     expect(
       screen.getByText("Invalid username or password."),
     ).toBeInTheDocument();
-    expect(mockedAuth.setHasAuth).not.toBeCalled();
-    expect(useRouter().push).not.toBeCalled();
+    expect(mockedAuth.setHasAuth).not.toHaveBeenCalled();
+    expect(useRouter().push).not.toHaveBeenCalled();
   });
 });

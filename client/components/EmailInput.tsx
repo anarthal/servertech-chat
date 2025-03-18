@@ -16,25 +16,27 @@ export default function EmailInput<TFieldValues extends FieldValues>({
   className?: string;
 }) {
   return (
-    <TextField
-      variant="standard"
-      label="Email"
-      required
-      inputProps={{ maxLength: 100, "aria-label": "email" }}
-      type="email"
-      {...register(name, {
-        required: {
-          value: true,
-          message: "This field is required.",
-        },
-        pattern: {
-          value: emailRegex,
-          message: "Please enter a valid email.",
-        },
-      })}
-      error={!!errorMessage}
-      helperText={errorMessage}
-      className={className}
-    />
+    <div className={className}>
+      <TextField
+        variant="standard"
+        label="Email"
+        required
+        inputProps={{ maxLength: 100, "aria-label": "email" }}
+        type="email"
+        {...register(name, {
+          required: {
+            value: true,
+            message: "This field is required.",
+          },
+          pattern: {
+            value: emailRegex,
+            message: "Please enter a valid email.",
+          },
+        })}
+        error={!!errorMessage}
+        helperText={errorMessage}
+        style={{ width: "100%" }}
+      />
+    </div>
   );
 }

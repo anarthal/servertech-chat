@@ -21,20 +21,21 @@ export const OtherUserMessage = ({
 }) => {
   return (
     <div className="flex flex-row pt-3 pb-3">
-      <div className="pr-5 flex flex-col justify-end">
-        <NameAvatar name={username} />
-        <p className="m-0 pt-1 text-sm">{username}</p>
-      </div>
-      <div className="flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2">
+      <div className="max-w-11/12 md:max-w-9/12 flex-1 bg-white rounded-lg pt-4 pl-4 md:pl-6 pr-4 md:pr-6">
+        <div className="flex flex-row align-middle pb-3">
+          <NameAvatar name={username} />
+          <div className="flex flex-col justify-center pl-3">
+            <p className="text-xs p-0 m-0">{username}</p>
+          </div>
+        </div>
         <p className="m-0 break-all">{content}</p>
         <p
-          className="m-0 pb-2 pr-2 text-xs text-right"
+          className="m-0 pb-1 pr-2 text-xs text-right"
           style={{ color: "var(--boost-grey)" }}
         >
           {formatDate(timestamp)}
         </p>
       </div>
-      <div className="flex-[3]"></div>
     </div>
   );
 };
@@ -48,9 +49,8 @@ export const MyMessage = ({
   timestamp: number;
 }) => {
   return (
-    <div className="flex flex-row pt-3 pb-3">
-      <div className="flex-[4]"></div>
-      <div className="flex-[6] bg-green-100 rounded-lg pt-4 pl-5 pr-2">
+    <div className="flex flex-row-reverse pt-3 pb-3">
+      <div className="max-w-11/12 md:max-w-9/12 flex-1 bg-green-100 rounded-lg pt-4 pl-4 md:pl-6 pr-4 md:pr-6">
         <p className="m-0 break-all">{content}</p>
         <p
           className="m-0 pb-2 pr-2 text-xs text-right"

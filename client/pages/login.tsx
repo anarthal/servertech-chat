@@ -62,7 +62,7 @@ const LoginScreen = () => {
       <Head />
 
       <div className="flex flex-col">
-        <Header />
+        <Header showArrow={false} />
         <div
           className={`${styles.bodycontainer} p-12 flex flex-col justify-center`}
         >

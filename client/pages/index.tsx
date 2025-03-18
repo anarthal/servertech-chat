@@ -72,12 +72,18 @@ export default function HomePage() {
     <>
       <Head />
       <div className="flex flex-col">
-        <Header />
+        <Header showArrow={false} />
         <div className={`${styles.bodycontainer} p-12`}>
           <div className="text-center pb-8">
-            <p className="text-3xl p-3 m-0">Welcome to</p>
-            <p className="text-6xl p-3 m-0">💬 BoostServerTech Chat 💬</p>
-            <p className="text-xl p-3 m-0">
+            <p className="max-md:hidden text-3xl p-3 m-0">Welcome to</p>
+            <p className="max-md:hidden text-6xl md:text-6xl p-3 m-0">
+              💬 BoostServerTech Chat 💬
+            </p>
+            <div className="md:hidden text-3xl md:text-6xl p-3 m-0">
+              <p>BoostServerTech</p>
+              <p>Chat 💬</p>
+            </div>
+            <p className="text-md md:text-xl p-3 m-0">
               A chat app written using the Boost C++ libraries
             </p>
           </div>
@@ -113,10 +119,12 @@ export default function HomePage() {
                     {loading ? "Creating account..." : "Create my account"}
                   </Button>
                 </div>
-                <div className="pt-8 flex justify-center">
-                  <p className="p-0 m-0 text-sm">
-                    Already have an account? Go to{" "}
-                    <Link href="/login">Sign In</Link>
+                <div className="pt-8 flex flex-col md:flex-row justify-center">
+                  <p className="p-0 m-0 text-sm text-center">
+                    Already have an account?
+                  </p>
+                  <p className="p-0 m-0 md:pl-1 text-sm text-center">
+                    Go to <Link href="/login">Sign In</Link>
                   </p>
                 </div>
               </form>

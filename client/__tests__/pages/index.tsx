@@ -6,9 +6,11 @@ import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/router";
 import { CreateAccountResponse, ErrorId } from "@/lib/apiTypes";
 import "@testing-library/jest-dom";
+import useIsSmallScreen from "@/hooks/useIsSmallScreen";
 
 jest.mock("@/lib/hasAuth");
 jest.mock("@/lib/api");
+jest.mock("@/hooks/useIsSmallScreen");
 
 const mockedAuth = jest.mocked(auth);
 const mockedApi = jest.mocked(api);
@@ -22,7 +24,17 @@ describe("CreateAccountPage page", () => {
   const password = "Useruser10!";
   const username = "somenickname";
 
-  test("Snapshot test", () => {
+  test("Snapshot test with large screen", () => {
+    // @ts-ignore
+    useIsSmallScreen.mockReturnValue(false);
+    const { asFragment } = render(<CreateAccountPage />);
+
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("Snapshot test with small screen", () => {
+    // @ts-ignore
+    useIsSmallScreen.mockReturnValue(true);
     const { asFragment } = render(<CreateAccountPage />);
 
     expect(asFragment()).toMatchSnapshot();
@@ -43,17 +55,17 @@ describe("CreateAccountPage page", () => {
     await user.click(screen.getByText("Create my account"));
 
     // We sent the data to the server
-    expect(mockedApi.createAccount).toBeCalledTimes(1);
-    expect(mockedApi.createAccount).toBeCalledWith({
+    expect(mockedApi.createAccount).toHaveBeenCalledTimes(1);
+    expect(mockedApi.createAccount).toHaveBeenCalledWith({
       email,
       password,
       username,
     });
 
     // We stored the auth state and navigated
-    expect(mockedAuth.setHasAuth).toBeCalled();
-    expect(useRouter().push).toBeCalledTimes(1);
-    expect(useRouter().push).toBeCalledWith("/chat");
+    expect(mockedAuth.setHasAuth).toHaveBeenCalled();
+    expect(useRouter().push).toHaveBeenCalledTimes(1);
+    expect(useRouter().push).toHaveBeenCalledWith("/chat");
   });
 
   test.each([
@@ -79,8 +91,8 @@ describe("CreateAccountPage page", () => {
     await user.click(screen.getByText("Create my account"));
 
     // We sent the data to the server
-    expect(mockedApi.createAccount).toBeCalledTimes(1);
-    expect(mockedApi.createAccount).toBeCalledWith({
+    expect(mockedApi.createAccount).toHaveBeenCalledTimes(1);
+    expect(mockedApi.createAccount).toHaveBeenCalledWith({
       email,
       password,
       username,
@@ -88,7 +100,7 @@ describe("CreateAccountPage page", () => {
 
     // We showed an error message and did not navigate
     expect(screen.getByText(expectedMsg)).toBeInTheDocument();
-    expect(mockedAuth.setHasAuth).not.toBeCalled();
-    expect(useRouter().push).not.toBeCalled();
+    expect(mockedAuth.setHasAuth).not.toHaveBeenCalled();
+    expect(useRouter().push).not.toHaveBeenCalled();
   });
 });
