@@ -7,9 +7,6 @@ set -e
 sudo yum install -y docker
 sudo systemctl start docker
 
-# This is required for MySQL to execute the init script
-sudo chmod 777 ~/deploy/db_setup.sql
-
 # Remove previous containers and networks
 sudo docker stop redis || echo "Redis container not running"
 sudo docker stop mysql || echo "MySQL container not running"
