@@ -8,17 +8,21 @@ exports[`login page Snapshot test 1`] = `
     <div
       class="flex m-3"
     >
-      <img
-        alt="Boost logo"
-        data-nimg="1"
-        decoding="async"
-        height="60"
-        loading="lazy"
-        src="/_next/image?url=%2Fimg.jpg&w=128&q=75"
-        srcset="/_next/image?url=%2Fimg.jpg&w=64&q=75 1x, /_next/image?url=%2Fimg.jpg&w=128&q=75 2x"
-        style="color: transparent;"
-        width="60"
-      />
+      <a
+        href="https://www.boost.org/"
+      >
+        <img
+          alt="Boost logo"
+          data-nimg="1"
+          decoding="async"
+          height="60"
+          loading="lazy"
+          src="/_next/image?url=%2Fimg.jpg&w=128&q=75"
+          srcset="/_next/image?url=%2Fimg.jpg&w=64&q=75 1x, /_next/image?url=%2Fimg.jpg&w=128&q=75 2x"
+          style="color: transparent;"
+          width="60"
+        />
+      </a>
       <div
         class="flex-1 flex justify-end align-middle"
       >
@@ -51,11 +55,10 @@ exports[`login page Snapshot test 1`] = `
         class="flex justify-center"
       >
         <div
-          class="bg-white rounded-2xl p-7 flex flex-col"
-          style="min-width: 50%;"
+          class="bg-white rounded-2xl p-7 flex flex-col min-w-1/2"
         >
           <p
-            class="text-center text-4xl p-3 m-0"
+            class="text-center text-3xl md:text-4xl p-3 m-0"
           >
             Log in to BoostServerTech chat
           </p>
@@ -70,85 +73,95 @@ exports[`login page Snapshot test 1`] = `
                 class="flex-1 flex flex-col"
               >
                 <div
-                  class="MuiFormControl-root MuiTextField-root flex-1 pb-2 css-1xp5r68-MuiFormControl-root-MuiTextField-root"
+                  class="flex-1 pb-2"
                 >
-                  <label
-                    class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard MuiFormLabel-colorPrimary Mui-required MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard css-2hy7sk-MuiFormLabel-root-MuiInputLabel-root"
-                    data-shrink="false"
-                    for=":r0:"
-                    id=":r0:-label"
-                  >
-                    Email
-                    <span
-                      aria-hidden="true"
-                      class="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
-                    >
-                       *
-                    </span>
-                  </label>
                   <div
-                    class="MuiInputBase-root MuiInput-root MuiInput-underline MuiInputBase-colorPrimary MuiInputBase-formControl css-5h82ro-MuiInputBase-root-MuiInput-root"
+                    class="MuiFormControl-root MuiTextField-root css-1xp5r68-MuiFormControl-root-MuiTextField-root"
+                    style="width: 100%;"
                   >
-                    <input
-                      aria-invalid="false"
-                      aria-label="email"
-                      class="MuiInputBase-input MuiInput-input css-1yrc8ca-MuiInputBase-input-MuiInput-input"
-                      id=":r0:"
-                      maxlength="100"
-                      name="email"
-                      required=""
-                      type="email"
-                    />
+                    <label
+                      class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard MuiFormLabel-colorPrimary Mui-required MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard css-2hy7sk-MuiFormLabel-root-MuiInputLabel-root"
+                      data-shrink="false"
+                      for=":r0:"
+                      id=":r0:-label"
+                    >
+                      Email
+                      <span
+                        aria-hidden="true"
+                        class="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
+                      >
+                         *
+                      </span>
+                    </label>
+                    <div
+                      class="MuiInputBase-root MuiInput-root MuiInput-underline MuiInputBase-colorPrimary MuiInputBase-formControl css-5h82ro-MuiInputBase-root-MuiInput-root"
+                    >
+                      <input
+                        aria-invalid="false"
+                        aria-label="email"
+                        class="MuiInputBase-input MuiInput-input css-1yrc8ca-MuiInputBase-input-MuiInput-input"
+                        id=":r0:"
+                        maxlength="100"
+                        name="email"
+                        required=""
+                        type="email"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div
-                  class="MuiFormControl-root MuiTextField-root flex-1 pb-2 css-1xp5r68-MuiFormControl-root-MuiTextField-root"
+                  class="flex-1 pb-2 "
                 >
-                  <label
-                    class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard MuiFormLabel-colorPrimary Mui-required MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard css-2hy7sk-MuiFormLabel-root-MuiInputLabel-root"
-                    data-shrink="false"
-                    for=":r1:"
-                    id=":r1:-label"
-                  >
-                    Password
-                    <span
-                      aria-hidden="true"
-                      class="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
-                    >
-                       *
-                    </span>
-                  </label>
                   <div
-                    class="MuiInputBase-root MuiInput-root MuiInput-underline MuiInputBase-colorPrimary MuiInputBase-formControl MuiInputBase-adornedEnd css-5h82ro-MuiInputBase-root-MuiInput-root"
+                    class="MuiFormControl-root MuiTextField-root css-1xp5r68-MuiFormControl-root-MuiTextField-root"
+                    style="width: 100%;"
                   >
-                    <input
-                      aria-invalid="false"
-                      aria-label="password"
-                      class="MuiInputBase-input MuiInput-input MuiInputBase-inputAdornedEnd css-1yrc8ca-MuiInputBase-input-MuiInput-input"
-                      id=":r1:"
-                      maxlength="100"
-                      name="password"
-                      required=""
-                      type="password"
-                    />
-                    <button
-                      class="MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium css-53g0n7-MuiButtonBase-root-MuiIconButton-root"
-                      role="button"
-                      tabindex="0"
-                      type="button"
+                    <label
+                      class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard MuiFormLabel-colorPrimary Mui-required MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard css-2hy7sk-MuiFormLabel-root-MuiInputLabel-root"
+                      data-shrink="false"
+                      for=":r1:"
+                      id=":r1:-label"
                     >
-                      <svg
+                      Password
+                      <span
                         aria-hidden="true"
-                        class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
-                        data-testid="VisibilityIcon"
-                        focusable="false"
-                        viewBox="0 0 24 24"
+                        class="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
                       >
-                        <path
-                          d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5M12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5m0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"
-                        />
-                      </svg>
-                    </button>
+                         *
+                      </span>
+                    </label>
+                    <div
+                      class="MuiInputBase-root MuiInput-root MuiInput-underline MuiInputBase-colorPrimary MuiInputBase-formControl MuiInputBase-adornedEnd css-5h82ro-MuiInputBase-root-MuiInput-root"
+                    >
+                      <input
+                        aria-invalid="false"
+                        aria-label="password"
+                        class="MuiInputBase-input MuiInput-input MuiInputBase-inputAdornedEnd css-1yrc8ca-MuiInputBase-input-MuiInput-input"
+                        id=":r1:"
+                        maxlength="100"
+                        name="password"
+                        required=""
+                        type="password"
+                      />
+                      <button
+                        class="MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium css-53g0n7-MuiButtonBase-root-MuiIconButton-root"
+                        role="button"
+                        tabindex="0"
+                        type="button"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+                          data-testid="VisibilityIcon"
+                          focusable="false"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5M12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5m0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div

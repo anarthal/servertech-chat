@@ -6,7 +6,9 @@ import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/router";
 import { ErrorId } from "@/lib/apiTypes";
 import "@testing-library/jest-dom";
+import useIsSmallScreen from "@/hooks/useIsSmallScreen";
 
+jest.mock("@/hooks/useIsSmallScreen");
 jest.mock("@/lib/hasAuth");
 jest.mock("@/lib/api");
 
