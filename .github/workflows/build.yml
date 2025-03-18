@@ -87,7 +87,7 @@ jobs:
         run: |
           pip install -r test/integration/requirements.txt
           docker compose up -d --wait || (docker compose logs; exit 1)
-          pytest
+          pytest || (docker compose logs; exit 1)
           docker compose down
 
       # Push the built container to the GitHub project's container registry.
