@@ -8,6 +8,8 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_API_API_TYPES_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_API_API_TYPES_HPP
 
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 #include <boost/variant2/variant.hpp>
 
 #include <span>
@@ -15,7 +17,6 @@
 #include <string_view>
 
 #include "business_types.hpp"
-#include "error.hpp"
 
 // This file contains type definitions for HTTP and websocket API objects.
 // Types for incoming requests are owning, since they're used after parsing,
@@ -45,7 +46,7 @@ struct create_account_request
     std::string password;
 
     // Parses a request from a JSON string
-    static result<create_account_request> from_json(std::string_view from);
+    static boost::system::result<create_account_request> from_json(std::string_view from);
 };
 
 // The request for POST /login
@@ -58,7 +59,7 @@ struct login_request
     std::string password;
 
     // Parses a request from a JSON string
-    static result<login_request> from_json(std::string_view from);
+    static boost::system::result<login_request> from_json(std::string_view from);
 };
 
 // A message as sent by the client
@@ -88,7 +89,7 @@ struct request_room_history_event
 // A variant that can represent any event that may be received from the client,
 // or an error_code, if the client sent an invalid message
 using any_client_event = boost::variant2::variant<
-    error_code,  // Invalid, used to report errors
+    boost::system::error_code,  // Invalid, used to report errors
     client_messages_event,
     request_room_history_event>;
 

@@ -122,11 +122,7 @@ public:
 
     // Returns an internal server error response. Error information is logged
     // but not sent in the response.
-    response_type internal_server_error(error_code ec, std::string_view what);
-    response_type internal_server_error(const error_with_message& err)
-    {
-        return internal_server_error(err.ec, err.msg);
-    }
+    response_type internal_server_error(boost::system::error_code ec, std::string_view what = {});
 
 private:
     using header_type = boost::beast::http::response_header<boost::beast::http::fields>;
@@ -173,7 +169,7 @@ public:
 
     // Parses the HTTP request target line into a URL. Returns an error_code on
     // failure. This should be called prior to invoking any API handler functions.
-    error_code parse_request_target();
+    boost::system::error_code parse_request_target();
 
     // Returns the request target as a URL. parse_request_target must have been
     // called and succeeded.
@@ -191,7 +187,7 @@ public:
     // result<T> from_json(std::string_view).
     // The request content-type is validated before attempting the parse.
     template <class T>
-    result<T> parse_json_body() const
+    boost::system::result<T> parse_json_body() const
     {
         // Validate content-type
         if (!is_json_content_type())

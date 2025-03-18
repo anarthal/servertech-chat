@@ -11,11 +11,10 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/experimental/channel.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <cassert>
 #include <memory>
-
-#include "error.hpp"
 
 namespace chat {
 
@@ -30,7 +29,7 @@ class async_mutex
 
     // Acts as a condition variable, so that coroutines waiting to acquire
     // the mutex can be notified when another coroutine releases it
-    boost::asio::experimental::channel<void(error_code)> chan_;
+    boost::asio::experimental::channel<void(boost::system::error_code)> chan_;
 
     struct guard_deleter
     {
@@ -82,7 +81,7 @@ public:
         locked_ = false;
 
         // Notify any waiting coroutines
-        chan_.try_send(error_code());
+        chan_.try_send(boost::system::error_code());
     }
 
     using guard = std::unique_ptr<async_mutex, guard_deleter>;

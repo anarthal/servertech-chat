@@ -9,13 +9,13 @@
 #define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_ROOM_HISTORY_SERVICE_HPP
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/system/result.hpp>
 
 #include <span>
 #include <string_view>
 #include <utility>
 
 #include "business_types.hpp"
-#include "error.hpp"
 
 // Contains functions to retrieve room chat history
 
@@ -41,12 +41,12 @@ public:
     // If a room_id doesn't exist, an empty message_batch is returned for the room.
     // If a user_id is referenced in a message but doesn't exist, the entry
     // is not included in the map
-    boost::asio::awaitable<result_with_message<std::pair<std::vector<message_batch>, username_map>>> get_room_history(
+    boost::asio::awaitable<boost::system::result<std::pair<std::vector<message_batch>, username_map>>> get_room_history(
         std::span<const std::string_view> room_ids
     );
 
     // Same as the above, but for an individual room.
-    boost::asio::awaitable<result_with_message<std::pair<message_batch, username_map>>> get_room_history(
+    boost::asio::awaitable<boost::system::result<std::pair<message_batch, username_map>>> get_room_history(
         std::string_view room_id
     );
 };

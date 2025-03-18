@@ -21,6 +21,8 @@
 
 namespace resp3 = boost::redis::resp3;
 using namespace chat;
+using boost::system::error_code;
+using boost::system::result;
 
 namespace {
 

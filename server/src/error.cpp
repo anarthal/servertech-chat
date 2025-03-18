@@ -56,12 +56,7 @@ static chat_category cat;
 
 const boost::system::error_category& chat::get_chat_category() noexcept { return cat; }
 
-[[noreturn]] void chat::throw_exception_from_error(const error_with_message& e, const boost::source_location&)
-{
-    throw boost::system::system_error(e.ec, e.msg);
-}
-
-void chat::log_error(error_code ec, std::string_view what, std::string_view diagnostics)
+void chat::log_error(boost::system::error_code ec, std::string_view what, std::string_view diagnostics)
 {
     // Don't report on canceled operations
     if (ec == boost::asio::error::operation_aborted)

@@ -7,6 +7,8 @@
 
 #include "services/session_store.hpp"
 
+#include <boost/system/result.hpp>
+
 #include <array>
 #include <openssl/rand.h>
 #include <stdexcept>
@@ -19,6 +21,7 @@
 
 using namespace chat;
 namespace asio = boost::asio;
+using boost::system::result;
 
 static constexpr std::size_t session_id_size = 16;  // bytes
 
@@ -49,7 +52,7 @@ static std::string get_redis_key(std::string_view session_id)
 
 using namespace chat;
 
-asio::awaitable<result_with_message<std::string>> session_store::generate_session_id(
+asio::awaitable<result<std::string>> session_store::generate_session_id(
     std::int64_t user_id,
     std::chrono::seconds session_duration
 )
@@ -68,16 +71,14 @@ asio::awaitable<result_with_message<std::string>> session_store::generate_sessio
 
         // If we were successful, done. If we got a conflict (unlikely), generate a new ID.
         // Exit on unknown errors
-        if (!err.ec)
+        if (!err)
             co_return id;
-        else if (err.ec != errc::already_exists)
+        else if (err != errc::already_exists)
             co_return err;
     }
 }
 
-asio::awaitable<result_with_message<std::int64_t>> session_store::get_user_by_session(
-    std::string_view session_id
-)
+asio::awaitable<result<std::int64_t>> session_store::get_user_by_session(std::string_view session_id)
 {
     auto redis_key = get_redis_key(session_id);
     co_return co_await redis_->get_int_key(redis_key);

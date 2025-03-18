@@ -23,6 +23,7 @@
 #include <boost/beast/http/verb.hpp>
 #include <boost/beast/websocket/error.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/system/error_code.hpp>
 #include <boost/url/url.hpp>
 #include <boost/variant2/variant.hpp>
 
@@ -44,6 +45,7 @@ namespace beast = boost::beast;
 namespace http = boost::beast::http;
 namespace asio = boost::asio;
 using namespace chat;
+using boost::system::error_code;
 
 namespace {
 
@@ -236,22 +238,9 @@ asio::awaitable<void> chat::run_http_session(
 
             // Run the websocket session. This will run until the client
             // closes the connection or an error occurs.
-            // We don't use exceptions to communicate regular failures, but an
-            // unhandled exception in a websocket session shoudn't crash the server.
-            try
-            {
-                auto err = co_await handle_chat_websocket(std::move(ws), state);
-                if (err.ec && err.ec != beast::websocket::error::closed)
-                    log_error(err, "Running chat websocket session");
-            }
-            catch (const std::exception& err)
-            {
-                log_error(
-                    errc::uncaught_exception,
-                    "Uncaught exception while running websocket session",
-                    err.what()
-                );
-            }
+            auto err = co_await handle_chat_websocket(std::move(ws), state);
+            if (err && err != beast::websocket::error::closed)
+                log_error(err, "Running chat websocket session");
             co_return;
         }
 

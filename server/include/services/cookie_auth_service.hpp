@@ -10,11 +10,11 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/beast/http/fields.hpp>
+#include <boost/system/result.hpp>
 
 #include <cstdint>
 
 #include "business_types.hpp"
-#include "error.hpp"
 
 // Contains high-level functions to set and verify user sessions.
 // Session IDs are stored in Redis (see session_store.hpp for details).
@@ -38,19 +38,19 @@ public:
 
     // Allocates a new session ID for the passed user ID (by storing it in Redis),
     // and returns an appropriate Set-Cookie header.
-    boost::asio::awaitable<result_with_message<std::string>> generate_session_cookie(std::int64_t user_id);
+    boost::asio::awaitable<boost::system::result<std::string>> generate_session_cookie(std::int64_t user_id);
 
     // Verifies that the user is authenticated via a cookie, returning the user_id of the
     // authenticated user.
     // Returns errc::auth_required if the cookie is not present, invalid,
     // or doesn't match any valid session ID.
-    boost::asio::awaitable<result_with_message<std::int64_t>> user_id_from_cookie(
+    boost::asio::awaitable<boost::system::result<std::int64_t>> user_id_from_cookie(
         const boost::beast::http::fields& req_headers
     );
 
     // Verifies that the user is authenticated via a cookie, returning the associated user.
     // Works like user_id_from_cookie, but also looks up the user in MySQL.
-    boost::asio::awaitable<result_with_message<user>> user_from_cookie(
+    boost::asio::awaitable<boost::system::result<user>> user_from_cookie(
         const boost::beast::http::fields& req_headers
     );
 };

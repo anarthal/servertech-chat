@@ -8,6 +8,8 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_UTIL_SCRYPT_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_UTIL_SCRYPT_HPP
 
+#include <boost/system/result.hpp>
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -16,8 +18,6 @@
 #include <string_view>
 #include <vector>
 
-#include "error.hpp"
-
 // Utility functions to hash and check passwords using the
 // scrypt algorithm (https://en.wikipedia.org/wiki/Scrypt)
 // and the PHC format (https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md)
@@ -25,11 +25,11 @@
 namespace chat {
 
 // Constants and defaults. These are based on node.js defaults
-constexpr std::size_t salt_size = 32;
-constexpr std::uint64_t default_ln = 14;
-constexpr std::uint64_t default_r = 8;
-constexpr std::uint64_t default_p = 1;
-constexpr std::size_t hash_size = 32;
+inline constexpr std::size_t salt_size = 32;
+inline constexpr std::uint64_t default_ln = 14;
+inline constexpr std::uint64_t default_r = 8;
+inline constexpr std::uint64_t default_p = 1;
+inline constexpr std::size_t hash_size = 32;
 
 // Algorithm parameters, user-independent
 struct scrypt_params
@@ -50,7 +50,7 @@ struct scrypt_data
 };
 
 // Parses a PHC scrypt string
-result<scrypt_data> scrypt_phc_parse(std::string_view from);
+boost::system::result<scrypt_data> scrypt_phc_parse(std::string_view from);
 
 // Serializes the given params, salt and hash to a PHC string
 std::string scrypt_phc_serialize(

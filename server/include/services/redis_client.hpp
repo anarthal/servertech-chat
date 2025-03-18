@@ -10,6 +10,8 @@
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 
 #include <chrono>
 #include <memory>
@@ -20,7 +22,6 @@
 #include <vector>
 
 #include "business_types.hpp"
-#include "error.hpp"
 
 // A high-level, specialized Redis client. It implements the operations
 // required by our server, abstracting away the actual Redis commands.
@@ -55,20 +56,20 @@ public:
     };
 
     // Retrieves a batch of room history for several rooms
-    virtual boost::asio::awaitable<result_with_message<std::vector<message_batch>>> get_room_history(
+    virtual boost::asio::awaitable<boost::system::result<std::vector<message_batch>>> get_room_history(
         std::span<const room_histoy_request> reqs
     ) = 0;
 
     // Inserts a batch of messages into a certain room's history.
     // Returns the IDs of the inserted messages
-    virtual boost::asio::awaitable<result_with_message<std::vector<std::string>>> store_messages(
+    virtual boost::asio::awaitable<boost::system::result<std::vector<std::string>>> store_messages(
         std::string_view room_id,
         std::span<const message> messages
     ) = 0;
 
     // Sets a certain key to a value, with the given time to live.
     // If the key already exists, the operation fails with already_exists
-    virtual boost::asio::awaitable<error_with_message> set_nonexisting_key(
+    virtual boost::asio::awaitable<boost::system::error_code> set_nonexisting_key(
         std::string_view key,
         std::string_view value,
         std::chrono::seconds ttl
@@ -76,7 +77,7 @@ public:
 
     // Gets the specified key, as an int64_t.
     // Returns not_found if the key does not exist
-    virtual boost::asio::awaitable<result_with_message<std::int64_t>> get_int_key(std::string_view key) = 0;
+    virtual boost::asio::awaitable<boost::system::result<std::int64_t>> get_int_key(std::string_view key) = 0;
 };
 
 // Creates a concrete implementation of redis_client

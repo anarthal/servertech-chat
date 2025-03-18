@@ -14,15 +14,20 @@
 #include <boost/json/serialize.hpp>
 #include <boost/json/value_from.hpp>
 #include <boost/json/value_to.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 #include <boost/variant2/variant.hpp>
 
 #include <cstdint>
 #include <string_view>
 
 #include "business_types.hpp"
+#include "error.hpp"
 #include "timestamp.hpp"
 
 using namespace chat;
+using boost::system::error_code;
+using boost::system::result;
 
 namespace chat {
 

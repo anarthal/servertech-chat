@@ -15,6 +15,8 @@
 #include <boost/redis/connection.hpp>
 #include <boost/redis/request.hpp>
 #include <boost/redis/response.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 
 #include <cstdlib>
 #include <optional>
@@ -27,6 +29,8 @@
 using namespace chat;
 namespace asio = boost::asio;
 namespace redis = boost::redis;
+using boost::system::error_code;
+using boost::system::result;
 
 namespace {
 
@@ -51,7 +55,7 @@ public:
 
     void cancel() final override { conn_.cancel(); }
 
-    asio::awaitable<result_with_message<std::vector<message_batch>>> get_room_history(
+    asio::awaitable<result<std::vector<message_batch>>> get_room_history(
         std::span<const room_histoy_request> input
     ) final override
     {
@@ -73,17 +77,21 @@ public:
         error_code ec;
         co_await conn_.async_exec(req, res, asio::redirect_error(ec));
         if (ec)
-            co_return error_with_message{ec};
+            co_return ec;
 
         // Verify success. If any of the nodes contains a Redis error (e.g.
         // because we sent an invalid command), this will contain an error.
         if (res.has_error())
-            CHAT_CO_RETURN_ERROR_WITH_MESSAGE(errc::redis_command_failed, std::move(res).error().diagnostic)
+        {
+            ec = errc::redis_command_failed;
+            log_error(ec, "Redis error while retrieving room history", std::move(res).error().diagnostic);
+            co_return ec;
+        }
 
         // Parse the response
         auto result = parse_room_history_batch(*res);
         if (result.has_error())
-            co_return error_with_message{result.error()};
+            co_return result.error();
 
         // Set the has_more flag
         for (auto& batch : *result)
@@ -92,7 +100,7 @@ public:
         co_return std::move(*result);
     }
 
-    asio::awaitable<result_with_message<std::vector<std::string>>> store_messages(
+    asio::awaitable<result<std::vector<std::string>>> store_messages(
         std::string_view room_id,
         std::span<const message> messages
     ) final override
@@ -108,21 +116,25 @@ public:
         error_code ec;
         co_await conn_.async_exec(req, res, asio::redirect_error(ec));
         if (ec)
-            co_return error_with_message{ec};
+            co_return ec;
 
         // Verify success. If any of the nodes contains a Redis error (e.g.
         // because we sent an invalid command), this will contain an error.
         if (res.has_error())
-            CHAT_CO_RETURN_ERROR_WITH_MESSAGE(errc::redis_command_failed, std::move(res).error().diagnostic)
+        {
+            ec = errc::redis_command_failed;
+            log_error(ec, "Redis error while storing messages", std::move(res).error().diagnostic);
+            co_return ec;
+        }
 
         // Parse the response
         auto result = parse_batch_xadd_response(*res);
         if (result.has_error())
-            co_return error_with_message{result.error()};
+            co_return result.error();
         co_return std::move(*result);
     }
 
-    asio::awaitable<error_with_message> set_nonexisting_key(
+    asio::awaitable<error_code> set_nonexisting_key(
         std::string_view key,
         std::string_view value,
         std::chrono::seconds ttl
@@ -137,17 +149,20 @@ public:
         error_code ec;
         co_await conn_.async_exec(req, res, asio::redirect_error(ec));
         if (ec)
-            co_return error_with_message{ec};
+            co_return ec;
 
         // Check
         auto& result = std::get<0>(res);
         if (result.has_error())
-            co_return error_with_message{errc::redis_parse_error, std::move(result).error().diagnostic};
-        co_return result.value().has_value() ? error_with_message{}
-                                             : error_with_message{errc::already_exists};
+        {
+            ec = errc::redis_command_failed;
+            log_error(ec, "Redis error while setting non-existing key", std::move(result).error().diagnostic);
+            co_return ec;
+        }
+        co_return result.value().has_value() ? error_code() : error_code(errc::already_exists);
     }
 
-    asio::awaitable<result_with_message<std::int64_t>> get_int_key(std::string_view key) final override
+    asio::awaitable<result<std::int64_t>> get_int_key(std::string_view key) final override
     {
         // Compose the request
         redis::request req;
@@ -158,19 +173,23 @@ public:
         error_code ec;
         co_await conn_.async_exec(req, res, asio::redirect_error(ec));
         if (ec)
-            co_return error_with_message{ec};
+            co_return ec;
 
         // Check for errors
         auto& result = std::get<0>(res);
         if (result.has_error())
-            co_return error_with_message{errc::redis_parse_error, std::move(result).error().diagnostic};
+        {
+            ec = errc::redis_command_failed;
+            log_error(ec, "Redis error getting key", std::move(result).error().diagnostic);
+            co_return ec;
+        }
         auto opt = result.value();
 
         // Check whether the key was present
         if (opt.has_value())
             co_return opt.value();
         else
-            co_return error_with_message{errc::not_found};
+            co_return error_code(errc::not_found);
     }
 };
 

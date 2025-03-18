@@ -9,6 +9,7 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/system/error_code.hpp>
 #include <boost/variant2/variant.hpp>
 
 #include <cstddef>
@@ -30,6 +31,7 @@
 
 using namespace chat;
 namespace asio = boost::asio;
+using boost::system::error_code;
 
 namespace {
 
@@ -56,13 +58,13 @@ struct hello_data
 };
 
 // Retrieves the data required to send the hello event
-static asio::awaitable<result_with_message<hello_data>> get_hello_data(shared_state& st)
+static asio::awaitable<boost::system::result<hello_data>> get_hello_data(shared_state& st)
 {
     // Retrieve room history
     room_history_service history_service(st.redis(), st.mysql());
     auto history_result = co_await history_service.get_room_history(room_ids);
     if (history_result.has_error())
-        co_return std::move(history_result).error();
+        co_return history_result.error();
     assert(history_result->first.size() == room_ids.size());
 
     // Compose hello data
@@ -85,13 +87,10 @@ struct event_handler_visitor
     shared_state& st;
 
     // Parsing error
-    asio::awaitable<error_with_message> operator()(error_code ec) const noexcept
-    {
-        co_return error_with_message{ec};
-    }
+    asio::awaitable<error_code> operator()(error_code ec) const noexcept { co_return ec; }
 
     // Messages event
-    asio::awaitable<error_with_message> operator()(client_messages_event& evt) const
+    asio::awaitable<error_code> operator()(client_messages_event& evt) const
     {
         // Set the timestamp
         auto timestamp = timestamp_t::clock::now();
@@ -112,7 +111,7 @@ struct event_handler_visitor
         // Store it in Redis
         auto ids_result = co_await st.redis().store_messages(evt.roomId, msgs);
         if (ids_result.has_error())
-            co_return std::move(ids_result).error();
+            co_return ids_result.error();
         auto& ids = ids_result.value();
 
         // Set the message IDs appropriately
@@ -125,17 +124,17 @@ struct event_handler_visitor
 
         // Broadcast the event to all clients
         st.pubsub().publish(evt.roomId, server_evt.to_json());
-        co_return error_with_message{};
+        co_return error_code();
     }
 
     // Request room history event
-    asio::awaitable<error_with_message> operator()(chat::request_room_history_event& evt) const
+    asio::awaitable<error_code> operator()(chat::request_room_history_event& evt) const
     {
         // Get room history
         room_history_service svc(st.redis(), st.mysql());
         auto history = co_await svc.get_room_history(evt.roomId);
         if (history.has_error())
-            co_return std::move(history).error();
+            co_return history.error();
 
         // Compose a room_history event
         chat::room_history_event response_evt{evt.roomId, history->first, history->second};
@@ -169,7 +168,7 @@ public:
     }
 
     // Runs the session until completion
-    asio::awaitable<error_with_message> run()
+    asio::awaitable<error_code> run()
     {
         error_code ec;
 
@@ -183,7 +182,7 @@ public:
             // upgrade failure information.
             log_error(user_result.error(), "Websocket authentication failed");
             co_await ws_.close(boost::beast::websocket::policy_error);  // Ignore the result
-            co_return error_with_message{};
+            co_return error_code();
         }
         const auto& current_user = user_result.value();
 
@@ -203,7 +202,7 @@ public:
         auto serialized_hello = hello_evt.to_json();
         ec = co_await ws_.write_locked(serialized_hello, write_guard);
         if (ec)
-            co_return error_with_message{ec};
+            co_return ec;
 
         // Once the hello is sent, we can start sending messages through the websocket
         write_guard.reset();
@@ -214,14 +213,14 @@ public:
             // Read a message
             auto raw_msg = co_await ws_.read();
             if (raw_msg.has_error())
-                co_return error_with_message{raw_msg.error()};
+                co_return raw_msg.error();
 
             // Deserialize it
             auto msg = chat::parse_client_event(raw_msg.value());
 
             // Dispatch
             auto err = co_await boost::variant2::visit(event_handler_visitor{current_user, ws_, *st_}, msg);
-            if (err.ec)
+            if (err)
                 co_return err;
         }
     }
@@ -229,10 +228,7 @@ public:
 
 }  // namespace
 
-asio::awaitable<error_with_message> chat::handle_chat_websocket(
-    websocket socket,
-    std::shared_ptr<shared_state> state
-)
+asio::awaitable<error_code> chat::handle_chat_websocket(websocket socket, std::shared_ptr<shared_state> state)
 {
     auto sess = std::make_shared<chat_websocket_session>(std::move(socket), std::move(state));
     co_return co_await sess->run();

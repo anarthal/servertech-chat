@@ -16,6 +16,8 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
 #include <boost/beast/websocket/stream.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 
 #include <memory>
 #include <string_view>
@@ -26,6 +28,8 @@
 namespace asio = boost::asio;
 namespace beast = boost::beast;
 using namespace chat;
+using boost::system::error_code;
+using boost::system::result;
 
 struct websocket::impl
 {

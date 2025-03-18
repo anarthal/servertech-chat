@@ -10,6 +10,7 @@
 #include <openssl/rand.h>
 #include <stdexcept>
 
+#include "error.hpp"
 #include "util/scrypt.hpp"
 
 using namespace chat;

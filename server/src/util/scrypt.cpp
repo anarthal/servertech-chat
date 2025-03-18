@@ -7,6 +7,8 @@
 
 #include "util/scrypt.hpp"
 
+#include <boost/system/result.hpp>
+
 #include <charconv>
 #include <openssl/crypto.h>
 #include <openssl/err.h>
@@ -16,8 +18,9 @@
 #include "util/base64.hpp"
 
 using namespace chat;
+using boost::system::result;
 
-static result<std::uint64_t> parse_int(std::string_view from) noexcept
+static result<std::uint64_t> parse_int(std::string_view from)
 {
     std::uint64_t value = 0;
     auto res = std::from_chars(from.begin(), from.end(), value);

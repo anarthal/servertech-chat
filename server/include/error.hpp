@@ -22,28 +22,6 @@
 
 namespace chat {
 
-// Type alias to reduce verbosity.
-using error_code = boost::system::error_code;
-
-// Type alias to reduce verbosity.
-template <class T>
-using result = boost::system::result<T>;
-
-// An error code with a diagnostics message
-struct error_with_message
-{
-    error_code ec;
-    std::string msg;
-};
-
-// Required by the Boost.System infrastructure.
-// Throws an exception from an error_with_message.
-[[noreturn]] void throw_exception_from_error(const error_with_message& e, const boost::source_location&);
-
-// Like result, but the error state includes an error message
-template <class T>
-using result_with_message = boost::system::result<T, error_with_message>;
-
 // Error code enum for errors originated within our application
 enum class errc
 {
@@ -66,17 +44,13 @@ enum class errc
 const boost::system::error_category& get_chat_category() noexcept;
 
 // Allows constructing error_code from errc
-inline error_code make_error_code(errc v) noexcept
+inline boost::system::error_code make_error_code(errc v) noexcept
 {
-    return error_code(static_cast<int>(v), get_chat_category());
+    return boost::system::error_code(static_cast<int>(v), get_chat_category());
 }
 
 // Logs ec to stderr
-void log_error(error_code ec, std::string_view what, std::string_view diagnostics = "");
-inline void log_error(const error_with_message& err, std::string_view what)
-{
-    log_error(err.ec, what, err.msg);
-}
+void log_error(boost::system::error_code ec, std::string_view what, std::string_view diagnostics = "");
 
 }  // namespace chat
 
@@ -93,24 +67,17 @@ struct is_error_code_enum<chat::errc>
 }  // namespace boost
 
 // Returns an error_code with source-code location information on it
-#define CHAT_RETURN_ERROR(e)                                    \
-    {                                                           \
-        static constexpr auto loc = BOOST_CURRENT_LOCATION;     \
-        return ::chat::error_code(::chat::error_code(e), &loc); \
-    }
-
-// Returns an error_with_message with source-code location information on the error_code
-#define CHAT_RETURN_ERROR_WITH_MESSAGE(e, msg)                                                   \
-    {                                                                                            \
-        static constexpr auto loc = BOOST_CURRENT_LOCATION;                                      \
-        return ::chat::error_with_message{::chat::error_code(::chat::error_code(e), &loc), msg}; \
+#define CHAT_RETURN_ERROR(e)                                                      \
+    {                                                                             \
+        static constexpr auto loc = BOOST_CURRENT_LOCATION;                       \
+        return ::boost::system::error_code(::boost::system::error_code(e), &loc); \
     }
 
 // Same, but for co_return
-#define CHAT_CO_RETURN_ERROR_WITH_MESSAGE(e, msg)                                                   \
-    {                                                                                               \
-        static constexpr auto loc = BOOST_CURRENT_LOCATION;                                         \
-        co_return ::chat::error_with_message{::chat::error_code(::chat::error_code(e), &loc), msg}; \
+#define CHAT_CO_RETURN_ERROR(e)                                                      \
+    {                                                                                \
+        static constexpr auto loc = BOOST_CURRENT_LOCATION;                          \
+        co_return ::boost::system::error_code(::boost::system::error_code(e), &loc); \
     }
 
 #endif

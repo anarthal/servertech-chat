@@ -13,11 +13,10 @@
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/string_body.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <memory>
 #include <string_view>
-
-#include "error.hpp"
 
 namespace chat {
 
@@ -29,7 +28,7 @@ class websocket
     struct impl;
     std::unique_ptr<impl> impl_;
 
-    boost::asio::awaitable<error_code> write_locked_impl(std::string_view buff);
+    boost::asio::awaitable<boost::system::error_code> write_locked_impl(std::string_view buff);
     boost::asio::awaitable<void> lock_writes_impl();
     void unlock_writes_impl() noexcept;
 
@@ -57,17 +56,17 @@ public:
     const upgrade_request_type& upgrade_request() const noexcept;
 
     // Runs the websocket handshake. Must be called before any other operation
-    boost::asio::awaitable<error_code> accept();
+    boost::asio::awaitable<boost::system::error_code> accept();
 
     // Reads a message from the client. The returned view is valid until the next
     // read is performed. Only a single read should be outstanding at each time
     // (unlike writes, reads are not serialized).
-    boost::asio::awaitable<result<std::string_view>> read();
+    boost::asio::awaitable<boost::system::result<std::string_view>> read();
 
     // Writes a message to the client. Writes are serialized: two
     // concurrent writes can be issued safely against the same websocket.
     // A write is roughly equivalent to lock_writes() + write_locked() + releasing the guard
-    boost::asio::awaitable<error_code> write(std::string_view buff);
+    boost::asio::awaitable<boost::system::error_code> write(std::string_view buff);
 
     // Locks writes until the returned guard is destroyed. Other coroutines
     // calling write will be suspended until the guard is released.
@@ -80,7 +79,7 @@ public:
 
     // Writes bypassing the write lock. lock_writes() must have been called
     // before calling this function.
-    boost::asio::awaitable<error_code> write_locked(
+    boost::asio::awaitable<boost::system::error_code> write_locked(
         std::string_view buff,
         [[maybe_unused]] write_guard& guard
     )
@@ -90,7 +89,7 @@ public:
     }
 
     // Closes the websocket, sending close_code to the client.
-    boost::asio::awaitable<error_code> close(unsigned close_code);
+    boost::asio::awaitable<boost::system::error_code> close(unsigned close_code);
 };
 
 }  // namespace chat
