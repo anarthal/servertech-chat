@@ -47,7 +47,7 @@ type AddMessagesAction = {
 type SetCurrentRoomAction = {
   type: "set_current_room";
   payload: {
-    roomId: string;
+    roomId: string | null;
   };
 };
 
@@ -319,6 +319,14 @@ export default function ChatPage() {
     [router],
   );
 
+  // Run when the user clicks the back button
+  const onBack = useCallback(() => {
+    dispatch({
+      type: "set_current_room",
+      payload: { roomId: null },
+    });
+  }, [dispatch]);
+
   // Create a websocket
   const websocketRef = useRef<WebSocket>(null);
   useEffect(() => {
@@ -346,7 +354,7 @@ export default function ChatPage() {
     <>
       <Head />
       <div className="flex flex-col h-full">
-        <Header />
+        <Header showArrow={true} onArrowClick={onBack} />
         <ChatScreen
           rooms={rooms}
           currentRoom={currentRoom}

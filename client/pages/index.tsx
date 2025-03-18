@@ -72,7 +72,7 @@ export default function HomePage() {
     <>
       <Head />
       <div className="flex flex-col">
-        <Header />
+        <Header showArrow={false} />
         <div className={`${styles.bodycontainer} p-12`}>
           <div className="text-center pb-8">
             <p className="max-md:hidden text-3xl p-3 m-0">Welcome to</p>
