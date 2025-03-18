@@ -30,6 +30,7 @@ type SetInitialStateAction = {
   payload: {
     currentUser: User;
     rooms: Room[];
+    autoSelectRoom: boolean; // pick the room with the latest message at startup?
   };
 };
 
@@ -91,14 +92,16 @@ const addNewMessages = (
 };
 
 function doSetInitialState(action: SetInitialStateAction): State {
-  const { rooms, currentUser } = action.payload;
+  const { rooms, currentUser, autoSelectRoom } = action.payload;
   const roomsById = {};
   for (const room of rooms) roomsById[room.id] = room;
   return {
     currentUser,
     loading: false,
     rooms: roomsById,
-    currentRoomId: findRoomWithLatestMessage(rooms)?.id || null,
+    currentRoomId: autoSelectRoom
+      ? findRoomWithLatestMessage(rooms)?.id || null
+      : null,
   };
 }
 
@@ -198,19 +201,24 @@ export const ChatScreen = ({
       className="flex-1 flex min-h-0"
       style={{ borderTop: "1px solid var(--boost-light-grey)" }}
     >
-      <div className="flex-1 flex flex-col overflow-y-scroll" ref={roomsRef}>
+      <div
+        className={`flex-1 flex flex-col overflow-y-scroll ${currentRoom !== null && "max-md:hidden"}`}
+        ref={roomsRef}
+      >
         {rooms.map(({ id, name, messages }) => (
           <RoomEntry
             key={id}
             id={id}
             name={name}
-            selected={id === currentRoom.id}
+            selected={id === currentRoom?.id}
             lastMessage={messages[0]?.content || "No messages yet"}
             onClick={onClickRoom}
           />
         ))}
       </div>
-      <div className="flex-[3] flex flex-col">
+      <div
+        className={`flex-[3] flex flex-col ${currentRoom === null && "max-md:hidden"}`}
+      >
         <div
           className="flex-1 flex flex-col-reverse p-5 overflow-y-scroll"
           style={{ backgroundColor: "var(--boost-light-grey)" }}
@@ -239,6 +247,9 @@ export const ChatScreen = ({
 
 // Websocket close code to signal that authentication is required
 const CODE_POLICY_VIOLATION = 1008;
+
+// Returns true if the screen is md or larger, according to tailwind
+const mediaIsMdOrGt = () => matchMedia("(width >= 48rem)").matches;
 
 // The actual component
 export default function ChatPage() {
@@ -281,6 +292,7 @@ export default function ChatPage() {
           payload: {
             currentUser: payload.me,
             rooms: payload.rooms,
+            autoSelectRoom: mediaIsMdOrGt(),
           },
         });
         break;
