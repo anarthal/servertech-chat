@@ -199,3 +199,400 @@ exports[`login page Snapshot test 1`] = `
   </div>
 </DocumentFragment>
 `;
+
+exports[`login page Snapshot test with large screen 1`] = `
+<DocumentFragment>
+  <div
+    class="flex flex-col"
+  >
+    <div
+      class="flex m-3"
+    >
+      <a
+        href="https://www.boost.org/"
+      >
+        <img
+          alt="Boost logo"
+          data-nimg="1"
+          decoding="async"
+          height="60"
+          loading="lazy"
+          src="/_next/image?url=%2Fimg.jpg&w=128&q=75"
+          srcset="/_next/image?url=%2Fimg.jpg&w=64&q=75 1x, /_next/image?url=%2Fimg.jpg&w=128&q=75 2x"
+          style="color: transparent;"
+          width="60"
+        />
+      </a>
+      <div
+        class="flex-1 flex justify-end align-middle"
+      >
+        <div
+          class="flex flex-col justify-center pr-12 pl-12"
+        >
+          <a
+            class="no-underline text-2xl text-black"
+            href="https://github.com/anarthal/servertech-chat"
+          >
+            Source code
+          </a>
+        </div>
+        <div
+          class="flex flex-col justify-center pr-12 pl-12"
+        >
+          <a
+            class="no-underline text-2xl text-black"
+            href="https://anarthal.github.io/servertech-chat/"
+          >
+            Docs
+          </a>
+        </div>
+      </div>
+    </div>
+    <div
+      class="bodycontainer p-12 flex flex-col justify-center"
+    >
+      <div
+        class="flex justify-center"
+      >
+        <div
+          class="bg-white rounded-2xl p-7 flex flex-col min-w-1/2"
+        >
+          <p
+            class="text-center text-3xl md:text-4xl p-3 m-0"
+          >
+            Log in to BoostServerTech chat
+          </p>
+          <div
+            class="flex justify-center"
+          >
+            <div
+              class="pt-8 pr-5 pl-5 pb-3 flex-1 flex"
+              style="max-width: 40em;"
+            >
+              <form
+                class="flex-1 flex flex-col"
+              >
+                <div
+                  class="flex-1 pb-2"
+                >
+                  <div
+                    class="MuiFormControl-root MuiTextField-root css-1xp5r68-MuiFormControl-root-MuiTextField-root"
+                    style="width: 100%;"
+                  >
+                    <label
+                      class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard MuiFormLabel-colorPrimary Mui-required MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard css-2hy7sk-MuiFormLabel-root-MuiInputLabel-root"
+                      data-shrink="false"
+                      for=":r0:"
+                      id=":r0:-label"
+                    >
+                      Email
+                      <span
+                        aria-hidden="true"
+                        class="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
+                      >
+                         *
+                      </span>
+                    </label>
+                    <div
+                      class="MuiInputBase-root MuiInput-root MuiInput-underline MuiInputBase-colorPrimary MuiInputBase-formControl css-5h82ro-MuiInputBase-root-MuiInput-root"
+                    >
+                      <input
+                        aria-invalid="false"
+                        aria-label="email"
+                        class="MuiInputBase-input MuiInput-input css-1yrc8ca-MuiInputBase-input-MuiInput-input"
+                        id=":r0:"
+                        maxlength="100"
+                        name="email"
+                        required=""
+                        type="email"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="flex-1 pb-2 "
+                >
+                  <div
+                    class="MuiFormControl-root MuiTextField-root css-1xp5r68-MuiFormControl-root-MuiTextField-root"
+                    style="width: 100%;"
+                  >
+                    <label
+                      class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard MuiFormLabel-colorPrimary Mui-required MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard css-2hy7sk-MuiFormLabel-root-MuiInputLabel-root"
+                      data-shrink="false"
+                      for=":r1:"
+                      id=":r1:-label"
+                    >
+                      Password
+                      <span
+                        aria-hidden="true"
+                        class="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
+                      >
+                         *
+                      </span>
+                    </label>
+                    <div
+                      class="MuiInputBase-root MuiInput-root MuiInput-underline MuiInputBase-colorPrimary MuiInputBase-formControl MuiInputBase-adornedEnd css-5h82ro-MuiInputBase-root-MuiInput-root"
+                    >
+                      <input
+                        aria-invalid="false"
+                        aria-label="password"
+                        class="MuiInputBase-input MuiInput-input MuiInputBase-inputAdornedEnd css-1yrc8ca-MuiInputBase-input-MuiInput-input"
+                        id=":r1:"
+                        maxlength="100"
+                        name="password"
+                        required=""
+                        type="password"
+                      />
+                      <button
+                        class="MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium css-53g0n7-MuiButtonBase-root-MuiIconButton-root"
+                        role="button"
+                        tabindex="0"
+                        type="button"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+                          data-testid="VisibilityIcon"
+                          focusable="false"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5M12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5m0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="pt-8 flex justify-center"
+                >
+                  <button
+                    class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-74d805-MuiButtonBase-root-MuiButton-root"
+                    tabindex="0"
+                    type="submit"
+                  >
+                    Log me in!
+                  </button>
+                </div>
+                <div
+                  class="pt-8 flex justify-center"
+                >
+                  <p
+                    class="p-0 m-0 text-sm"
+                  >
+                    Don't have an account? Go to 
+                    <a
+                      class="MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineAlways css-1orsvah-MuiTypography-root-MuiLink-root"
+                      href="/"
+                    >
+                      Create account
+                    </a>
+                  </p>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`login page Snapshot test with small screen 1`] = `
+<DocumentFragment>
+  <div
+    class="flex flex-col"
+  >
+    <div
+      class="flex m-3"
+    >
+      <div
+        class="flex flex-1 justify-between"
+      >
+        <a
+          href="https://www.boost.org/"
+        >
+          <img
+            alt="Boost logo"
+            data-nimg="1"
+            decoding="async"
+            height="40"
+            loading="lazy"
+            src="/_next/image?url=%2Fimg.jpg&w=96&q=75"
+            srcset="/_next/image?url=%2Fimg.jpg&w=48&q=75 1x, /_next/image?url=%2Fimg.jpg&w=96&q=75 2x"
+            style="color: transparent;"
+            width="40"
+          />
+        </a>
+        <a
+          class="pl-2"
+          href="https://github.com/anarthal/servertech-chat"
+        >
+          <svg
+            aria-hidden="true"
+            class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+            data-testid="GitHubIcon"
+            focusable="false"
+            style="width: 40px; height: 40px;"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"
+            />
+          </svg>
+        </a>
+      </div>
+    </div>
+    <div
+      class="bodycontainer p-12 flex flex-col justify-center"
+    >
+      <div
+        class="flex justify-center"
+      >
+        <div
+          class="bg-white rounded-2xl p-7 flex flex-col min-w-1/2"
+        >
+          <p
+            class="text-center text-3xl md:text-4xl p-3 m-0"
+          >
+            Log in to BoostServerTech chat
+          </p>
+          <div
+            class="flex justify-center"
+          >
+            <div
+              class="pt-8 pr-5 pl-5 pb-3 flex-1 flex"
+              style="max-width: 40em;"
+            >
+              <form
+                class="flex-1 flex flex-col"
+              >
+                <div
+                  class="flex-1 pb-2"
+                >
+                  <div
+                    class="MuiFormControl-root MuiTextField-root css-1xp5r68-MuiFormControl-root-MuiTextField-root"
+                    style="width: 100%;"
+                  >
+                    <label
+                      class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard MuiFormLabel-colorPrimary Mui-required MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard css-2hy7sk-MuiFormLabel-root-MuiInputLabel-root"
+                      data-shrink="false"
+                      for=":r4:"
+                      id=":r4:-label"
+                    >
+                      Email
+                      <span
+                        aria-hidden="true"
+                        class="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
+                      >
+                         *
+                      </span>
+                    </label>
+                    <div
+                      class="MuiInputBase-root MuiInput-root MuiInput-underline MuiInputBase-colorPrimary MuiInputBase-formControl css-5h82ro-MuiInputBase-root-MuiInput-root"
+                    >
+                      <input
+                        aria-invalid="false"
+                        aria-label="email"
+                        class="MuiInputBase-input MuiInput-input css-1yrc8ca-MuiInputBase-input-MuiInput-input"
+                        id=":r4:"
+                        maxlength="100"
+                        name="email"
+                        required=""
+                        type="email"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="flex-1 pb-2 "
+                >
+                  <div
+                    class="MuiFormControl-root MuiTextField-root css-1xp5r68-MuiFormControl-root-MuiTextField-root"
+                    style="width: 100%;"
+                  >
+                    <label
+                      class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard MuiFormLabel-colorPrimary Mui-required MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeMedium MuiInputLabel-standard css-2hy7sk-MuiFormLabel-root-MuiInputLabel-root"
+                      data-shrink="false"
+                      for=":r5:"
+                      id=":r5:-label"
+                    >
+                      Password
+                      <span
+                        aria-hidden="true"
+                        class="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
+                      >
+                         *
+                      </span>
+                    </label>
+                    <div
+                      class="MuiInputBase-root MuiInput-root MuiInput-underline MuiInputBase-colorPrimary MuiInputBase-formControl MuiInputBase-adornedEnd css-5h82ro-MuiInputBase-root-MuiInput-root"
+                    >
+                      <input
+                        aria-invalid="false"
+                        aria-label="password"
+                        class="MuiInputBase-input MuiInput-input MuiInputBase-inputAdornedEnd css-1yrc8ca-MuiInputBase-input-MuiInput-input"
+                        id=":r5:"
+                        maxlength="100"
+                        name="password"
+                        required=""
+                        type="password"
+                      />
+                      <button
+                        class="MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium css-53g0n7-MuiButtonBase-root-MuiIconButton-root"
+                        role="button"
+                        tabindex="0"
+                        type="button"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+                          data-testid="VisibilityIcon"
+                          focusable="false"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5M12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5m0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="pt-8 flex justify-center"
+                >
+                  <button
+                    class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-74d805-MuiButtonBase-root-MuiButton-root"
+                    tabindex="0"
+                    type="submit"
+                  >
+                    Log me in!
+                  </button>
+                </div>
+                <div
+                  class="pt-8 flex justify-center"
+                >
+                  <p
+                    class="p-0 m-0 text-sm"
+                  >
+                    Don't have an account? Go to 
+                    <a
+                      class="MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineAlways css-1orsvah-MuiTypography-root-MuiLink-root"
+                      href="/"
+                    >
+                      Create account
+                    </a>
+                  </p>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;

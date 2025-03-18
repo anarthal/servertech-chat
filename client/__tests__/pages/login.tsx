@@ -23,7 +23,19 @@ describe("login page", () => {
   const email = "test@test.com";
   const password = "Useruser10!";
 
-  test("Snapshot test", () => {
+  test("Snapshot test with large screen", () => {
+    // @ts-ignore
+    useIsSmallScreen.mockReturnValue(false);
+    mockedAuth.hasAuth.mockReturnValue(false);
+
+    const { asFragment } = render(<LoginPage />);
+
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("Snapshot test with small screen", () => {
+    // @ts-ignore
+    useIsSmallScreen.mockReturnValue(true);
     mockedAuth.hasAuth.mockReturnValue(false);
 
     const { asFragment } = render(<LoginPage />);
