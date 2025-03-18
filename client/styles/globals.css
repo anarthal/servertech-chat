@@ -12,6 +12,8 @@ div#__next>div {
   margin: 0;
   font-family: Roboto, sans-serif;
   height: 100%;
+  width: 100%;
+  position: fixed;
 }
 
 :root {
