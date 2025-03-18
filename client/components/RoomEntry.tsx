@@ -22,17 +22,14 @@ export default function RoomEntry({
 
   return (
     <div
-      className="flex pt-2 pl-3 pr-3 cursor-pointer overflow-hidden"
+      className="flex pt-2 pl-3 pr-3 cursor-pointer"
       onClick={onClickCallback}
     >
-      <div
-        className="flex-1 flex p-4 rounded-lg overflow-hidden"
-        style={cardStyle}
-      >
+      <div className="flex-1 flex min-w-0 p-4 rounded-lg" style={cardStyle}>
         <div className="pr-3 flex flex-col justify-center">
           <NameAvatar name={name} />
         </div>
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0">
           <p className="m-0 font-bold pb-2" data-testid="room-name">
             {name}
           </p>
