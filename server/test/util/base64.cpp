@@ -7,13 +7,17 @@
 
 #include "util/base64.hpp"
 
+#include <boost/system/error_code.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <span>
 #include <string_view>
 
+#include "error.hpp"
+
 using namespace chat;
 using namespace std::string_view_literals;
+using boost::system::error_code;
 
 // Some test cases have been copied from CPython's and Android's base64 test suites
 

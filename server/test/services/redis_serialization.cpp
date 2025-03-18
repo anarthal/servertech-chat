@@ -17,9 +17,11 @@
 #include <chrono>
 
 #include "business_types.hpp"
+#include "error.hpp"
 
 namespace resp3 = boost::redis::resp3;
 using namespace chat;
+using boost::system::error_code;
 
 BOOST_AUTO_TEST_SUITE(redis_serialization)
 

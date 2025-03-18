@@ -9,7 +9,7 @@
 
 #include <boost/json/error.hpp>
 #include <boost/json/parse.hpp>
-#include <boost/test/tools/interface.hpp>
+#include <boost/system/error_code.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/variant2/variant.hpp>
 
@@ -20,6 +20,7 @@
 #include "timestamp.hpp"
 
 using namespace chat;
+using boost::system::error_code;
 
 BOOST_AUTO_TEST_SUITE(api_types)
 
