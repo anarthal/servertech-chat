@@ -45,5 +45,5 @@ You can find out more [here](https://anarthal.github.io/servertech-chat/03-fork-
 
 ## Want to contribute?
 
-Drop us a message in [the cpplang Slack](https://cpplang.slack.com/archives/C05MLSQGA01)!
+Drop us a message in [the cpplang Slack](https://cpplang.slack.com/archives/C06BRML5EFK)!
 Contributors are more than welcome!
