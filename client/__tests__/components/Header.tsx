@@ -1,6 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import { SmallHeader, LargeHeader } from "@/components/Header";
+import Header, { SmallHeader, LargeHeader } from "@/components/Header";
 import "@testing-library/jest-dom";
+import useIsSmallScreen from "@/hooks/useIsSmallScreen";
+
+jest.mock("@/hooks/useIsSmallScreen");
 
 describe("Header", () => {
   test("Small header: arrow shown", () => {
@@ -63,5 +66,31 @@ describe("Header", () => {
 
     // Snapshot test
     expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("Header: large screen", () => {
+    // Setup
+    // @ts-ignore
+    useIsSmallScreen.mockReturnValue(false);
+
+    // Render
+    render(<Header onArrowClick={undefined} showArrow={true} />);
+
+    // The large header was rendered
+    expect(screen.getByText("Source code")).toBeInTheDocument();
+    expect(screen.queryByTestId("ArrowBackIcon")).toBeNull();
+  });
+
+  test("Header: small screen", () => {
+    // Setup
+    // @ts-ignore
+    useIsSmallScreen.mockReturnValue(true);
+
+    // Render
+    render(<Header onArrowClick={undefined} showArrow={true} />);
+
+    // The small header was rendered
+    expect(screen.queryByText("Source code")).toBeNull();
+    expect(screen.getByTestId("ArrowBackIcon")).toBeInTheDocument();
   });
 });
