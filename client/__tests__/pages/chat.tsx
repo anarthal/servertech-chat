@@ -13,6 +13,7 @@ import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/router";
 import { clearHasAuth } from "@/lib/hasAuth";
 
+jest.mock("@/hooks/useIsSmallScreen");
 jest.mock("@/lib/hasAuth");
 
 describe("chat page", () => {
@@ -64,6 +65,7 @@ describe("chat page", () => {
         currentUserId={2}
         onClickRoom={jest.fn()}
         onMessage={jest.fn()}
+        isSmallScreen={false}
       />,
     );
 
