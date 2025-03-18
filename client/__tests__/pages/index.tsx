@@ -43,17 +43,17 @@ describe("CreateAccountPage page", () => {
     await user.click(screen.getByText("Create my account"));
 
     // We sent the data to the server
-    expect(mockedApi.createAccount).toBeCalledTimes(1);
-    expect(mockedApi.createAccount).toBeCalledWith({
+    expect(mockedApi.createAccount).toHaveBeenCalledTimes(1);
+    expect(mockedApi.createAccount).toHaveBeenCalledWith({
       email,
       password,
       username,
     });
 
     // We stored the auth state and navigated
-    expect(mockedAuth.setHasAuth).toBeCalled();
-    expect(useRouter().push).toBeCalledTimes(1);
-    expect(useRouter().push).toBeCalledWith("/chat");
+    expect(mockedAuth.setHasAuth).toHaveBeenCalled();
+    expect(useRouter().push).toHaveBeenCalledTimes(1);
+    expect(useRouter().push).toHaveBeenCalledWith("/chat");
   });
 
   test.each([
@@ -79,8 +79,8 @@ describe("CreateAccountPage page", () => {
     await user.click(screen.getByText("Create my account"));
 
     // We sent the data to the server
-    expect(mockedApi.createAccount).toBeCalledTimes(1);
-    expect(mockedApi.createAccount).toBeCalledWith({
+    expect(mockedApi.createAccount).toHaveBeenCalledTimes(1);
+    expect(mockedApi.createAccount).toHaveBeenCalledWith({
       email,
       password,
       username,
@@ -88,7 +88,7 @@ describe("CreateAccountPage page", () => {
 
     // We showed an error message and did not navigate
     expect(screen.getByText(expectedMsg)).toBeInTheDocument();
-    expect(mockedAuth.setHasAuth).not.toBeCalled();
-    expect(useRouter().push).not.toBeCalled();
+    expect(mockedAuth.setHasAuth).not.toHaveBeenCalled();
+    expect(useRouter().push).not.toHaveBeenCalled();
   });
 });

@@ -43,7 +43,7 @@ describe("api", () => {
     });
 
     // Validate
-    expect(fetchMock).toBeCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(res).toStrictEqual({ type: "ok" });
   });
 
@@ -66,7 +66,7 @@ describe("api", () => {
     });
 
     // Validate
-    expect(fetchMock).toBeCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(res).toStrictEqual({ type: ErrorId.LoginFailed });
   });
 
@@ -93,7 +93,7 @@ describe("api", () => {
     });
 
     // validate
-    expect(fetchMock).toBeCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(res).toStrictEqual({ type: "ok" });
   });
 
@@ -120,7 +120,7 @@ describe("api", () => {
     });
 
     // Validate
-    expect(fetchMock).toBeCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(res).toStrictEqual({ type: errorId });
   });
 });

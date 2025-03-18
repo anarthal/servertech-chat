@@ -23,7 +23,7 @@ describe("RoomEntry", () => {
 
     // Clicking calls the callback
     screen.getByText("My Room").click();
-    expect(onClick).toBeCalledWith("myRoomId");
+    expect(onClick).toHaveBeenCalledWith("myRoomId");
 
     // Snapshot test
     expect(asFragment()).toMatchSnapshot();

@@ -226,9 +226,9 @@ describe("chat page", () => {
       await server.connected;
       server.close({ code: 1008, reason: "", wasClean: true });
 
-      expect(useRouter().replace).toBeCalledTimes(1);
-      expect(useRouter().replace).toBeCalledWith("/login");
-      expect(clearHasAuth).toBeCalledTimes(1);
+      expect(useRouter().replace).toHaveBeenCalledTimes(1);
+      expect(useRouter().replace).toHaveBeenCalledWith("/login");
+      expect(clearHasAuth).toHaveBeenCalledTimes(1);
     });
   });
 });
