@@ -134,12 +134,7 @@ asio::awaitable<result<std::string_view>> websocket::read()
         co_return ec;
 
     // Convert it to a string_view (no copy is performed)
-    auto res = buffer_to_sv(impl_->read_buffer.data());
-
-    // Log it
-    std::cout << "(READ) " << res << std::endl;
-
-    co_return res;
+    co_return buffer_to_sv(impl_->read_buffer.data());
 }
 
 asio::awaitable<error_code> websocket::write_locked_impl(std::string_view buff)
@@ -149,10 +144,6 @@ asio::awaitable<error_code> websocket::write_locked_impl(std::string_view buff)
     // Perform the write
     error_code ec;
     co_await impl_->ws.async_write(asio::buffer(buff), asio::redirect_error(ec));
-
-    // Log it
-    std::cout << "(WRITE) " << buff << std::endl;
-
     co_return ec;
 }
 
