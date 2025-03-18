@@ -3,13 +3,10 @@
 exports[`Message MyMessage 1`] = `
 <DocumentFragment>
   <div
-    class="flex flex-row pt-3 pb-3"
+    class="flex flex-row-reverse pt-3 pb-3"
   >
     <div
-      class="flex-[4]"
-    />
-    <div
-      class="flex-[6] bg-green-100 rounded-lg pt-4 pl-5 pr-2"
+      class="max-w-11/12 md:max-w-9/12 flex-1 bg-green-100 rounded-lg pt-4 pl-4 md:pl-6 pr-4 md:pr-6"
     >
       <p
         class="m-0 break-all"
@@ -32,36 +29,37 @@ exports[`Message OtherUserMessage 1`] = `
     class="flex flex-row pt-3 pb-3"
   >
     <div
-      class="pr-5 flex flex-col justify-end"
+      class="max-w-11/12 md:max-w-9/12 flex-1 bg-white rounded-lg pt-4 pl-4 md:pl-6 pr-4 md:pr-6"
     >
       <div
-        class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1ih4l76-MuiAvatar-root"
+        class="flex flex-row align-middle pb-3"
       >
-        F
+        <div
+          class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1ih4l76-MuiAvatar-root"
+        >
+          F
+        </div>
+        <div
+          class="flex flex-col justify-center pl-3"
+        >
+          <p
+            class="text-xs p-0 m-0"
+          >
+            Fancy user
+          </p>
+        </div>
       </div>
-      <p
-        class="m-0 pt-1 text-sm"
-      >
-        Fancy user
-      </p>
-    </div>
-    <div
-      class="flex-[6] bg-white rounded-lg pt-4 pl-5 pr-2"
-    >
       <p
         class="m-0 break-all"
       >
         Hello dear!
       </p>
       <p
-        class="m-0 pb-2 pr-2 text-xs text-right"
+        class="m-0 pb-1 pr-2 text-xs text-right"
       >
         Mar 10, 2020, 10:03 PM
       </p>
     </div>
-    <div
-      class="flex-[3]"
-    />
   </div>
 </DocumentFragment>
 `;
