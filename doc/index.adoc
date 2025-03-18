@@ -86,7 +86,7 @@ xref:03-fork-modify-deploy.adoc#[this section] to learn more.
 == Contributing
 
 We always welcome contributions! As a fist step, please
-https://cpplang.slack.com/archives/C05MLSQGA01[join our Slack discussion group]
+https://cpplang.slack.com/archives/C06BRML5EFK[join our Slack discussion group]
 and have a look at
 https://github.com/anarthal/servertech-chat/issues[the open issues].
 

@@ -80,4 +80,4 @@ distribution-agnostic.
 
 We're also happy to provide help if you're stuck. Please
 https://github.com/anarthal/servertech-chat/issues/new[open an issue in the repository]
-or https://cpplang.slack.com/archives/C05MLSQGA01[contact us in Slack].
+or https://cpplang.slack.com/archives/C06BRML5EFK[contact us in Slack].
