@@ -17,7 +17,7 @@ sudo docker network rm chat-net || echo "Network does not exist"
 # Run our application
 sudo docker run -d \
     --name redis \
-    -v /data/redis-data:/data redis:alpine \
+    -v /data/redis-data:/data redis:7.4.2-alpine \
     redis-server \
     --appendonly yes
 sudo docker run -d \
