@@ -14,15 +14,15 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/this_coro.hpp>
+#include <boost/system/error_code.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <chrono>
 #include <exception>
 
-#include "error.hpp"
-
 using namespace chat;
 namespace asio = boost::asio;
+using boost::system::error_code;
 
 static constexpr auto rethrow_on_error = [](std::exception_ptr ptr) {
     if (ptr)

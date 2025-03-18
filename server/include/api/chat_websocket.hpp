@@ -9,10 +9,10 @@
 #define SERVERTECHCHAT_SERVER_INCLUDE_API_CHAT_WEBSOCKET_HPP
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <memory>
 
-#include "error.hpp"
 #include "util/websocket.hpp"
 
 namespace chat {
@@ -21,7 +21,7 @@ namespace chat {
 class shared_state;
 
 // Runs the chat websocket session until an error occurs.
-boost::asio::awaitable<error_with_message> handle_chat_websocket(
+boost::asio::awaitable<boost::system::error_code> handle_chat_websocket(
     websocket socket,
     std::shared_ptr<shared_state> state
 );

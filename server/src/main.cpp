@@ -5,14 +5,15 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
 
 #include <cstdlib>
+#include <exception>
 #include <iostream>
 
-#include "error.hpp"
-#include "listener.hpp"
+#include "server.hpp"
 #include "services/mysql_client.hpp"
 #include "services/redis_client.hpp"
 #include "shared_state.hpp"
@@ -20,7 +21,7 @@
 namespace asio = boost::asio;
 using namespace chat;
 
-int main(int argc, char* argv[])
+static void main_impl(int argc, char* argv[])
 {
     // Check command line arguments.
     if (argc != 4)
@@ -28,7 +29,7 @@ int main(int argc, char* argv[])
         std::cerr << "Usage: " << argv[0] << " <address> <port> <doc_root>\n"
                   << "Example:\n"
                   << "    " << argv[0] << " 0.0.0.0 8080 .\n";
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 
     // Application config
@@ -38,17 +39,17 @@ int main(int argc, char* argv[])
 
     // An event loop, where the application will run. The server is single-
     // threaded, so we set the concurrency hint to 1
-    asio::io_context ioc{1};
+    asio::io_context ctx(1);
 
     // Singleton objects shared by all connections
-    auto st = std::make_shared<shared_state>(doc_root, ioc.get_executor());
+    auto st = std::make_shared<shared_state>(doc_root, ctx.get_executor());
 
     // The physical endpoint where our server will listen
-    asio::ip::tcp::endpoint listening_endpoint{asio::ip::make_address(ip), port};
+    asio::ip::tcp::endpoint listening_endpoint(asio::ip::make_address(ip), port);
 
     // A signal_set allows us to intercept SIGINT and SIGTERM and
     // exit gracefully
-    asio::signal_set signals{ioc.get_executor(), SIGINT, SIGTERM};
+    asio::signal_set signals(ctx.get_executor(), SIGINT, SIGTERM);
 
     // Launch the Redis connection
     st->redis().start_run();
@@ -57,15 +58,23 @@ int main(int argc, char* argv[])
     st->mysql().start_run();
 
     // Start listening for HTTP connections. This will run until the context is stopped
-    auto ec = launch_http_listener(ioc.get_executor(), listening_endpoint, st);
-    if (ec)
-    {
-        log_error(ec, "Error launching the HTTP listener");
-        exit(EXIT_FAILURE);
-    }
+    asio::co_spawn(
+        // The execution context to run the coroutine on
+        ctx,
+
+        // The actual coroutine to run, as an awaitable
+        run_server(listening_endpoint, st),
+
+        // Will run when the coroutine finishes. Propagate any exceptions thrown
+        // in the coroutine to main
+        [](std::exception_ptr exc) {
+            if (exc)
+                std::rethrow_exception(exc);
+        }
+    );
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
-    signals.async_wait([st, &ioc](error_code, int) {
+    signals.async_wait([st, &ctx](boost::system::error_code, int) {
         // Stop the Redis reconnection loop
         st->redis().cancel();
 
@@ -73,13 +82,25 @@ int main(int argc, char* argv[])
         st->mysql().cancel();
 
         // Stop the io_context. This will cause run() to return
-        ioc.stop();
+        ctx.stop();
     });
 
     // Run the io_context. This will block until the context is stopped by
     // a signal and all outstanding async tasks are finished.
-    ioc.run();
+    ctx.run();
 
     // (If we get here, it means we got a SIGINT or SIGTERM)
-    return EXIT_SUCCESS;
+}
+
+int main(int argc, char* argv[])
+{
+    try
+    {
+        main_impl(argc, argv);
+    }
+    catch (const std::exception& err)
+    {
+        std::cerr << "Exception in main(): " << err.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 }

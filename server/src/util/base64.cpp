@@ -8,6 +8,7 @@
 #include "util/base64.hpp"
 
 #include <boost/core/ignore_unused.hpp>
+#include <boost/system/result.hpp>
 
 #include <cstddef>
 #include <string>
@@ -19,6 +20,7 @@
 // interface is not public.
 
 using namespace chat;
+using boost::system::result;
 
 // Number of bytes of expected padding for a given input data length
 static std::size_t get_padding(std::size_t data_length) noexcept

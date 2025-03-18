@@ -13,6 +13,7 @@
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/status.hpp>
 #include <boost/beast/http/string_body.hpp>
+#include <boost/system/error_code.hpp>
 #include <boost/url/parse.hpp>
 
 #include <string_view>
@@ -23,6 +24,7 @@
 using namespace chat;
 namespace http = boost::beast::http;
 namespace beast = boost::beast;
+using boost::system::error_code;
 
 // Intentionally don't provide exact version
 static constexpr std::string_view server_header = "beast";

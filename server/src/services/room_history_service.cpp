@@ -7,6 +7,9 @@
 
 #include "services/room_history_service.hpp"
 
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
+
 #include <array>
 #include <string_view>
 #include <unordered_set>
@@ -17,6 +20,8 @@
 
 using namespace chat;
 namespace asio = boost::asio;
+using boost::system::error_code;
+using boost::system::result;
 
 static std::vector<std::int64_t> unique_user_ids(const std::vector<message_batch>& input)
 {
@@ -27,7 +32,7 @@ static std::vector<std::int64_t> unique_user_ids(const std::vector<message_batch
     return std::vector<std::int64_t>(set.begin(), set.end());
 }
 
-asio::awaitable<result_with_message<std::pair<std::vector<message_batch>, username_map>>> room_history_service::
+asio::awaitable<result<std::pair<std::vector<message_batch>, username_map>>> room_history_service::
     get_room_history(std::span<const std::string_view> room_ids)
 {
     // Compose an array of requests for Redis
@@ -39,7 +44,7 @@ asio::awaitable<result_with_message<std::pair<std::vector<message_batch>, userna
     // Lookup messages
     auto batches_result = co_await redis_->get_room_history(redis_req);
     if (batches_result.has_error())
-        co_return std::move(batches_result).error();
+        co_return batches_result.error();
     assert(batches_result->size() == room_ids.size());
 
     // Collect the IDs we need to lookup
@@ -48,13 +53,14 @@ asio::awaitable<result_with_message<std::pair<std::vector<message_batch>, userna
     // Look them up
     auto usernames_result = co_await mysql_->get_usernames(user_ids);
     if (usernames_result.has_error())
-        co_return std::move(usernames_result).error();
+        co_return usernames_result.error();
 
     co_return std::pair{std::move(*batches_result), std::move(*usernames_result)};
 }
 
-asio::awaitable<result_with_message<std::pair<message_batch, username_map>>> room_history_service::
-    get_room_history(std::string_view room_id)
+asio::awaitable<result<std::pair<message_batch, username_map>>> room_history_service::get_room_history(
+    std::string_view room_id
+)
 {
     // Compose an aray with a single request
     std::array<std::string_view, 1> room_ids{room_id};
@@ -62,7 +68,7 @@ asio::awaitable<result_with_message<std::pair<message_batch, username_map>>> roo
     // Call the batch function
     auto res = co_await get_room_history(room_ids);
     if (res.has_error())
-        co_return std::move(res).error();
+        co_return res.error();
     assert(res->first.size() == 1u);
 
     // Result

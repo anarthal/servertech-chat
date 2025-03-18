@@ -8,11 +8,11 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_UTIL_BASE64_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_UTIL_BASE64_HPP
 
+#include <boost/system/result.hpp>
+
 #include <span>
 #include <string>
 #include <string_view>
-
-#include "error.hpp"
 
 namespace chat {
 
@@ -22,7 +22,10 @@ std::string base64_encode(std::span<const unsigned char> input, bool with_paddin
 
 // Decodes the given input, interpreting it as a base64 string. If !with_padding,
 // no padding is expected at the end of the string.
-result<std::vector<unsigned char>> base64_decode(std::string_view input, bool with_padding = true);
+boost::system::result<std::vector<unsigned char>> base64_decode(
+    std::string_view input,
+    bool with_padding = true
+);
 
 }  // namespace chat
 

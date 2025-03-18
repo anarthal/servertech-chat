@@ -63,10 +63,10 @@ asio::awaitable<response_builder::response_type> chat::handle_create_account(
     // Handle errors
     if (user_id_result.has_error())
     {
-        auto err = std::move(user_id_result).error();
-        if (err.ec == errc::username_exists)
+        auto err = user_id_result.error();
+        if (err == errc::username_exists)
             co_return ctx.response().json_error(http::status::bad_request, api_error_id::username_exists, "");
-        else if (err.ec == errc::email_exists)
+        else if (err == errc::email_exists)
             co_return ctx.response().json_error(http::status::bad_request, api_error_id::email_exists, "");
         else
             co_return ctx.response().internal_server_error(err);
@@ -101,8 +101,8 @@ asio::awaitable<response_builder::response_type> chat::handle_login(request_cont
     // Handle errors
     if (user_result.has_error())
     {
-        auto err = std::move(user_result).error();
-        if (err.ec == errc::not_found)
+        auto err = user_result.error();
+        if (err == errc::not_found)
             co_return login_failed(ctx.response());  // email not found
         else
             co_return ctx.response().internal_server_error(err);

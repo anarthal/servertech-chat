@@ -7,6 +7,7 @@
 
 #include "util/scrypt.hpp"
 
+#include <boost/system/error_code.hpp>
 #include <boost/test/tools/context.hpp>
 #include <boost/test/unit_test.hpp>
 
@@ -17,6 +18,7 @@
 
 using namespace chat;
 using namespace std::string_view_literals;
+using boost::system::error_code;
 
 BOOST_AUTO_TEST_SUITE(scrypt)
 

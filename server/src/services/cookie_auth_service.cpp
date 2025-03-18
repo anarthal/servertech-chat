@@ -8,6 +8,8 @@
 #include "services/cookie_auth_service.hpp"
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 
 #include <algorithm>
 
@@ -19,19 +21,19 @@
 using namespace chat;
 namespace http = boost::beast::http;
 namespace asio = boost::asio;
+using boost::system::error_code;
+using boost::system::result;
 
 static constexpr std::string_view session_cookie_name = "sid";
 static constexpr std::chrono::seconds session_duration(3600 * 24 * 7);  // 7 days
 
-asio::awaitable<result_with_message<std::string>> cookie_auth_service::generate_session_cookie(
-    std::int64_t user_id
-)
+asio::awaitable<result<std::string>> cookie_auth_service::generate_session_cookie(std::int64_t user_id)
 {
     // Generate a session token
     session_store store{*redis_};
     auto session_id_result = co_await store.generate_session_id(user_id, session_duration);
     if (session_id_result.has_error())
-        co_return std::move(session_id_result).error();
+        co_return session_id_result.error();
 
     // Generate the cookie to be set
     co_return set_cookie_builder(session_cookie_name, *session_id_result)
@@ -41,14 +43,14 @@ asio::awaitable<result_with_message<std::string>> cookie_auth_service::generate_
         .build_header();
 }
 
-asio::awaitable<result_with_message<std::int64_t>> cookie_auth_service::user_id_from_cookie(
+asio::awaitable<result<std::int64_t>> cookie_auth_service::user_id_from_cookie(
     const boost::beast::http::fields& req
 )
 {
     // Get the Cookie header from the request
     auto it = req.find(http::field::cookie);
     if (it == req.end())
-        CHAT_CO_RETURN_ERROR_WITH_MESSAGE(errc::requires_auth, "")
+        CHAT_CO_RETURN_ERROR(errc::requires_auth)
 
     // Retrieve the session cookie
     cookie_list cookies(it->value());
@@ -56,28 +58,28 @@ asio::awaitable<result_with_message<std::int64_t>> cookie_auth_service::user_id_
         return p.name == session_cookie_name;
     });
     if (cookie_it == cookies.end())
-        CHAT_CO_RETURN_ERROR_WITH_MESSAGE(errc::requires_auth, "")
+        CHAT_CO_RETURN_ERROR(errc::requires_auth)
 
     // Look it up in Redis
     session_store store{*redis_};
     auto result = co_await store.get_user_by_session(cookie_it->value);
     if (result.has_error())
     {
-        auto err = std::move(result).error();
-        if (err.ec == errc::not_found)
-            CHAT_CO_RETURN_ERROR_WITH_MESSAGE(errc::requires_auth, std::move(err.msg))
+        auto err = result.error();
+        if (err == errc::not_found)
+            CHAT_CO_RETURN_ERROR(errc::requires_auth)
         else
             co_return err;
     }
     co_return result.value();
 }
 
-asio::awaitable<result_with_message<user>> cookie_auth_service::user_from_cookie(
+asio::awaitable<result<user>> cookie_auth_service::user_from_cookie(
     const boost::beast::http::fields& req_headers
 )
 {
     auto user_id_result = co_await user_id_from_cookie(req_headers);
     if (user_id_result.has_error())
-        co_return std::move(user_id_result).error();
+        co_return user_id_result.error();
     co_return co_await mysql_->get_user_by_id(*user_id_result);
 }

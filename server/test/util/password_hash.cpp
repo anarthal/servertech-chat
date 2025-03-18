@@ -17,21 +17,21 @@ BOOST_AUTO_TEST_SUITE(password_hash)
 
 BOOST_AUTO_TEST_CASE(success)
 {
-    constexpr std::string_view pasword = "some_password";
+    constexpr std::string_view password = "some_password";
 
     // Hash the password
-    auto hash = hash_password(pasword);
+    auto hash = hash_password(password);
 
     // It was hashed using scrypt and encoded using PHC
     std::string_view prefix = "$scrypt$";
     BOOST_TEST(hash.substr(0, prefix.size()) == prefix);
 
     // Hashing the password again yields a different value because of the salt
-    auto hash2 = hash_password(pasword);
+    auto hash2 = hash_password(password);
     BOOST_TEST(hash != hash2);
 
     // Checking the right password succeeds
-    BOOST_TEST(verify_password(pasword, hash));
+    BOOST_TEST(verify_password(password, hash));
 
     // Checking an incorrect password fails
     BOOST_TEST(!verify_password("bad_password", hash));
