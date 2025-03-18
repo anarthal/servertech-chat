@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import boostLogo from "@/public/boost.jpg";
+import boostLogo from "@/public/boost.png";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import useIsSmallScreen from "@/hooks/useIsSmallScreen";
