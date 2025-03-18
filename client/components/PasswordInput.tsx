@@ -1,4 +1,5 @@
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { IconButton, TextField } from "@mui/material";
 import { useReducer } from "react";
 import { FieldValues, Path, UseFormRegister } from "react-hook-form";
@@ -29,7 +30,7 @@ export default function PasswordInput<TFieldValues extends FieldValues>({
         InputProps={{
           endAdornment: (
             <IconButton onClick={triggerShowPassword} role="button">
-              {showPassword ? <VisibilityOff /> : <Visibility />}
+              {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
             </IconButton>
           ),
         }}

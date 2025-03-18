@@ -1,7 +1,8 @@
 import React from "react";
 import Image from "next/image";
 import boostLogo from "@/public/boost.jpg";
-import { ArrowBack, GitHub } from "@mui/icons-material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import GitHubIcon from "@mui/icons-material/GitHub";
 import useIsSmallScreen from "@/hooks/useIsSmallScreen";
 
 // The common Header with the Boost logo shown in all pages
@@ -52,7 +53,7 @@ const SmallHeader = ({
           onClick={onArrowClick}
           className="flex flex-col justify-center pr-2"
         >
-          <ArrowBack
+          <ArrowBackIcon
             color={onArrowClick === undefined ? "disabled" : undefined}
           />
         </div>
@@ -60,7 +61,7 @@ const SmallHeader = ({
       <div className="flex flex-1 justify-between">
         <BoostLogo height={40} />
         <a href="https://github.com/anarthal/servertech-chat" className="pl-2">
-          <GitHub style={{ width: "40px", height: "40px" }} />
+          <GitHubIcon style={{ width: "40px", height: "40px" }} />
         </a>
       </div>
     </div>
