@@ -5,7 +5,6 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "error.hpp"
 #include "services/mysql_client.hpp"
 
 #include <boost/asio/any_io_executor.hpp>
@@ -35,9 +34,11 @@
 #include <exception>
 #include <string>
 #include <string_view>
+#include <tuple>
 
 #include "business_types.hpp"
 #include "business_types_metadata.hpp"  // Required by static_results
+#include "error.hpp"
 
 using namespace chat;
 namespace mysql = boost::mysql;
@@ -112,7 +113,6 @@ public:
     {
         error_code ec;
         mysql::diagnostics diag;
-        mysql::results result;
 
         // Get a connection
         mysql::pooled_connection conn = co_await pool_.async_get_connection(diag, asio::redirect_error(ec));
@@ -122,10 +122,27 @@ public:
             co_return ec;
         }
 
-        // Execute the insertion
+        // Execute the insertion and check for duplicates.
+        // If the user to be inserted has a duplicate username or password,
+        // the INSERT statement will fail and the transaction won't be committed.
+        // The SELECT statement allows us to discriminate whether the duplication
+        // was caused by the email or by the username.
+        // SELECT ... FOR UPDATE will prevent new users with that username from
+        // being inserted until we commit, avoiding race conditions.
+        // The query has 4 statements, so MySQL sends us 4 results back
+        mysql::static_results<
+            std::tuple<>,              // START TRANSACTION (returns no data)
+            std::tuple<std::int64_t>,  // SELECT
+            std::tuple<>,              // INSERT (returns no data)
+            std::tuple<>               // COMMIT (returns no data)
+            >
+            result;
         co_await conn->async_execute(
             mysql::with_params(
-                "INSERT INTO users (username, email, password) VALUES ({}, {}, {})",
+                "START TRANSACTION;"
+                "SELECT id FROM users WHERE username = {0} FOR UPDATE;"
+                "INSERT INTO users (username, email, password) VALUES ({0}, {1}, {2});"
+                "COMMIT",
                 username,
                 email,
                 hashed_password
@@ -135,15 +152,12 @@ public:
             asio::redirect_error(ec)
         );
 
-        // Detect duplicates
+        // If there was a duplicate, the operation fails with this error code
         if (ec == mysql::common_server_errc::er_dup_entry)
         {
-            // As per MySQL documentation, error messages for er_dup_entry
-            // are formatted as: Duplicate entry '%s' for key %d
-            if (diag.server_message().ends_with("'users.username'"))
-                co_return errc::username_exists;
-            else if (diag.server_message().ends_with("'users.email'"))
-                co_return errc::email_exists;
+            // If the SELECT returned any row, the duplicated field was the username.
+            // Otherwise, it was the email
+            co_return result.rows<1>().empty() ? errc::email_exists : errc::username_exists;
         }
 
         // Unknown errors
