@@ -64,7 +64,6 @@ target_link_libraries(
     PUBLIC
     Boost::headers
     Boost::json
-    Boost::regex
     Boost::url
     Boost::charconv
     OpenSSL::Crypto
