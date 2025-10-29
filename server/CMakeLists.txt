@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.16.0)
 project(servertech_chat)
 
 # Boost.Charconv is required by Boost.MySQL
-find_package(Boost REQUIRED COMPONENTS headers json regex url charconv)
+find_package(Boost REQUIRED COMPONENTS headers json url charconv)
 
 # OpenSSL is required by Boost.Redis
 find_package(OpenSSL REQUIRED)
