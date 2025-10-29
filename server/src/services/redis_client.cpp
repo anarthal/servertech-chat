@@ -50,7 +50,7 @@ public:
         redis::config cfg;
         cfg.addr.host = std::move(host);
         cfg.health_check_interval = std::chrono::seconds::zero();  // Disable health checks for now
-        conn_.async_run(cfg, {}, asio::detached);
+        conn_.async_run(cfg, asio::detached);
     }
 
     void cancel() final override { conn_.cancel(); }
