@@ -1,10 +1,22 @@
-# Downloads sources to ~/boost-src, installs to /opt/boost
-# Get the source code
-mkdir ~/boost-src
+# # Downloads sources to ~/boost-src, installs to /opt/boost
+# # Get the source code
+# mkdir ~/boost-src
+# cd ~/boost-src
+# wget -q https://archives.boost.io/beta/1.89.0.beta1/source/boost_1_89_0_b1_rc1.tar.gz
+# tar -xf boost_1_89_0_b1_rc1.tar.gz
+# cd boost_1_89_0
+
+set -e
+
+git clone -b develop --depth 1 https://github.com/boostorg/boost.git ~/boost-src
 cd ~/boost-src
-wget -q https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz
-tar -xf boost_1_87_0.tar.gz
-cd boost_1_87_0
+git config submodule.fetchJobs 8
+git submodule update -q --init --recursive
+
+# Charconv branch
+cd libs/charconv
+git checkout source_compiles
+cd ../..
 
 # Build and install. Make sure you've got write access to /opt/boost,
 # otherwise change the --prefix argument
