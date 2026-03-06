@@ -9,6 +9,7 @@ module;
 
 // For compile-time efficiency, Asio-dependent libraries are also provided by this file,
 // since they share a lot of includes
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/buffer.hpp>
@@ -16,7 +17,7 @@ module;
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/redirect_error.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/ssl/stream.hpp> // fix a friend declaration in Beast
+#include <boost/asio/detached.hpp>
 
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/http/field.hpp>
@@ -32,7 +33,9 @@ using asio::as_tuple;
 using asio::const_buffer;
 using asio::buffer;
 using asio::redirect_error;
-using asio::use_awaitable_t;
+using asio::use_awaitable;
+using asio::detached;
+using asio::co_spawn;
 
 namespace experimental {
 using experimental::channel;

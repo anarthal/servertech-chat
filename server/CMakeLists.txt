@@ -50,8 +50,8 @@ target_sources(servertech_chat
 
         # Services
         modules/services/redis_serialization.cppm
-        # modules/services/redis_client.cppm
-        # modules/services/mysql_client.cppm
+        modules/services/redis_client.cppm
+        modules/services/mysql_client.cppm
         # modules/services/session_store.cppm
         # modules/services/cookie_auth_service.cppm
         # modules/services/room_history_service.cppm
@@ -89,8 +89,8 @@ target_sources(servertech_chat
 
         # Services
         src/services/redis_serialization.cpp
-        # src/services/redis_client.cpp
-        # src/services/mysql_client.cpp
+        src/services/redis_client.cpp
+        src/services/mysql_client.cpp
         # src/services/session_store.cpp
         # src/services/cookie_auth_service.cpp
         # src/services/room_history_service.cpp

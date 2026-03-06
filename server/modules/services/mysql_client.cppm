@@ -5,19 +5,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_MYSQL_CLIENT_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_MYSQL_CLIENT_HPP
+module;
 
-#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/system/result.hpp>
-#include <boost/variant2/variant.hpp>
 
-#include <memory>
-#include <span>
-#include <string_view>
+module servertech_chat:mysql_client;
 
-#include "business_types.hpp"
+import :business_types;
+import :boost.asio;
+import :boost.system;
+import std;
 
 // A high-level, specialized MySQL client. It implements the operations
 // required by our server, abstracting away the actual SQL operations.
@@ -69,5 +66,3 @@ public:
 std::unique_ptr<mysql_client> create_mysql_client(boost::asio::any_io_executor ex);
 
 }  // namespace chat
-
-#endif
