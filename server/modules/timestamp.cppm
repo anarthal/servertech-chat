@@ -5,10 +5,9 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_TIMESTAMP_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_TIMESTAMP_HPP
+module servertech_chat:timestamp;
 
-#include <chrono>
+export import std;
 
 // Helpers to work with timestamps.
 // The serialized representation of a timestamp is an int64_t with milliseconds
@@ -32,5 +31,3 @@ inline timestamp_t parse_timestamp(std::int64_t input) noexcept
 }
 
 }  // namespace chat
-
-#endif
