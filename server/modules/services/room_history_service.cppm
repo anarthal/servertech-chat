@@ -5,17 +5,12 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_ROOM_HISTORY_SERVICE_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_ROOM_HISTORY_SERVICE_HPP
+module servertech_chat:room_history_service;
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/system/result.hpp>
-
-#include <span>
-#include <string_view>
-#include <utility>
-
-#include "business_types.hpp"
+import :boost.asio;
+import :boost.system;
+import :business_types;
+import std;
 
 // Contains functions to retrieve room chat history
 
@@ -52,5 +47,3 @@ public:
 };
 
 }  // namespace chat
-
-#endif
