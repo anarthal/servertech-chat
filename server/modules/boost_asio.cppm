@@ -7,8 +7,7 @@
 
 module;
 
-// For compile-time efficiency, Asio-dependent libraries are also provided by this file,
-// since they share a lot of includes
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/as_tuple.hpp>
@@ -18,11 +17,6 @@ module;
 #include <boost/asio/redirect_error.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/detached.hpp>
-
-#include <boost/beast/core/flat_buffer.hpp>
-#include <boost/beast/http/field.hpp>
-#include <boost/beast/http/message.hpp>
-#include <boost/beast/http/string_body.hpp>
 
 export module servertech_chat:boost.asio;
 
@@ -45,17 +39,8 @@ namespace ip {
 using ip::tcp;
 }
 
-}
-
-export namespace boost::beast {
-
-using beast::flat_buffer;
-
-namespace http {
-using http::field;
-using http::request;
-using http::response;
-using http::string_body;
+inline asio::awaitable<void> dummy() {
+    co_await asio::awaitable<void>{};
 }
 
 }

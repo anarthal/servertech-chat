@@ -32,6 +32,8 @@ target_sources(servertech_chat
             modules/boost_variant2.cppm
             modules/boost_json.cppm
             modules/boost_redis.cppm
+            modules/boost_url.cppm
+            modules/boost_beast.cppm
 
         # Header-only libraries with optional separate-source mode
         # modules/separate-compilation/boost_asio.cppm
@@ -55,7 +57,7 @@ target_sources(servertech_chat
         # modules/services/session_store.cppm
         # modules/services/cookie_auth_service.cppm
         # modules/services/room_history_service.cppm
-        # modules/services/pubsub_service.cppm
+        modules/services/pubsub_service.cppm
 
         # API
         modules/api/api_types.cppm
@@ -66,7 +68,7 @@ target_sources(servertech_chat
         # modules/static_files.cppm
         # modules/server.cppm
         # modules/http_session.cppm
-        # modules/request_context.cppm
+        modules/request_context.cppm
         # modules/shared_state.cppm
         modules/business_types.cppm
         modules/timestamp.cppm
@@ -94,7 +96,7 @@ target_sources(servertech_chat
         # src/services/session_store.cpp
         # src/services/cookie_auth_service.cpp
         # src/services/room_history_service.cpp
-        # src/services/pubsub_service.cpp
+        src/services/pubsub_service.cpp
 
         # API
         src/api/api_types.cpp
@@ -105,7 +107,7 @@ target_sources(servertech_chat
         # src/static_files.cpp
         # src/server.cpp
         # src/http_session.cpp
-        # src/request_context.cpp
+        src/request_context.cpp
         # src/shared_state.cpp
         src/error.cpp
 )

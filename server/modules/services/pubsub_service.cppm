@@ -4,18 +4,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
+module;
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_PUBSUB_SERVICE_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_PUBSUB_SERVICE_HPP
-
-#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/error.hpp>
 
-#include <memory>
-#include <span>
-#include <string>
-#include <string_view>
+module servertech_chat:pubsub_service;
+
+import :boost.asio;
+import std;
 
 // An in-memory publish-subscribe mechanism. Used to broadcast messages between clients.
 
@@ -82,4 +78,3 @@ std::unique_ptr<pubsub_service> create_pubsub_service(boost::asio::any_io_execut
 
 }  // namespace chat
 
-#endif

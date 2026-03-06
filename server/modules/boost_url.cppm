@@ -7,17 +7,16 @@
 
 module;
 
-#include <boost/system/error_code.hpp>
-#include <boost/system/result.hpp>
+#include <boost/url/parse.hpp>
+#include <boost/url/url.hpp>
+#include <boost/url/url_view.hpp>
 
-export module servertech_chat:boost.system;
+export module servertech_chat:boost.url;
 
-export namespace boost::system {
+export namespace boost::urls {
 
-using system::result;
-using system::error_code;
-namespace errc {
-using errc::errc_t;
-}
+using urls::url_view;
+using urls::url;
+using urls::parse_origin_form;
 
 }

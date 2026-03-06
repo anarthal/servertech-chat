@@ -5,27 +5,19 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_REQUEST_CONTEXT_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_REQUEST_CONTEXT_HPP
-
-#include <boost/beast/http/error.hpp>
-#include <boost/beast/http/field.hpp>
-#include <boost/beast/http/fields.hpp>
-#include <boost/beast/http/message.hpp>
-#include <boost/beast/http/message_generator.hpp>
-#include <boost/beast/http/status.hpp>
-#include <boost/beast/http/verb.hpp>
-#include <boost/url/error_types.hpp>
-#include <boost/url/url_view.hpp>
+module;
 
 #include <cassert>
-#include <cstddef>
-#include <optional>
-#include <string>
-#include <string_view>
+#include "error_macros.hpp"
 
-#include "api/api_types.hpp"
-#include "error.hpp"
+module servertech_chat:request_context;
+
+import :boost.beast;
+import :boost.url;
+import :error;
+import :api_types;
+import std;
+
 
 // Contains a request_context class, which encapsulates a Boost.Beast HTTP request
 // and provides an easy way to build HTTP responses.
@@ -210,4 +202,3 @@ private:
 
 }  // namespace chat
 
-#endif
