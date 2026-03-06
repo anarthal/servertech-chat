@@ -5,19 +5,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_SESSION_STORE_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_SESSION_STORE_HPP
+module servertech_chat:session_store;
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/system/result.hpp>
-
-#include <chrono>
-#include <string_view>
+import :boost.asio;
+import :boost.system;
+import std;
 
 // Contains functions to manage user sessions. This are stored in Redis as
 // (session_id, user_id) pairs, with a certain expiry time. Sessions last
 // until their corresponding Redis key expires or is removed.
-// These functions are relatively low-level. Prefer cookie_auth_service.hpp
+// These functions are relatively low-level. Prefer cookie_auth_service
 // to check auth in API handlers.
 
 namespace chat {
@@ -48,4 +45,3 @@ public:
 
 }  // namespace chat
 
-#endif

@@ -5,19 +5,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_COOKIE_AUTH_SERVICE_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_COOKIE_AUTH_SERVICE_HPP
+module servertech_chat:cookie_auth_service;
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/beast/http/fields.hpp>
-#include <boost/system/result.hpp>
-
-#include <cstdint>
-
-#include "business_types.hpp"
+import :boost.asio;
+import :boost.beast;
+import :boost.system;
+import :business_types;
+import std;
 
 // Contains high-level functions to set and verify user sessions.
-// Session IDs are stored in Redis (see session_store.hpp for details).
+// Session IDs are stored in Redis (see session_store for details).
 // The session ID alone is enough to authenticate a client (so it constitutes
 // an authentication token).
 // Session IDs are transmitted to the client and back using HTTP cookies.
@@ -56,5 +53,3 @@ public:
 };
 
 }  // namespace chat
-
-#endif

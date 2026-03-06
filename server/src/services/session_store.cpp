@@ -5,19 +5,17 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "services/session_store.hpp"
+module;
 
-#include <boost/system/result.hpp>
-
-#include <array>
 #include <openssl/rand.h>
-#include <stdexcept>
-#include <string>
-#include <string_view>
 
-#include "error.hpp"
-#include "services/redis_client.hpp"
-#include "util/base64.hpp"
+module servertech_chat;
+
+import :session_store;
+import :error;
+import :redis_client;
+import :base64;
+import :boost.system;
 
 using namespace chat;
 namespace asio = boost::asio;
