@@ -5,6 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <boost/assert/source_location.hpp>
+
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_ERROR_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_ERROR_HPP
 

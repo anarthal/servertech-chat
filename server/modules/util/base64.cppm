@@ -5,12 +5,9 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-module;
-
-#include <boost/system/result.hpp>
-
 module servertech_chat:base64;
 
+import :boost;
 export import std;
 
 namespace chat {
