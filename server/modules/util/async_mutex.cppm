@@ -8,7 +8,6 @@
 module;
 
 #include <cassert>
-#include <boost/asio/awaitable.hpp>
 
 module servertech_chat:async_mutex;
 

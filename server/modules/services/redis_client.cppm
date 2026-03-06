@@ -7,8 +7,6 @@
 
 module;
 
-#include <boost/asio/awaitable.hpp>
-
 module servertech_chat:redis_client;
 
 import :business_types;

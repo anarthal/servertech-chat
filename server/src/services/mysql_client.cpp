@@ -10,7 +10,6 @@ module;
 #include "error_macros.hpp"
 #include <boost/core/ignore_unused.hpp>
 #include <boost/describe/class.hpp>
-#include <boost/asio/awaitable.hpp>
 
 #include <boost/mysql/any_address.hpp>
 #include <boost/mysql/any_connection.hpp>
@@ -27,8 +26,8 @@ module servertech_chat;
 
 import :mysql_client;
 import :business_types;
-import :boost.system;
 import :error;
+import :boost.system;
 import :boost.asio;
 
 

@@ -8,11 +8,14 @@
 module;
 
 #include <cassert>
-#include <boost/asio/awaitable.hpp>
+
 #include <boost/beast/version.hpp>
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/websocket/stream.hpp>
+
+// Websocket can't be reliably exported with export using
+#include <boost/beast/websocket/error.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/beast/websocket/stream.hpp>
+#include <boost/beast/core/tcp_stream.hpp> // Required because of 'export using' deficiencies
 
 module servertech_chat;
 

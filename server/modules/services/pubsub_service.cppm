@@ -6,8 +6,6 @@
 //
 module;
 
-#include <boost/asio/awaitable.hpp>
-
 module servertech_chat:pubsub_service;
 
 import :boost.asio;

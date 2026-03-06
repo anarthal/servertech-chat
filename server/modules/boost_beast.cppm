@@ -29,10 +29,6 @@ module;
 #include <boost/beast/http/verb.hpp>
 #include <boost/beast/http/write.hpp>
 
-// WebSocket
-#include <boost/beast/websocket/error.hpp>
-#include <boost/beast/websocket/rfc6455.hpp>
-#include <boost/beast/websocket/stream.hpp>
 
 export module servertech_chat:boost.beast;
 
