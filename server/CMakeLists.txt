@@ -26,19 +26,15 @@ target_sources(servertech_chat
         FILE_SET CXX_MODULES
         BASE_DIRS modules
         FILES
-            modules/boost_system.cppm
-            modules/boost_asio.cppm
-            modules/boost_variant2.cppm
-            modules/boost_json.cppm
-            modules/boost_redis.cppm
-            modules/boost_url.cppm
-            modules/boost_beast.cppm
 
-        # Header-only libraries with optional separate-source mode
-        # modules/separate-compilation/boost_asio.cppm
-        # modules/separate-compilation/boost_beast.cppm
-        # modules/separate-compilation/boost_redis.cppm
-        # modules/separate-compilation/boost_mysql.cppm
+        # Boost library wrappers
+        modules/boost_system.cppm
+        modules/boost_asio.cppm
+        modules/boost_variant2.cppm
+        modules/boost_json.cppm
+        modules/boost_redis.cppm
+        modules/boost_url.cppm
+        modules/boost_beast.cppm
 
         # Utilities
         modules/util/base64.cppm
@@ -75,12 +71,6 @@ target_sources(servertech_chat
         modules/servertech_chat.cppm
 
     PRIVATE
-        # Header-only libraries with optional separate-source mode
-        # src/separate-compilation/boost_asio.cpp
-        # src/separate-compilation/boost_beast.cpp
-        # src/separate-compilation/boost_redis.cpp
-        # src/separate-compilation/boost_mysql.cpp
-
         # Utilities
         src/util/base64.cpp
         src/util/email.cpp
@@ -143,17 +133,6 @@ target_compile_features(
     servertech_chat
     PUBLIC
     cxx_std_20
-)
-
-# These are required because we're building Boost.Asio, Boost.Beast and Boost.MySQL
-# in separate-compilation mode (see boost_asio.cpp, boost_beast.cpp, boost_mysql.cpp).
-# Boost.Redis doesn't need such definition, even when building it like we're doing.
-target_compile_definitions(
-    servertech_chat
-    PUBLIC
-    BOOST_BEAST_SEPARATE_COMPILATION
-    BOOST_ASIO_SEPARATE_COMPILATION
-    BOOST_MYSQL_SEPARATE_COMPILATION
 )
 
 # The actual server executable
