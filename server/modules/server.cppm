@@ -5,13 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_LISTENER_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_LISTENER_HPP
+module servertech_chat:server;
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/ip/tcp.hpp>
-
-#include <memory>
+import :boost.asio;
+import std;
 
 namespace chat {
 
@@ -27,5 +24,3 @@ boost::asio::awaitable<void> run_server(
 );
 
 }  // namespace chat
-
-#endif

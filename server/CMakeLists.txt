@@ -66,7 +66,7 @@ target_sources(servertech_chat
 
         # Server
         modules/static_files.cppm
-        # modules/server.cppm
+        modules/server.cppm
         modules/http_session.cppm
         modules/request_context.cppm
         modules/shared_state.cppm
@@ -105,7 +105,7 @@ target_sources(servertech_chat
 
         # Server
         src/static_files.cpp
-        # src/server.cpp
+        src/server.cpp
         src/http_session.cpp
         src/request_context.cpp
         src/shared_state.cpp
