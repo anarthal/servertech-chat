@@ -5,13 +5,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "util/password_hash.hpp"
+module;
 
 #include <openssl/rand.h>
-#include <stdexcept>
 
-#include "error.hpp"
-#include "util/scrypt.hpp"
+module servertech_chat;
+
+import :password_hash;
+import :error;
+import :scrypt;
+import std;
 
 using namespace chat;
 

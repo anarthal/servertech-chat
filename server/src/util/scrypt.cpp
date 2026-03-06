@@ -5,17 +5,20 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "util/scrypt.hpp"
+module;
 
-#include <boost/system/result.hpp>
-
-#include <charconv>
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#include "error_macros.hpp"
 
-#include "error.hpp"
-#include "util/base64.hpp"
+module servertech_chat;
+
+import :scrypt;
+import :error;
+import :base64;
+import :boost;
+import std;
 
 using namespace chat;
 using boost::system::result;
