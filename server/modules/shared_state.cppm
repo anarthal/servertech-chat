@@ -5,13 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_SHARED_STATE_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_SHARED_STATE_HPP
+module servertech_chat:shared_state;
 
-#include <boost/asio/any_io_executor.hpp>
-
-#include <memory>
-#include <string>
+import :boost.asio;
+import std;
 
 namespace chat {
 
@@ -50,5 +47,3 @@ public:
 };
 
 }  // namespace chat
-
-#endif

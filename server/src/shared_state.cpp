@@ -5,16 +5,14 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "shared_state.hpp"
+module servertech_chat;
 
-#include <boost/asio/any_io_executor.hpp>
-
-#include <memory>
-
-#include "services/cookie_auth_service.hpp"
-#include "services/mysql_client.hpp"
-#include "services/pubsub_service.hpp"
-#include "services/redis_client.hpp"
+import :shared_state;
+import :cookie_auth_service;
+import :mysql_client;
+import :pubsub_service;
+import :redis_client;
+import :boost.asio;
 
 using namespace chat;
 

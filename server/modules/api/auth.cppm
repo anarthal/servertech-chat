@@ -5,12 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_API_AUTH_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_API_AUTH_HPP
+module servertech_chat:auth;
 
-#include <boost/asio/awaitable.hpp>
-
-#include "request_context.hpp"
+import :boost.asio;
+import :request_context;
 
 // API handler functions for authentication endpoints
 
@@ -28,5 +26,3 @@ boost::asio::awaitable<response_builder::response_type> handle_create_account(
 boost::asio::awaitable<response_builder::response_type> handle_login(request_context& ctx, shared_state& st);
 
 }  // namespace chat
-
-#endif
