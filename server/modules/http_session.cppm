@@ -5,12 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_HTTP_SESSION_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_HTTP_SESSION_HPP
+module servertech_chat:http_session;
 
-#include <boost/asio/awaitable.hpp>
-
-#include <memory>
+import :boost.asio;
+import std;
 
 namespace chat {
 
@@ -26,5 +24,3 @@ boost::asio::awaitable<void> run_http_session(
 );
 
 }  // namespace chat
-
-#endif

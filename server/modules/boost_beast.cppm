@@ -30,9 +30,12 @@ module;
 #include <boost/beast/http/write.hpp>
 
 #include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/beast/websocket/error.hpp>
 
 
 export module servertech_chat:boost.beast;
+
+import :boost.system;
 
 export namespace boost::beast {
 
@@ -43,6 +46,8 @@ using beast::role_type;
 using beast::file_mode;
 using beast::iequals;
 using beast::string_view;
+using beast::make_error_code;
+using beast::async_write;
 
 namespace http {
 using http::field;
@@ -64,6 +69,9 @@ using http::async_write;
 
 namespace websocket {
 using websocket::policy_error;
+using websocket::is_upgrade;
+using websocket::error;
+using websocket::make_error_code;
 }
 
 }
