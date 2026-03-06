@@ -5,18 +5,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_API_API_TYPES_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_API_API_TYPES_HPP
+module servertech_chat:api_types;
 
-#include <boost/system/error_code.hpp>
-#include <boost/system/result.hpp>
-#include <boost/variant2/variant.hpp>
+import :boost.system;
+import :boost.variant2;
+import :business_types;
+import std;
 
-#include <span>
-#include <string>
-#include <string_view>
-
-#include "business_types.hpp"
 
 // This file contains type definitions for HTTP and websocket API objects.
 // Types for incoming requests are owning, since they're used after parsing,
@@ -180,5 +175,3 @@ struct room_history_event
 };
 
 }  // namespace chat
-
-#endif

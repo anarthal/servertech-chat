@@ -30,6 +30,7 @@ target_sources(servertech_chat
             modules/boost_system.cppm
             modules/boost_asio.cppm
             modules/boost_variant2.cppm
+            modules/boost_json.cppm
 
         # Header-only libraries with optional separate-source mode
         # modules/separate-compilation/boost_asio.cppm
@@ -56,7 +57,7 @@ target_sources(servertech_chat
         # modules/services/pubsub_service.cppm
 
         # API
-        # modules/api/api_types.cppm
+        modules/api/api_types.cppm
         # modules/api/auth.cppm
         # modules/api/chat_websocket.cppm
 
@@ -95,7 +96,7 @@ target_sources(servertech_chat
         # src/services/pubsub_service.cpp
 
         # API
-        # src/api/api_types.cpp
+        src/api/api_types.cpp
         # src/api/auth.cpp
         # src/api/chat_websocket.cpp
 

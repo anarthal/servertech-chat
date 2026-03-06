@@ -5,25 +5,22 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "api/api_types.hpp"
+module;
 
 #include <boost/describe/class.hpp>
-#include <boost/json/array.hpp>
-#include <boost/json/object.hpp>
-#include <boost/json/parse.hpp>
-#include <boost/json/serialize.hpp>
-#include <boost/json/value_from.hpp>
-#include <boost/json/value_to.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/system/result.hpp>
-#include <boost/variant2/variant.hpp>
+#include "error_macros.hpp"
+#include <cassert>
 
-#include <cstdint>
-#include <string_view>
+module servertech_chat;
 
-#include "business_types.hpp"
-#include "error.hpp"
-#include "timestamp.hpp"
+import :api_types;
+import :business_types;
+import :timestamp;
+import :error;
+import :boost.json;
+import :boost.variant2;
+import :boost.system;
+import std;
 
 using namespace chat;
 using boost::system::error_code;
