@@ -7,8 +7,8 @@
 
 module servertech_chat:scrypt;
 
+export import :boost.system;
 export import std;
-export import :boost;
 
 // Utility functions to hash and check passwords using the
 // scrypt algorithm (https://en.wikipedia.org/wiki/Scrypt)

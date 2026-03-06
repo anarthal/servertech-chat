@@ -5,25 +5,22 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "util/websocket.hpp"
+module;
 
-#include <boost/asio/as_tuple.hpp>
+#include <cassert>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/experimental/channel.hpp>
-#include <boost/asio/redirect_error.hpp>
-#include <boost/asio/use_awaitable.hpp>
-#include <boost/beast/core/flat_buffer.hpp>
+#include <boost/beast/version.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/websocket/rfc6455.hpp>
 #include <boost/beast/websocket/stream.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/system/result.hpp>
+#include <boost/beast/websocket/rfc6455.hpp>
 
-#include <memory>
-#include <string_view>
+module servertech_chat;
 
-#include "error.hpp"
-#include "util/async_mutex.hpp"
+import :websocket;
+import :async_mutex;
+import :boost.asio;
+import :boost.system;
+import std;
 
 namespace asio = boost::asio;
 namespace beast = boost::beast;

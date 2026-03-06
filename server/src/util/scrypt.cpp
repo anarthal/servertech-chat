@@ -17,7 +17,7 @@ module servertech_chat;
 import :scrypt;
 import :error;
 import :base64;
-import :boost;
+import :boost.system;
 import std;
 
 using namespace chat;

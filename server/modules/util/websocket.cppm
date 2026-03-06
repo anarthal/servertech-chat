@@ -5,18 +5,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_UTIL_WEBSOCKET_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_UTIL_WEBSOCKET_HPP
+module;
 
+#include <cassert>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/core/flat_buffer.hpp>
-#include <boost/beast/http/message.hpp>
-#include <boost/beast/http/string_body.hpp>
-#include <boost/system/error_code.hpp>
 
-#include <memory>
-#include <string_view>
+module servertech_chat:websocket;
+
+import :boost.system;
+import :boost.asio; 
+export import std;
 
 namespace chat {
 
@@ -93,5 +91,3 @@ public:
 };
 
 }  // namespace chat
-
-#endif

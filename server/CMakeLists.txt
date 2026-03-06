@@ -27,7 +27,8 @@ target_sources(servertech_chat
         BASE_DIRS modules
         FILES
             modules/dummy.cppm
-            modules/boost.cppm
+            modules/boost_system.cppm
+            modules/boost_asio.cppm
 
         # Header-only libraries with optional separate-source mode
         # modules/separate-compilation/boost_asio.cppm
@@ -38,10 +39,11 @@ target_sources(servertech_chat
         # Utilities
         modules/util/base64.cppm
         modules/util/email.cppm
-        # modules/util/scrypt.cppm
-        # modules/util/password_hash.cppm
+        modules/util/scrypt.cppm
+        modules/util/password_hash.cppm
         modules/util/cookie.cppm
-        # modules/util/websocket.cppm
+        modules/util/async_mutex.cppm
+        modules/util/websocket.cppm
 
         # Services
         # modules/services/redis_serialization.cppm
@@ -75,10 +77,10 @@ target_sources(servertech_chat
         # Utilities
         src/util/base64.cpp
         src/util/email.cpp
-        # src/util/scrypt.cpp
-        # src/util/password_hash.cpp
+        src/util/scrypt.cpp
+        src/util/password_hash.cpp
         src/util/cookie.cpp
-        # src/util/websocket.cpp
+        src/util/websocket.cpp
 
         # Services
         # src/services/redis_serialization.cpp
