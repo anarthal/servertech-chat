@@ -5,23 +5,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_REDIS_CLIENT_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_REDIS_CLIENT_HPP
+module;
 
-#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/system/result.hpp>
 
-#include <chrono>
-#include <memory>
-#include <optional>
-#include <span>
-#include <string>
-#include <string_view>
-#include <vector>
+module servertech_chat:redis_client;
 
-#include "business_types.hpp"
+import :business_types;
+import :boost.asio;
+import :boost.system;
+import std;
 
 // A high-level, specialized Redis client. It implements the operations
 // required by our server, abstracting away the actual Redis commands.
@@ -84,5 +77,3 @@ public:
 std::unique_ptr<redis_client> create_redis_client(boost::asio::any_io_executor ex);
 
 }  // namespace chat
-
-#endif
