@@ -42,6 +42,7 @@ using beast::tcp_stream;
 using beast::role_type;
 using beast::file_mode;
 using beast::iequals;
+using beast::string_view;
 
 namespace http {
 using http::field;

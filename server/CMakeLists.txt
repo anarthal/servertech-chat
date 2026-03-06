@@ -65,7 +65,7 @@ target_sources(servertech_chat
         modules/api/chat_websocket.cppm
 
         # Server
-        # modules/static_files.cppm
+        modules/static_files.cppm
         # modules/server.cppm
         # modules/http_session.cppm
         modules/request_context.cppm
@@ -104,7 +104,7 @@ target_sources(servertech_chat
         src/api/chat_websocket.cpp
 
         # Server
-        # src/static_files.cpp
+        src/static_files.cpp
         # src/server.cpp
         # src/http_session.cpp
         src/request_context.cpp

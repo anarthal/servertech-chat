@@ -5,11 +5,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "static_files.hpp"
+module servertech_chat;
 
-#include <boost/beast/http/verb.hpp>
-
-#include <filesystem>
+import :static_files;
+import :request_context;
+import :shared_state;
+import :boost.beast;
+import std;
 
 using namespace chat;
 namespace beast = boost::beast;

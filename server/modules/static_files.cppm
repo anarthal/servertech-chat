@@ -5,11 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_STATIC_FILES_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_STATIC_FILES_HPP
+module servertech_chat:static_files;
 
-#include "request_context.hpp"
-#include "shared_state.hpp"
+import :request_context;
+import :shared_state;
 
 namespace chat {
 
@@ -20,5 +19,3 @@ class http_handler;
 response_builder::response_type handle_static_file(request_context& ctx, shared_state& st);
 
 }  // namespace chat
-
-#endif
