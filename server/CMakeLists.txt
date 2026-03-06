@@ -29,6 +29,7 @@ target_sources(servertech_chat
             modules/dummy.cppm
             modules/boost_system.cppm
             modules/boost_asio.cppm
+            modules/boost_variant2.cppm
 
         # Header-only libraries with optional separate-source mode
         # modules/separate-compilation/boost_asio.cppm
