@@ -59,14 +59,12 @@ using http::async_read;
 using http::async_write;
 }
 
-namespace websocket {
-using websocket::stream;
-using websocket::stream_base;
-using websocket::close_reason;
-using websocket::response_type;
-using websocket::is_upgrade;
-using websocket::error;
-using websocket::condition;
 }
+
+export namespace chat {
+
+// Required because of GMF discards
+inline boost::beast::http::response<boost::beast::http::string_body>
+dont_discard_response() { return {}; }
 
 }
