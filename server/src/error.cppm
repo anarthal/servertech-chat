@@ -5,17 +5,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_ERROR_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_ERROR_HPP
+module;
 
 #include <boost/assert/source_location.hpp>
 #include <boost/system/error_category.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/system/result.hpp>
 
-#include <string>
-#include <string_view>
-#include <utility>
+module servertech_chat:error;
+
+export import std;
 
 // Error management infrastructure. Uses Boost.System error codes and categories.
 // This is consistent with Asio, Beast and Redis.
@@ -66,18 +65,3 @@ struct is_error_code_enum<chat::errc>
 }  // namespace system
 }  // namespace boost
 
-// Returns an error_code with source-code location information on it
-#define CHAT_RETURN_ERROR(e)                                                      \
-    {                                                                             \
-        static constexpr auto loc = BOOST_CURRENT_LOCATION;                       \
-        return ::boost::system::error_code(::boost::system::error_code(e), &loc); \
-    }
-
-// Same, but for co_return
-#define CHAT_CO_RETURN_ERROR(e)                                                      \
-    {                                                                                \
-        static constexpr auto loc = BOOST_CURRENT_LOCATION;                          \
-        co_return ::boost::system::error_code(::boost::system::error_code(e), &loc); \
-    }
-
-#endif

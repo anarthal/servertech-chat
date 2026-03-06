@@ -5,10 +5,15 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "util/email.hpp"
+module;
 
 #include <boost/regex/v5/icu.hpp>
 #include <boost/regex/v5/regex_match.hpp>
+
+module servertech_chat;
+
+import :email;
+import std;
 
 static constexpr std::string_view email_regex_str =
     R"REGEX(^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$)REGEX";

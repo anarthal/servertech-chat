@@ -5,13 +5,14 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "util/cookie.hpp"
+module;
 
-#include <sstream>
-#include <stdexcept>
-#include <string_view>
+#include <cassert>
 
-#include "error.hpp"
+module servertech_chat;
+
+import :cookie;
+import std;
 
 using namespace chat;
 

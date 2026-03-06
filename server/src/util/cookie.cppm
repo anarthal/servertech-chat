@@ -5,13 +5,9 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_UTIL_COOKIE_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_UTIL_COOKIE_HPP
+module servertech_chat:cookie;
 
-#include <chrono>
-#include <optional>
-#include <string>
-#include <string_view>
+export import std;
 
 namespace chat {
 
@@ -171,4 +167,3 @@ public:
 
 }  // namespace chat
 
-#endif

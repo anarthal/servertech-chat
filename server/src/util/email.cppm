@@ -5,8 +5,9 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_UTIL_EMAIL_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_UTIL_EMAIL_HPP
+module servertech_chat:email;
+
+export import std;
 
 namespace chat {
 
@@ -14,5 +15,3 @@ namespace chat {
 bool is_email(std::string_view str);
 
 }  // namespace chat
-
-#endif

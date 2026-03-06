@@ -5,14 +5,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_UTIL_BASE64_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_UTIL_BASE64_HPP
+module;
 
 #include <boost/system/result.hpp>
 
-#include <span>
-#include <string>
-#include <string_view>
+module servertech_chat:base64;
+
+export import std;
 
 namespace chat {
 
@@ -28,5 +27,3 @@ boost::system::result<std::vector<unsigned char>> base64_decode(
 );
 
 }  // namespace chat
-
-#endif
