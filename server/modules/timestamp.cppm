@@ -7,7 +7,7 @@
 
 module servertech_chat:timestamp;
 
-export import std;
+import std;
 
 // Helpers to work with timestamps.
 // The serialized representation of a timestamp is an int64_t with milliseconds

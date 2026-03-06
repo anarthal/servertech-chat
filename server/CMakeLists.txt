@@ -66,6 +66,7 @@ target_sources(servertech_chat
         # modules/http_session.cppm
         # modules/request_context.cppm
         # modules/shared_state.cppm
+        modules/business_types.cppm
         modules/timestamp.cppm
         modules/error.cppm
 

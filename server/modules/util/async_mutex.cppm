@@ -14,7 +14,7 @@ module servertech_chat:async_mutex;
 
 import :boost.system;
 import :boost.asio;
-export import std;
+import std;
 
 namespace chat {
 

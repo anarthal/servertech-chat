@@ -5,13 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_BUSINESS_TYPES_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_BUSINESS_TYPES_HPP
+module servertech_chat:business_types;
 
-#include <string>
-#include <unordered_map>
-
-#include "timestamp.hpp"
+import std;
+import :timestamp;
 
 // This file contains business object definitions
 
@@ -82,5 +79,3 @@ struct room
 using username_map = std::unordered_map<std::int64_t, std::string>;
 
 }  // namespace chat
-
-#endif

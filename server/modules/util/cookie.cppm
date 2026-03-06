@@ -7,7 +7,7 @@
 
 module servertech_chat:cookie;
 
-export import std;
+import std;
 
 namespace chat {
 
