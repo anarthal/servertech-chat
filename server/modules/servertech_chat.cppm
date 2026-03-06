@@ -5,9 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-import servertech_chat;
+export module servertech_chat;
 
-int main(int argc, char* argv[])
-{
-    return chat::run_main(argc, argv);
+export namespace chat {
+
+int run_main(int argc, char* argv[]);
+
 }

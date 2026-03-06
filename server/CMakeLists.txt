@@ -26,7 +26,6 @@ target_sources(servertech_chat
         FILE_SET CXX_MODULES
         BASE_DIRS modules
         FILES
-            modules/dummy.cppm
             modules/boost_system.cppm
             modules/boost_asio.cppm
             modules/boost_variant2.cppm
@@ -73,6 +72,7 @@ target_sources(servertech_chat
         modules/business_types.cppm
         modules/timestamp.cppm
         modules/error.cppm
+        modules/servertech_chat.cppm
 
     PRIVATE
         # Header-only libraries with optional separate-source mode
@@ -110,6 +110,7 @@ target_sources(servertech_chat
         src/request_context.cpp
         src/shared_state.cpp
         src/error.cpp
+        src/servertech_chat.cpp
 )
 
 target_compile_features(servertech_chat PUBLIC cxx_std_23)
@@ -154,13 +155,6 @@ target_compile_definitions(
     BOOST_ASIO_SEPARATE_COMPILATION
     BOOST_MYSQL_SEPARATE_COMPILATION
 )
-
-# # Precompiled headers, to reduce build times
-# target_precompile_headers(
-#     servertech_chat
-#     PRIVATE
-#     include/pch.hpp
-# )
 
 # The actual server executable
 add_executable(main src/main.cpp)
