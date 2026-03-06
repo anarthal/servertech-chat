@@ -14,5 +14,6 @@ export module servertech_chat:boost.variant2;
 export namespace boost::variant2 {
 
 using variant2::variant;
+using variant2::visit;
 
 }

@@ -56,20 +56,20 @@ target_sources(servertech_chat
         modules/services/mysql_client.cppm
         modules/services/session_store.cppm
         modules/services/cookie_auth_service.cppm
-        # modules/services/room_history_service.cppm
+        modules/services/room_history_service.cppm
         modules/services/pubsub_service.cppm
 
         # API
         modules/api/api_types.cppm
-        # modules/api/auth.cppm
-        # modules/api/chat_websocket.cppm
+        modules/api/auth.cppm
+        modules/api/chat_websocket.cppm
 
         # Server
         # modules/static_files.cppm
         # modules/server.cppm
         # modules/http_session.cppm
         modules/request_context.cppm
-        # modules/shared_state.cppm
+        modules/shared_state.cppm
         modules/business_types.cppm
         modules/timestamp.cppm
         modules/error.cppm
@@ -95,20 +95,20 @@ target_sources(servertech_chat
         src/services/mysql_client.cpp
         src/services/session_store.cpp
         src/services/cookie_auth_service.cpp
-        # src/services/room_history_service.cpp
+        src/services/room_history_service.cpp
         src/services/pubsub_service.cpp
 
         # API
         src/api/api_types.cpp
-        # src/api/auth.cpp
-        # src/api/chat_websocket.cpp
+        src/api/auth.cpp
+        src/api/chat_websocket.cpp
 
         # Server
         # src/static_files.cpp
         # src/server.cpp
         # src/http_session.cpp
         src/request_context.cpp
-        # src/shared_state.cpp
+        src/shared_state.cpp
         src/error.cpp
 )
 

@@ -5,29 +5,26 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "api/chat_websocket.hpp"
+module;
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/beast/websocket/rfc6455.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/variant2/variant.hpp>
+#include <cassert>
 
-#include <cstddef>
-#include <memory>
-#include <span>
-#include <string>
-#include <string_view>
-#include <vector>
+module servertech_chat;
 
-#include "api/api_types.hpp"
-#include "business_types.hpp"
-#include "error.hpp"
-#include "services/cookie_auth_service.hpp"
-#include "services/pubsub_service.hpp"
-#include "services/redis_client.hpp"
-#include "services/room_history_service.hpp"
-#include "shared_state.hpp"
-#include "util/websocket.hpp"
+import :chat_websocket;
+import :api_types;
+import :business_types;
+import :error;
+import :cookie_auth_service;
+import :pubsub_service;
+import :redis_client;
+import :room_history_service;
+import :shared_state;
+import :websocket;
+import :boost.beast;
+import :boost.system;
+import :boost.variant2;
+import std;
 
 using namespace chat;
 namespace asio = boost::asio;

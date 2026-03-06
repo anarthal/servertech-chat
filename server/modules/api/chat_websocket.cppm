@@ -5,15 +5,12 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_API_CHAT_WEBSOCKET_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_API_CHAT_WEBSOCKET_HPP
+module servertech_chat:chat_websocket;
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/system/error_code.hpp>
-
-#include <memory>
-
-#include "util/websocket.hpp"
+import :boost.asio;
+import :boost.system;
+import :websocket;
+import std;
 
 namespace chat {
 
@@ -27,5 +24,3 @@ boost::asio::awaitable<boost::system::error_code> handle_chat_websocket(
 );
 
 }  // namespace chat
-
-#endif

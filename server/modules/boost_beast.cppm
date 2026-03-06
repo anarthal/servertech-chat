@@ -29,6 +29,8 @@ module;
 #include <boost/beast/http/verb.hpp>
 #include <boost/beast/http/write.hpp>
 
+#include <boost/beast/websocket/rfc6455.hpp>
+
 
 export module servertech_chat:boost.beast;
 
@@ -57,6 +59,10 @@ using http::error;
 using http::request_parser;
 using http::async_read;
 using http::async_write;
+}
+
+namespace websocket {
+using websocket::policy_error;
 }
 
 }
