@@ -7,7 +7,7 @@
 
 module servertech_chat:email;
 
-import std;
+export import std;
 
 namespace chat {
 

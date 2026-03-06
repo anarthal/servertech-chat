@@ -7,7 +7,7 @@
 
 module servertech_chat:business_types;
 
-import std;
+export import std;
 import :timestamp;
 
 // This file contains business object definitions

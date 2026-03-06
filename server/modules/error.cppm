@@ -14,7 +14,7 @@ module;
 
 module servertech_chat:error;
 
-import std;
+export import std;
 
 // Error management infrastructure. Uses Boost.System error codes and categories.
 // This is consistent with Asio, Beast and Redis.
