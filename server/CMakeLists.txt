@@ -31,6 +31,7 @@ target_sources(servertech_chat
             modules/boost_asio.cppm
             modules/boost_variant2.cppm
             modules/boost_json.cppm
+            modules/boost_redis.cppm
 
         # Header-only libraries with optional separate-source mode
         # modules/separate-compilation/boost_asio.cppm
@@ -48,7 +49,7 @@ target_sources(servertech_chat
         modules/util/websocket.cppm
 
         # Services
-        # modules/services/redis_serialization.cppm
+        modules/services/redis_serialization.cppm
         # modules/services/redis_client.cppm
         # modules/services/mysql_client.cppm
         # modules/services/session_store.cppm
@@ -87,7 +88,7 @@ target_sources(servertech_chat
         src/util/websocket.cpp
 
         # Services
-        # src/services/redis_serialization.cpp
+        src/services/redis_serialization.cpp
         # src/services/redis_client.cpp
         # src/services/mysql_client.cpp
         # src/services/session_store.cpp

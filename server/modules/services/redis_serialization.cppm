@@ -5,16 +5,12 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_REDIS_SERIALIZATION_HPP
-#define SERVERTECHCHAT_SERVER_INCLUDE_SERVICES_REDIS_SERIALIZATION_HPP
+module servertech_chat:redis_serialization;
 
-#include <boost/redis/resp3/node.hpp>
-#include <boost/system/result.hpp>
-
-#include <span>
-#include <vector>
-
-#include "business_types.hpp"
+import :business_types;
+import :boost.system;
+import :boost.redis;
+import std;
 
 // Contains function definitions to parse Redis responses. Used to
 // implement redis_client. Boost.Redis doesn't support streams out
@@ -40,4 +36,3 @@ std::string serialize_redis_message(const message& msg);
 
 }  // namespace chat
 
-#endif
