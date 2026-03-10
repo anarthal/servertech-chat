@@ -12,8 +12,8 @@ module;
 
 module servertech_chat:request_context;
 
-import :boost.beast;
-import :boost.url;
+import boost.beast;
+import boost.url;
 import :error;
 import :api_types;
 import std;

@@ -7,7 +7,7 @@
 
 module servertech_chat:shared_state;
 
-import :boost.asio;
+import boost.asio;
 import std;
 
 namespace chat {

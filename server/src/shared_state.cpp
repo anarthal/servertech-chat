@@ -12,7 +12,7 @@ import :cookie_auth_service;
 import :mysql_client;
 import :pubsub_service;
 import :redis_client;
-import :boost.asio;
+import boost.asio;
 
 using namespace chat;
 

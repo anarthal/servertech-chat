@@ -26,7 +26,7 @@ module;
 #include <boost/asio/detached.hpp>
 #include <boost/asio/ssl/stream.hpp>
 
-export module servertech_chat:boost.asio;
+export module boost.asio;
 
 export namespace boost::asio {
 

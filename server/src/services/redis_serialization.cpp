@@ -15,9 +15,9 @@ module servertech_chat;
 import :error;
 import :timestamp;
 import :redis_serialization;
-import :boost.redis;
-import :boost.json;
-import :boost.system;
+import boost.redis;
+import boost.json;
+import boost.system;
 
 namespace resp3 = boost::redis::resp3;
 using namespace chat;

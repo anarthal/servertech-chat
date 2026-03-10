@@ -10,7 +10,7 @@ module servertech_chat;
 import :static_files;
 import :request_context;
 import :shared_state;
-import :boost.beast;
+import boost.beast;
 import std;
 
 using namespace chat;

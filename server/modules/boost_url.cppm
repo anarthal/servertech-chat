@@ -11,7 +11,7 @@ module;
 #include <boost/url/url.hpp>
 #include <boost/url/url_view.hpp>
 
-export module servertech_chat:boost.url;
+export module boost.url;
 
 export namespace boost::urls {
 

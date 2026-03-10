@@ -8,8 +8,8 @@
 module servertech_chat:redis_serialization;
 
 import :business_types;
-import :boost.system;
-import :boost.redis;
+import boost.system;
+import boost.redis;
 import std;
 
 // Contains function definitions to parse Redis responses. Used to

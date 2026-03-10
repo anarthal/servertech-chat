@@ -7,7 +7,7 @@
 
 module servertech_chat:server;
 
-import :boost.asio;
+import boost.asio;
 import std;
 
 namespace chat {

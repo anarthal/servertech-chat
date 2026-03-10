@@ -16,7 +16,7 @@ import :room_history_service;
 import :business_types;
 import :mysql_client;
 import :redis_client;
-import :boost.system;
+import boost.system;
 import std;
 
 using namespace chat;

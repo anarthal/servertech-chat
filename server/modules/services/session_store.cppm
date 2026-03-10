@@ -7,8 +7,8 @@
 
 module servertech_chat:session_store;
 
-import :boost.asio;
-import :boost.system;
+import boost.asio;
+import boost.system;
 import std;
 
 // Contains functions to manage user sessions. This are stored in Redis as

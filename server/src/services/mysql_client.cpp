@@ -11,24 +11,14 @@ module;
 #include <boost/core/ignore_unused.hpp>
 #include <boost/describe/class.hpp>
 
-#include <boost/mysql/any_address.hpp>
-#include <boost/mysql/any_connection.hpp>
-#include <boost/mysql/common_server_errc.hpp>
-#include <boost/mysql/connection.hpp>
-#include <boost/mysql/connection_pool.hpp>
-#include <boost/mysql/diagnostics.hpp>
-#include <boost/mysql/handshake_params.hpp>
-#include <boost/mysql/results.hpp>
-#include <boost/mysql/static_results.hpp>
-#include <boost/mysql/with_params.hpp>
-
 module servertech_chat;
 
 import :mysql_client;
 import :business_types;
 import :error;
-import :boost.system;
-import :boost.asio;
+import boost.system;
+import boost.mysql;
+import boost.asio;
 
 
 using namespace chat;

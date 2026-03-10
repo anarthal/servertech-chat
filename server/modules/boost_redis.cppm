@@ -15,10 +15,7 @@ module;
 #include <boost/redis/request.hpp>
 #include <boost/redis/response.hpp>
 
-// Boost.Redis unconditionally requires separate compilation
-#include <boost/redis/src.hpp>
-
-export module servertech_chat:boost.redis;
+export module boost.redis;
 
 export namespace boost::redis {
 
@@ -40,3 +37,10 @@ using redis::response;
 using redis::generic_response;
 
 }
+
+module : private;
+
+extern "C++" {
+#include <boost/redis/src.hpp>
+}
+

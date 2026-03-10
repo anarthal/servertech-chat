@@ -11,9 +11,9 @@ module;
 
 module servertech_chat:websocket;
 
-import :boost.system;
-import :boost.asio; 
-import :boost.beast;
+import boost.system;
+import boost.asio; 
+import boost.beast;
 import std;
 
 namespace chat {

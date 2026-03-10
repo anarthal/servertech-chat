@@ -7,7 +7,7 @@
 
 module servertech_chat:http_session;
 
-import :boost.asio;
+import boost.asio;
 import std;
 
 namespace chat {

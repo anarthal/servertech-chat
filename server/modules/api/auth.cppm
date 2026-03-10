@@ -7,7 +7,7 @@
 
 module servertech_chat:auth;
 
-import :boost.asio;
+import boost.asio;
 import :request_context;
 
 // API handler functions for authentication endpoints

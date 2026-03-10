@@ -33,6 +33,7 @@ target_sources(servertech_chat
         modules/boost_variant2.cppm
         modules/boost_json.cppm
         modules/boost_redis.cppm
+        modules/boost_mysql.cppm
         modules/boost_url.cppm
         modules/boost_beast.cppm
 
@@ -71,6 +72,9 @@ target_sources(servertech_chat
         modules/servertech_chat.cppm
 
     PRIVATE
+        # Separate compilation
+        src/separate-compilation/boost_asio.cpp
+
         # Utilities
         src/util/base64.cpp
         src/util/email.cpp
@@ -106,6 +110,17 @@ target_sources(servertech_chat
 target_compile_features(servertech_chat PUBLIC cxx_std_23)
 set_target_properties(servertech_chat PROPERTIES CXX_MODULE_STD 1)
 
+# These are required because we're building Boost.Asio, Boost.Beast and Boost.MySQL
+# in separate-compilation mode (see boost_asio.cpp, boost_beast.cpp, boost_mysql.cpp).
+# Boost.Redis doesn't need such definition, even when building it like we're doing.
+target_compile_definitions(
+    servertech_chat
+    PUBLIC
+    BOOST_BEAST_SEPARATE_COMPILATION
+    BOOST_ASIO_SEPARATE_COMPILATION
+    BOOST_MYSQL_SEPARATE_COMPILATION
+)
+
 
 target_link_libraries(
     servertech_chat
@@ -126,13 +141,6 @@ target_include_directories(
     servertech_chat
     PUBLIC
     include
-)
-
-# Coroutines require C++20
-target_compile_features(
-    servertech_chat
-    PUBLIC
-    cxx_std_20
 )
 
 # The actual server executable

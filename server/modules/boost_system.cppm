@@ -10,7 +10,7 @@ module;
 #include <boost/system/error_code.hpp>
 #include <boost/system/result.hpp>
 
-export module servertech_chat:boost.system;
+export module boost.system;
 
 export namespace boost::system {
 

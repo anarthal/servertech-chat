@@ -10,8 +10,8 @@ module;
 module servertech_chat:redis_client;
 
 import :business_types;
-import :boost.asio;
-import :boost.system;
+import boost.asio;
+import boost.system;
 import std;
 
 // A high-level, specialized Redis client. It implements the operations

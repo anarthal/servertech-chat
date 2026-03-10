@@ -7,8 +7,8 @@
 
 module servertech_chat:api_types;
 
-import :boost.system;
-import :boost.variant2;
+import boost.system;
+import boost.variant2;
 import :business_types;
 import std;
 

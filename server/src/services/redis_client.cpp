@@ -15,9 +15,9 @@ module servertech_chat;
 import :redis_client;
 import :error;
 import :redis_serialization;
-import :boost.asio;
-import :boost.redis;
-import :boost.system;
+import boost.asio;
+import boost.redis;
+import boost.system;
 import std;
 
 using namespace chat;

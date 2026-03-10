@@ -7,8 +7,8 @@
 
 module servertech_chat:room_history_service;
 
-import :boost.asio;
-import :boost.system;
+import boost.asio;
+import boost.system;
 import :business_types;
 import std;
 

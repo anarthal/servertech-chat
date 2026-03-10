@@ -33,9 +33,9 @@ module;
 #include <boost/beast/websocket/error.hpp>
 
 
-export module servertech_chat:boost.beast;
+export module boost.beast;
 
-import :boost.system;
+import boost.system;
 
 export namespace boost::beast {
 
@@ -82,4 +82,10 @@ export namespace chat {
 inline boost::beast::http::response<boost::beast::http::string_body>
 dont_discard_response() { return {}; }
 
+}
+
+module:private;
+
+extern "C++" {
+#include <boost/beast/src.hpp>
 }

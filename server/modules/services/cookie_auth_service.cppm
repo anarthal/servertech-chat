@@ -7,9 +7,9 @@
 
 module servertech_chat:cookie_auth_service;
 
-import :boost.asio;
-import :boost.beast;
-import :boost.system;
+import boost.asio;
+import boost.beast;
+import boost.system;
 import :business_types;
 import std;
 

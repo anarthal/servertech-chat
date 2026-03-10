@@ -15,7 +15,7 @@ import :mysql_client;
 import :shared_state;
 import :email;
 import :password_hash;
-import :boost.beast;
+import boost.beast;
 
 using namespace chat;
 namespace http = boost::beast::http;

@@ -7,7 +7,7 @@
 
 module servertech_chat:base64;
 
-export import :boost.system;
+export import boost.system;
 export import std;
 
 namespace chat {

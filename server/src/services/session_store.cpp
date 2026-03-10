@@ -15,7 +15,7 @@ import :session_store;
 import :error;
 import :redis_client;
 import :base64;
-import :boost.system;
+import boost.system;
 
 using namespace chat;
 namespace asio = boost::asio;

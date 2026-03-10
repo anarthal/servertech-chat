@@ -21,8 +21,8 @@ module servertech_chat;
 
 import :websocket;
 import :async_mutex;
-import :boost.asio;
-import :boost.system;
+import boost.asio;
+import boost.system;
 import std;
 
 namespace asio = boost::asio;

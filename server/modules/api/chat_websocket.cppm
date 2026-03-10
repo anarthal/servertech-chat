@@ -7,8 +7,8 @@
 
 module servertech_chat:chat_websocket;
 
-import :boost.asio;
-import :boost.system;
+import boost.asio;
+import boost.system;
 import :websocket;
 import std;
 

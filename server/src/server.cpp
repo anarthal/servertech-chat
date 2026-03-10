@@ -11,7 +11,7 @@ import :server;
 import :error;
 import :http_session;
 import :shared_state;
-import :boost.asio;
+import boost.asio;
 import std;
 
 namespace asio = boost::asio;

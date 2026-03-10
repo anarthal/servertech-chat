@@ -7,33 +7,32 @@
 
 module;
 
-#include <boost/redis/resp3/type.hpp>
-#include <boost/redis/adapter/result.hpp>
-#include <boost/redis/resp3/node.hpp>
-#include <boost/redis/connection.hpp>
-#include <boost/redis/config.hpp>
-#include <boost/redis/request.hpp>
-#include <boost/redis/response.hpp>
+#include <boost/mysql/any_address.hpp>
+#include <boost/mysql/common_server_errc.hpp>
+#include <boost/mysql/connection_pool.hpp>
+#include <boost/mysql/diagnostics.hpp>
+#include <boost/mysql/results.hpp>
+#include <boost/mysql/static_results.hpp>
+#include <boost/mysql/with_params.hpp>
 
-export module servertech_chat:boost.redis;
+export module boost.mysql;
 
-export namespace boost::redis {
+export namespace boost::mysql {
 
-namespace resp3 {
-using resp3::node;
-using resp3::type;
-using resp3::is_aggregate;
+using mysql::connection_pool;
+using mysql::pool_params;
+using mysql::pooled_connection;
+using mysql::host_and_port;
+using mysql::diagnostics;
+using mysql::results;
+using mysql::static_results;
+using mysql::with_params;
+using mysql::common_server_errc;
+
 }
 
-namespace adapter{
-using adapter::result;
-using adapter::throw_exception_from_error;
-}
+module : private;
 
-using redis::connection;
-using redis::request;
-using redis::config;
-using redis::response;
-using redis::generic_response;
-
+extern "C++" {
+#include <boost/mysql/src.hpp>
 }

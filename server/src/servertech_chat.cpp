@@ -11,7 +11,7 @@ module;
 
 module servertech_chat;
 
-import :boost.asio;
+import boost.asio;
 import :server;
 import :mysql_client;
 import :redis_client;

@@ -15,7 +15,7 @@ module;
 #include <boost/json/value_to.hpp>
 #include <boost/json/error.hpp>
 
-export module servertech_chat:boost.json;
+export module boost.json;
 
 export namespace boost::json {
 

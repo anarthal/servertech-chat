@@ -12,7 +12,7 @@ module;
 
 module servertech_chat;
 
-import :boost.system;
+import boost.system;
 import :base64;
 import :error;
 import std;

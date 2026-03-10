@@ -9,7 +9,7 @@ module;
 
 #include <boost/variant2/variant.hpp>
 
-export module servertech_chat:boost.variant2;
+export module boost.variant2;
 
 export namespace boost::variant2 {
 
