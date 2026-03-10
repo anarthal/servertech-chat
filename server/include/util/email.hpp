@@ -8,6 +8,8 @@
 #ifndef SERVERTECHCHAT_SERVER_INCLUDE_UTIL_EMAIL_HPP
 #define SERVERTECHCHAT_SERVER_INCLUDE_UTIL_EMAIL_HPP
 
+#include <string_view>
+
 namespace chat {
 
 // Returns true if the given string is a valid email (by pattern matching)

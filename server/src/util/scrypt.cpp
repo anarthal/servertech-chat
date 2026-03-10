@@ -10,6 +10,7 @@
 #include <boost/system/result.hpp>
 
 #include <charconv>
+#include <sstream>
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>

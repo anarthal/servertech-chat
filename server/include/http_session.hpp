@@ -9,6 +9,7 @@
 #define SERVERTECHCHAT_SERVER_INCLUDE_HTTP_SESSION_HPP
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
 #include <memory>
 

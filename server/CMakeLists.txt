@@ -98,12 +98,12 @@ target_compile_definitions(
     BOOST_MYSQL_SEPARATE_COMPILATION
 )
 
-# Precompiled headers, to reduce build times
-target_precompile_headers(
-    servertech_chat
-    PRIVATE
-    include/pch.hpp
-)
+# # Precompiled headers, to reduce build times
+# target_precompile_headers(
+#     servertech_chat
+#     PRIVATE
+#     include/pch.hpp
+# )
 
 # The actual server executable
 add_executable(main src/main.cpp)

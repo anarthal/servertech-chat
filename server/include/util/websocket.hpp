@@ -14,6 +14,7 @@
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/string_body.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 
 #include <memory>
 #include <string_view>

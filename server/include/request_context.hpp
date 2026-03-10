@@ -15,6 +15,7 @@
 #include <boost/beast/http/message_generator.hpp>
 #include <boost/beast/http/status.hpp>
 #include <boost/beast/http/verb.hpp>
+#include <boost/beast/http/string_body.hpp>
 #include <boost/url/error_types.hpp>
 #include <boost/url/url_view.hpp>
 
