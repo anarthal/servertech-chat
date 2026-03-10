@@ -9,11 +9,25 @@ module;
 
 #include <cassert>
 #include "error_macros.hpp"
+#include <boost/beast/core/file_base.hpp>
+#include <boost/beast/core/string.hpp>
+#include <boost/beast/http/empty_body.hpp>
+#include <boost/beast/http/field.hpp>
+#include <boost/beast/http/fields.hpp>
+#include <boost/beast/http/file_body.hpp>
+#include <boost/beast/http/message.hpp>
+#include <boost/beast/http/message_generator.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/beast/http/string_body.hpp>
+#include <boost/beast/http/verb.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
+#include <boost/url/parse.hpp>
+#include <boost/url/url.hpp>
+#include <boost/url/url_view.hpp>
 
 module servertech_chat:request_context;
 
-import boost.beast;
-import boost.url;
 import :error;
 import :api_types;
 import std;

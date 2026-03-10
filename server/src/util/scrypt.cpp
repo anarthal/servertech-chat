@@ -11,13 +11,14 @@ module;
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include "error_macros.hpp"
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 
 module servertech_chat;
 
 import :scrypt;
 import :error;
 import :base64;
-import boost.system;
 import std;
 
 using namespace chat;

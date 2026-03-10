@@ -8,6 +8,9 @@
 module;
 
 #include <cassert>
+#include <boost/asio/awaitable.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 
 module servertech_chat;
 
@@ -16,7 +19,6 @@ import :room_history_service;
 import :business_types;
 import :mysql_client;
 import :redis_client;
-import boost.system;
 import std;
 
 using namespace chat;

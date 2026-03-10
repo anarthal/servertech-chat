@@ -8,10 +8,15 @@
 module;
 
 #include <csignal>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/signal_set.hpp>
+#include <boost/system/error_code.hpp>
 
 module servertech_chat;
 
-import boost.asio;
 import :server;
 import :mysql_client;
 import :redis_client;

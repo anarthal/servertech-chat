@@ -7,6 +7,12 @@
 
 module;
 
+#include <boost/asio/awaitable.hpp>
+#include <boost/beast/websocket/error.hpp>
+#include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
+#include <boost/variant2/variant.hpp>
 #include <cassert>
 
 module servertech_chat;
@@ -21,9 +27,6 @@ import :redis_client;
 import :room_history_service;
 import :shared_state;
 import :websocket;
-import boost.beast;
-import boost.system;
-import boost.variant2;
 import std;
 
 using namespace chat;

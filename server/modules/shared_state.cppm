@@ -5,9 +5,12 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+module;
+
+#include <boost/asio/any_io_executor.hpp>
+
 module servertech_chat:shared_state;
 
-import boost.asio;
 import std;
 
 namespace chat {

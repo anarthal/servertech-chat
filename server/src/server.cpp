@@ -5,13 +5,19 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+module;
+
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/this_coro.hpp>
+
 module servertech_chat;
 
 import :server;
 import :error;
 import :http_session;
 import :shared_state;
-import boost.asio;
 import std;
 
 namespace asio = boost::asio;

@@ -7,12 +7,14 @@
 
 module;
 
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/experimental/channel.hpp>
+#include <boost/system/error_code.hpp>
 #include <cassert>
 
 module servertech_chat:async_mutex;
 
-import boost.system;
-import boost.asio;
 export import std;
 
 namespace chat {

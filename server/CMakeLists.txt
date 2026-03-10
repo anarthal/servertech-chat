@@ -27,16 +27,6 @@ target_sources(servertech_chat
         BASE_DIRS modules
         FILES
 
-        # Boost library wrappers
-        modules/boost_system.cppm
-        modules/boost_asio.cppm
-        modules/boost_variant2.cppm
-        modules/boost_json.cppm
-        modules/boost_redis.cppm
-        modules/boost_mysql.cppm
-        modules/boost_url.cppm
-        modules/boost_beast.cppm
-
         # Utilities
         modules/util/base64.cppm
         modules/util/email.cppm
@@ -74,6 +64,9 @@ target_sources(servertech_chat
     PRIVATE
         # Separate compilation
         src/separate-compilation/boost_asio.cpp
+        src/separate-compilation/boost_beast.cpp
+        src/separate-compilation/boost_mysql.cpp
+        src/separate-compilation/boost_redis.cpp
 
         # Utilities
         src/util/base64.cpp

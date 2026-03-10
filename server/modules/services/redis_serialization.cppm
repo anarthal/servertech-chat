@@ -5,11 +5,14 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+module;
+
+#include <boost/redis/resp3/node.hpp>
+#include <boost/system/result.hpp>
+
 module servertech_chat:redis_serialization;
 
 import :business_types;
-import boost.system;
-import boost.redis;
 import std;
 
 // Contains function definitions to parse Redis responses. Used to

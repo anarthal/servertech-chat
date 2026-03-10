@@ -8,6 +8,15 @@
 module;
 
 #include <boost/describe/class.hpp>
+#include <boost/json/array.hpp>
+#include <boost/json/object.hpp>
+#include <boost/json/parse.hpp>
+#include <boost/json/serialize.hpp>
+#include <boost/json/value_from.hpp>
+#include <boost/json/value_to.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
+#include <boost/variant2/variant.hpp>
 #include "error_macros.hpp"
 #include <cassert>
 
@@ -17,9 +26,6 @@ import :api_types;
 import :business_types;
 import :timestamp;
 import :error;
-import boost.json;
-import boost.variant2;
-import boost.system;
 import std;
 
 using namespace chat;

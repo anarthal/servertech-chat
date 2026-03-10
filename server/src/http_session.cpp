@@ -8,6 +8,25 @@
 module;
 
 #include <cassert>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/cancel_after.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/redirect_error.hpp>
+#include <boost/asio/this_coro.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/http/error.hpp>
+#include <boost/beast/http/message_generator.hpp>
+#include <boost/beast/http/parser.hpp>
+#include <boost/beast/http/read.hpp>
+#include <boost/beast/http/string_body.hpp>
+#include <boost/beast/http/verb.hpp>
+#include <boost/beast/http/write.hpp>
+#include <boost/beast/websocket/error.hpp>
+#include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/url/url.hpp>
 
 module servertech_chat;
 
@@ -19,10 +38,6 @@ import :request_context;
 import :shared_state;
 import :static_files;
 import :websocket;
-import boost.asio;
-import boost.beast;
-import boost.system;
-import boost.url;
 import std;
 
 namespace beast = boost::beast;

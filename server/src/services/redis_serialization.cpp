@@ -8,6 +8,14 @@
 module;
 
 #include <boost/describe/class.hpp>
+#include <boost/json/parse.hpp>
+#include <boost/json/serialize.hpp>
+#include <boost/json/value_from.hpp>
+#include <boost/json/value_to.hpp>
+#include <boost/redis/resp3/node.hpp>
+#include <boost/redis/resp3/type.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 #include "error_macros.hpp"
 
 module servertech_chat;
@@ -15,9 +23,6 @@ module servertech_chat;
 import :error;
 import :timestamp;
 import :redis_serialization;
-import boost.redis;
-import boost.json;
-import boost.system;
 
 namespace resp3 = boost::redis::resp3;
 using namespace chat;

@@ -5,10 +5,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+module;
+
+#include <boost/asio/awaitable.hpp>
+#include <boost/system/error_code.hpp>
+
 module servertech_chat:chat_websocket;
 
-import boost.asio;
-import boost.system;
 import :websocket;
 import std;
 

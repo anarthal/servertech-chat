@@ -5,11 +5,15 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+module;
+
+#include <boost/asio/awaitable.hpp>
+#include <boost/beast/http/fields.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
+
 module servertech_chat:cookie_auth_service;
 
-import boost.asio;
-import boost.beast;
-import boost.system;
 import :business_types;
 import std;
 

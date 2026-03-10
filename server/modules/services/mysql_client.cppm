@@ -7,11 +7,14 @@
 
 module;
 
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/awaitable.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
+
 module servertech_chat:mysql_client;
 
 import :business_types;
-import boost.asio;
-import boost.system;
 import std;
 
 // A high-level, specialized MySQL client. It implements the operations

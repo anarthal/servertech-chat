@@ -6,9 +6,11 @@
 //
 module;
 
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/awaitable.hpp>
+
 module servertech_chat:pubsub_service;
 
-import boost.asio;
 import std;
 
 // An in-memory publish-subscribe mechanism. Used to broadcast messages between clients.

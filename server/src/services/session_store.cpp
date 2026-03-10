@@ -8,6 +8,9 @@
 module;
 
 #include <openssl/rand.h>
+#include <boost/asio/awaitable.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 
 module servertech_chat;
 
@@ -15,7 +18,6 @@ import :session_store;
 import :error;
 import :redis_client;
 import :base64;
-import boost.system;
 
 using namespace chat;
 namespace asio = boost::asio;

@@ -7,7 +7,16 @@
 
 module;
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/detached.hpp>
+#include <boost/asio/redirect_error.hpp>
+#include <boost/redis/config.hpp>
+#include <boost/redis/connection.hpp>
+#include <boost/redis/request.hpp>
+#include <boost/redis/response.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 #include "error_macros.hpp"
 
 module servertech_chat;
@@ -15,9 +24,6 @@ module servertech_chat;
 import :redis_client;
 import :error;
 import :redis_serialization;
-import boost.asio;
-import boost.redis;
-import boost.system;
 import std;
 
 using namespace chat;

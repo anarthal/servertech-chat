@@ -5,6 +5,11 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+module;
+
+#include <boost/asio/awaitable.hpp>
+#include <boost/beast/http/status.hpp>
+
 module servertech_chat;
 
 import :auth;
@@ -15,7 +20,6 @@ import :mysql_client;
 import :shared_state;
 import :email;
 import :password_hash;
-import boost.beast;
 
 using namespace chat;
 namespace http = boost::beast::http;

@@ -5,12 +5,17 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+module;
+
+#include <ostream> // verb.hpp seems to be missing an include
+#include <boost/beast/core/string.hpp>
+#include <boost/beast/http/verb.hpp>
+
 module servertech_chat;
 
 import :static_files;
 import :request_context;
 import :shared_state;
-import boost.beast;
 import std;
 
 using namespace chat;

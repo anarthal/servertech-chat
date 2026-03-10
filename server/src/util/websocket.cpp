@@ -9,20 +9,27 @@ module;
 
 #include <cassert>
 
+#include <boost/asio/as_tuple.hpp>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/redirect_error.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
+#include <boost/beast/core/role.hpp>
+#include <boost/beast/core/tcp_stream.hpp> // Required because of 'export using' deficiencies
+#include <boost/beast/http/field.hpp>
 #include <boost/beast/version.hpp>
-
 // Websocket can't be reliably exported with export using
 #include <boost/beast/websocket/error.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>
 #include <boost/beast/websocket/stream.hpp>
-#include <boost/beast/core/tcp_stream.hpp> // Required because of 'export using' deficiencies
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 
 module servertech_chat;
 
 import :websocket;
 import :async_mutex;
-import boost.asio;
-import boost.system;
 import std;
 
 namespace asio = boost::asio;

@@ -5,10 +5,14 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+module;
+
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
+#include <boost/variant2/variant.hpp>
+
 module servertech_chat:api_types;
 
-import boost.system;
-import boost.variant2;
 import :business_types;
 import std;
 

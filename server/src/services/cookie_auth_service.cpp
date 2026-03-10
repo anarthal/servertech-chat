@@ -8,6 +8,11 @@
 module;
 
 #include "error_macros.hpp"
+#include <boost/asio/awaitable.hpp>
+#include <boost/beast/http/field.hpp>
+#include <boost/beast/http/fields.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 
 module servertech_chat;
 
@@ -16,8 +21,6 @@ import :error;
 import :session_store;
 import :mysql_client;
 import :cookie;
-import boost.beast;
-import boost.system;
 
 using namespace chat;
 namespace http = boost::beast::http;

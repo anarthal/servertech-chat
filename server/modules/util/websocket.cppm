@@ -7,13 +7,17 @@
 
 module;
 
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
+#include <boost/beast/http/message.hpp>
+#include <boost/beast/http/string_body.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 #include <cassert>
 
 module servertech_chat:websocket;
 
-import boost.system;
-import boost.asio; 
-import boost.beast;
 import std;
 
 namespace chat {

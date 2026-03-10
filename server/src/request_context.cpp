@@ -7,14 +7,24 @@
 
 module;
 
+#include <boost/beast/core/file_base.hpp>
+#include <boost/beast/core/string.hpp>
+#include <boost/beast/http/empty_body.hpp>
+#include <boost/beast/http/field.hpp>
+#include <boost/beast/http/file_body.hpp>
+#include <boost/beast/http/message.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/beast/http/string_body.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/errc.hpp>
+#include <boost/url/parse.hpp>
+#include <boost/url/url_view.hpp>
+
 module servertech_chat;
 
 import :request_context;
 import :api_types;
 import :error;
-import boost.beast;
-import boost.system;
-import boost.url;
 
 
 using namespace chat;

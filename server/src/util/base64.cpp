@@ -8,11 +8,12 @@
 module;
 
 #include "error_macros.hpp"
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
 #include <cassert>
 
 module servertech_chat;
 
-import boost.system;
 import :base64;
 import :error;
 import std;
