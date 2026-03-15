@@ -223,7 +223,7 @@ asio::awaitable<void> chat::run_http_session(
             // Run the websocket session. This will run until the client
             // closes the connection or an error occurs.
             auto err = co_await handle_chat_websocket(std::move(ws), state);
-            if (err && err != beast::websocket::error::closed)
+            if (err && err != beast::websocket::make_error_code(beast::websocket::error::closed))
                 log_error(err, "Running chat websocket session");
             co_return;
         }

@@ -7,6 +7,7 @@
 
 module;
 
+#include <cassert>
 #include <boost/asio/awaitable.hpp>
 #include "error_macros.hpp"
 

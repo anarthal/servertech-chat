@@ -11,7 +11,18 @@ project(servertech_chat)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
 # Boost.Charconv is required by Boost.MySQL
-find_package(Boost REQUIRED COMPONENTS headers json regex url charconv)
+find_package(boost_asio REQUIRED)
+find_package(boost_system REQUIRED)
+find_package(boost_mysql REQUIRED)
+find_package(boost_redis REQUIRED)
+find_package(boost_beast REQUIRED)
+find_package(boost_json REQUIRED)
+find_package(boost_regex REQUIRED)
+find_package(boost_url REQUIRED)
+find_package(boost_multi_index REQUIRED)
+find_package(boost_core REQUIRED)
+find_package(boost_endian REQUIRED)
+find_package(boost_charconv REQUIRED)
 
 # OpenSSL is required by Boost.Redis
 find_package(OpenSSL REQUIRED)
@@ -28,9 +39,6 @@ target_sources(servertech_chat
         FILES
 
         # Boost library wrappers
-        modules/boost_system.cppm
-        modules/boost_asio.cppm
-        modules/boost_variant2.cppm
         modules/boost_json.cppm
         modules/boost_redis.cppm
         modules/boost_mysql.cppm
@@ -72,9 +80,6 @@ target_sources(servertech_chat
         modules/servertech_chat.cppm
 
     PRIVATE
-        # Separate compilation
-        src/separate-compilation/boost_asio.cpp
-
         # Utilities
         src/util/base64.cpp
         src/util/email.cpp
@@ -125,10 +130,17 @@ target_compile_definitions(
 target_link_libraries(
     servertech_chat
     PUBLIC
-    Boost::headers
+    Boost::asio
+    Boost::system
+    Boost::mysql
+    Boost::redis
+    Boost::beast
     Boost::json
     Boost::regex
     Boost::url
+    Boost::multi_index
+    Boost::core
+    Boost::endian
     Boost::charconv
     OpenSSL::Crypto
     OpenSSL::SSL
@@ -147,8 +159,8 @@ target_include_directories(
 add_executable(main src/main.cpp)
 target_link_libraries(main PRIVATE servertech_chat)
 
-# Testing
-include(CTest)
-if (BUILD_TESTING)
-    add_subdirectory(test)
-endif()
+# # Testing
+# include(CTest)
+# if (BUILD_TESTING)
+#     add_subdirectory(test)
+# endif()

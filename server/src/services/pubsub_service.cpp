@@ -7,6 +7,40 @@
 
 module;
 
+#include <algorithm>
+#include <array>
+#include <atomic>
+#include <bit>
+#include <cassert>
+#include <cctype>
+#include <cerrno>
+#include <cerrno>
+#include <cfloat>
+#include <cinttypes>
+#include <climits>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <initializer_list>
+#include <iosfwd>
+#include <istream>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <new>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
+#include <version>
+
 #include <boost/multi_index/indexed_by.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/member.hpp>

@@ -7,6 +7,40 @@
 
 module;
 
+#include <algorithm>
+#include <array>
+#include <atomic>
+#include <bit>
+#include <cassert>
+#include <cctype>
+#include <cerrno>
+#include <cerrno>
+#include <cfloat>
+#include <cinttypes>
+#include <climits>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <initializer_list>
+#include <iosfwd>
+#include <istream>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <new>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
+#include <version>
+
 // Core
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
@@ -85,6 +119,8 @@ dont_discard_response() { return {}; }
 }
 
 module:private;
+
+#define BOOST_IN_MODULE_PURVIEW
 
 extern "C++" {
 #include <boost/beast/src.hpp>
