@@ -5,14 +5,21 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "error.hpp"
+module;
 
 #include <boost/describe/enum.hpp>
 #include <boost/describe/enum_to_string.hpp>
 #include <boost/system/system_error.hpp>
+#include <boost/assert/source_location.hpp>
+#include <boost/system/error_category.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/result.hpp>
+#include <boost/asio/error.hpp>
 
-#include <iostream>
-#include <string_view>
+module servertech_chat;
+
+import :error;
+import std;
 
 namespace chat {
 

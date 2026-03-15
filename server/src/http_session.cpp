@@ -5,41 +5,25 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "http_session.hpp"
+module;
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/cancel_after.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/error.hpp>
-#include <boost/asio/redirect_error.hpp>
-#include <boost/asio/this_coro.hpp>
-#include <boost/beast/core/flat_buffer.hpp>
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/http/message_generator.hpp>
-#include <boost/beast/http/parser.hpp>
-#include <boost/beast/http/read.hpp>
-#include <boost/beast/http/status.hpp>
-#include <boost/beast/http/string_body.hpp>
-#include <boost/beast/http/verb.hpp>
-#include <boost/beast/websocket/error.hpp>
-#include <boost/beast/websocket/rfc6455.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/url/url.hpp>
-#include <boost/variant2/variant.hpp>
+#include <cassert>
 
-#include <algorithm>
-#include <exception>
-#include <iterator>
-#include <optional>
-#include <string_view>
-#include <utility>
+module servertech_chat;
 
-#include "api/auth.hpp"
-#include "api/chat_websocket.hpp"
-#include "error.hpp"
-#include "request_context.hpp"
-#include "shared_state.hpp"
-#include "static_files.hpp"
+import :http_session;
+import :auth;
+import :chat_websocket;
+import :error;
+import :request_context;
+import :shared_state;
+import :static_files;
+import :websocket;
+import boost.asio;
+import boost.beast;
+import boost.system;
+import boost.url;
+import std;
 
 namespace beast = boost::beast;
 namespace http = boost::beast::http;

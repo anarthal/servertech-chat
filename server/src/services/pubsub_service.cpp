@@ -5,21 +5,18 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "services/pubsub_service.hpp"
+module;
 
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/multi_index/indexed_by.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index_container.hpp>
 
-#include <memory>
-#include <span>
-#include <string>
-#include <string_view>
+module servertech_chat;
+
+import :pubsub_service;
+import std;
 
 using namespace chat;
 namespace asio = boost::asio;

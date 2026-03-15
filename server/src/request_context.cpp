@@ -5,21 +5,17 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "request_context.hpp"
+module;
 
-#include <boost/beast/http/empty_body.hpp>
-#include <boost/beast/http/fields.hpp>
-#include <boost/beast/http/file_body.hpp>
-#include <boost/beast/http/message.hpp>
-#include <boost/beast/http/status.hpp>
-#include <boost/beast/http/string_body.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/url/parse.hpp>
+module servertech_chat;
 
-#include <string_view>
+import :request_context;
+import :api_types;
+import :error;
+import boost.beast;
+import boost.system;
+import boost.url;
 
-#include "api/api_types.hpp"
-#include "error.hpp"
 
 using namespace chat;
 namespace http = boost::beast::http;

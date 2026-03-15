@@ -5,26 +5,20 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "services/redis_client.hpp"
+module;
 
-#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/redirect_error.hpp>
-#include <boost/redis/adapter/result.hpp>
-#include <boost/redis/connection.hpp>
-#include <boost/redis/request.hpp>
-#include <boost/redis/response.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/system/result.hpp>
+#include "error_macros.hpp"
 
-#include <cstdlib>
-#include <optional>
-#include <string>
-#include <utility>
+module servertech_chat;
 
-#include "error.hpp"
-#include "services/redis_serialization.hpp"
+import :redis_client;
+import :error;
+import :redis_serialization;
+import boost.asio;
+import boost.redis;
+import boost.system;
+import std;
 
 using namespace chat;
 namespace asio = boost::asio;

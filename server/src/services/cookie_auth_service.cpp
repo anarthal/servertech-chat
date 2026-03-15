@@ -5,18 +5,19 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "services/cookie_auth_service.hpp"
+module;
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/system/result.hpp>
+#include "error_macros.hpp"
 
-#include <algorithm>
+module servertech_chat;
 
-#include "error.hpp"
-#include "services/mysql_client.hpp"
-#include "services/session_store.hpp"
-#include "util/cookie.hpp"
+import :cookie_auth_service;
+import :error;
+import :session_store;
+import :mysql_client;
+import :cookie;
+import boost.beast;
+import boost.system;
 
 using namespace chat;
 namespace http = boost::beast::http;

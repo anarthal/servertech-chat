@@ -5,9 +5,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-import servertech_chat;
+module servertech_chat:email;
 
-int main(int argc, char* argv[])
-{
-    return chat::run_main(argc, argv);
-}
+export import std;
+
+namespace chat {
+
+// Returns true if the given string is a valid email (by pattern matching)
+bool is_email(std::string_view str);
+
+}  // namespace chat

@@ -5,16 +5,18 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "util/base64.hpp"
+module;
 
-#include <boost/core/ignore_unused.hpp>
-#include <boost/system/result.hpp>
+#include "error_macros.hpp"
+#include <cassert>
 
-#include <cstddef>
-#include <string>
-#include <string_view>
+module servertech_chat;
 
-#include "error.hpp"
+import boost.system;
+import :base64;
+import :error;
+import std;
+
 
 // This code has been copied and adapted from Boost.Beast implementation, since the
 // interface is not public.

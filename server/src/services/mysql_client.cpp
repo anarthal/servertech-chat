@@ -5,45 +5,37 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "error.hpp"
-#include "services/mysql_client.hpp"
+module;
 
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/experimental/channel.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/redirect_error.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/this_coro.hpp>
-#include <boost/asio/use_awaitable.hpp>
+#include "error_macros.hpp"
 #include <boost/core/ignore_unused.hpp>
 #include <boost/describe/class.hpp>
-#include <boost/mysql/any_address.hpp>
-#include <boost/mysql/any_connection.hpp>
-#include <boost/mysql/common_server_errc.hpp>
-#include <boost/mysql/connection.hpp>
-#include <boost/mysql/connection_pool.hpp>
-#include <boost/mysql/diagnostics.hpp>
-#include <boost/mysql/handshake_params.hpp>
-#include <boost/mysql/results.hpp>
-#include <boost/mysql/static_results.hpp>
-#include <boost/mysql/with_params.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/system/result.hpp>
 
-#include <cstdlib>
-#include <exception>
-#include <string>
-#include <string_view>
+module servertech_chat;
 
-#include "business_types.hpp"
-#include "business_types_metadata.hpp"  // Required by static_results
+import :mysql_client;
+import :business_types;
+import :error;
+import boost.system;
+import boost.mysql;
+import boost.asio;
+
 
 using namespace chat;
 namespace mysql = boost::mysql;
 namespace asio = boost::asio;
 using boost::system::error_code;
 using boost::system::result;
+
+// Boost.Describe metadata for business types.
+// Metadata is not included in the main header to reduce build times.
+
+namespace chat {
+
+BOOST_DESCRIBE_STRUCT(auth_user, (), (id, hashed_password))
+BOOST_DESCRIBE_STRUCT(user, (), (id, username))
+
+}  // namespace chat
 
 namespace {
 

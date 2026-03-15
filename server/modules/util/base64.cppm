@@ -1,0 +1,26 @@
+//
+// Copyright (c) 2023-2025 Ruben Perez Hidalgo (rubenperez038 at gmail dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+
+module servertech_chat:base64;
+
+export import boost.system;
+export import std;
+
+namespace chat {
+
+// Encodes the given input as a base64 string. If !with_padding, no padding
+// will be added to the string.
+std::string base64_encode(std::span<const unsigned char> input, bool with_padding = true);
+
+// Decodes the given input, interpreting it as a base64 string. If !with_padding,
+// no padding is expected at the end of the string.
+boost::system::result<std::vector<unsigned char>> base64_decode(
+    std::string_view input,
+    bool with_padding = true
+);
+
+}  // namespace chat

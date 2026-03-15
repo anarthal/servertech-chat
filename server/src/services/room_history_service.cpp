@@ -5,18 +5,19 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "services/room_history_service.hpp"
+module;
 
-#include <boost/system/error_code.hpp>
-#include <boost/system/result.hpp>
+#include <cassert>
 
-#include <array>
-#include <string_view>
-#include <unordered_set>
+module servertech_chat;
 
-#include "business_types.hpp"
-#include "services/mysql_client.hpp"
-#include "services/redis_client.hpp"
+
+import :room_history_service;
+import :business_types;
+import :mysql_client;
+import :redis_client;
+import boost.system;
+import std;
 
 using namespace chat;
 namespace asio = boost::asio;

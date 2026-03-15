@@ -5,14 +5,17 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "api/auth.hpp"
-#include "api/api_types.hpp"
-#include "request_context.hpp"
-#include "services/cookie_auth_service.hpp"
-#include "services/mysql_client.hpp"
-#include "shared_state.hpp"
-#include "util/email.hpp"
-#include "util/password_hash.hpp"
+module servertech_chat;
+
+import :auth;
+import :api_types;
+import :request_context;
+import :cookie_auth_service;
+import :mysql_client;
+import :shared_state;
+import :email;
+import :password_hash;
+import boost.beast;
 
 using namespace chat;
 namespace http = boost::beast::http;
