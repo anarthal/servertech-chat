@@ -1,3 +1,35 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=id">Bahasa Indonesia</a>
+        | <a href="https://openaitx.github.io/view.html?user=anarthal&project=servertech-chat&lang=as">অসমীয়া</
+      </div>
+    </div>
+  </details>
+</div>
+
 # BoostServerTech Chat
 
 This repository holds the code for a chat application written in C++.
