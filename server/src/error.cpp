@@ -7,6 +7,7 @@
 
 #include "error.hpp"
 
+#include <boost/asio/error.hpp>
 #include <boost/describe/enum.hpp>
 #include <boost/describe/enum_to_string.hpp>
 #include <boost/system/system_error.hpp>
