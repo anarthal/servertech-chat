@@ -22,7 +22,7 @@ RUN apk update && \
         linux-headers \
         wget \
         tar \
-        python3
+        python3=3.12.4
 
 # Install Boost
 COPY tools/install-boost.sh .
