@@ -8,7 +8,7 @@
 #
 # Build the server
 #
-FROM alpine:3.21.3 AS server-builder-base
+FROM alpine:3.24.4 AS server-builder-base
 
 # Packages
 RUN apk update && \
@@ -55,7 +55,7 @@ RUN cmake -DCMAKE_GENERATOR=Ninja -DCMAKE_PREFIX_PATH=/opt/boost -DCMAKE_BUILD_T
 #
 # Build the client - setup
 #
-FROM node:23-alpine AS client-builder-base
+FROM node:26-alpine AS client-builder-base
 
 # Don't send telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -86,7 +86,7 @@ RUN npm run test
 #
 # Runtime image
 #
-FROM alpine:3.21.3
+FROM alpine:3.24.4
 RUN apk add openssl icu libstdc++ curl
 COPY --from=server-builder \
     /opt/boost/lib/libboost_container.so* \
