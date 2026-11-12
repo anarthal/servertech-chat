@@ -2,9 +2,9 @@
 # Get the source code
 mkdir ~/boost-src
 cd ~/boost-src
-wget -q https://archives.boost.io/release/1.90.0/source/boost_1_90_0.tar.gz
-tar -xf boost_1_90_0.tar.gz
-cd boost_1_90_0
+wget -q https://archives.boost.io/release/1.92.0/source/boost_1_92_0.tar.gz
+tar -xf boost_1_92_0.tar.gz
+cd boost_1_92_0
 
 # Build and install. Make sure you've got write access to /opt/boost,
 # otherwise change the --prefix argument
